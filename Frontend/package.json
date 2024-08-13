@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "../node_modules/.bin/vite",
-    "build": "../node_modules/.bin/vite build",
-    "lint": "../node_modules/.bin/eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "../node_modules/.bin/vite preview"
+    "dev": "vite.cmd",
+    "build": "vite.cmd build",
+    "lint": "eslint.cmd . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite.cmd preview"
   },
   "dependencies": {
     "@ant-design/icons": "^5.4.0",
