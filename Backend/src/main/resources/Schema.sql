@@ -3,13 +3,13 @@ CREATE TABLE transaction_users (
                                    id SERIAL PRIMARY KEY,
                                    username VARCHAR(255) NOT NULL,
                                    password VARCHAR(255) NOT NULL,
-                                   email VARCHAR(255),
+                                   email VARCHAR(255) NOT NULL,
                                    phone VARCHAR(20),
                                    dob DATE,
                                    full_name VARCHAR(255)
 );
 
-INSERT INTO users (username, password, email, phone, dob, full_name) VALUES
+INSERT INTO  transaction_users (username, password, email, phone, dob, full_name) VALUES
  ('johndoe', 'password123', 'johndoe@example.com', '1234567890', '1990-01-15', 'John Doe'),
  ('janedoe', 'securepassword', 'janedoe@example.com', '0987654321', '1992-02-25', 'Jane Doe'),
  ('alice', 'alicepassword', 'alice@example.com', '1112223333', '1988-03-10', 'Alice Johnson'),
