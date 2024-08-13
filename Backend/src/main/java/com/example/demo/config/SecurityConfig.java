@@ -11,12 +11,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.util.logging.Logger;
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    private final Logger logger = Logger.getLogger(SecurityConfig.class.getName());
 
     private final UserService userService;
 
@@ -26,18 +23,14 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // 配置AuthenticationManager
-        AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        authBuilder.userDetailsService(userService).passwordEncoder(passwordEncoder());
-        AuthenticationManager authManager = authBuilder.build();
-
         // 配置HttpSecurity
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login").permitAll() // 允许所有人访问登录页面
+                        .requestMatchers("/h2-console/**").permitAll() // 允许访问H2控制台
                         .anyRequest().authenticated() // 其他请求需要认证
                 )
-                .authenticationManager(authManager) // 设置认证管理器
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**")) // 禁用H2控制台的CSRF保护
+                .headers(headers -> headers.disable()) // 允许H2控制台页面使用iframe
                 .formLogin(formLogin -> formLogin.disable()); // 禁用默认的表单登录
 
         return http.build();
