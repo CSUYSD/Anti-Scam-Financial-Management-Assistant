@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["frontend/src/*"]
+    },
+    "experimentalDecorators": true,
+    "jsx": "preserve"
+  }
+}
