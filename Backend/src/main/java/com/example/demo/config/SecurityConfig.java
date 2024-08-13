@@ -33,12 +33,15 @@ public class SecurityConfig {
 
         // 配置HttpSecurity
         http
+                // 根据需要禁用CSRF保护
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login").permitAll() // 允许所有人访问登录页面
+                        .requestMatchers("/login", "/restfulapi/users/signup","/allusers").permitAll() // 允许未认证用户访问
                         .anyRequest().authenticated() // 其他请求需要认证
                 )
-                .authenticationManager(authManager) // 设置认证管理器
-                .formLogin(formLogin -> formLogin.disable()); // 禁用默认的表单登录
+                .authenticationManager(authManager) // 设置自定义的认证管理器
+                .formLogin(formLogin -> formLogin.disable() // 禁用默认的表单登录
+
+        );
 
         return http.build();
     }
