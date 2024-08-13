@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
 import com.example.demo.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,10 +23,13 @@ import java.util.Map;
 @RestController
 public class AuthController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
     @Autowired
+    public AuthController(UserService userService, AuthenticationManager authenticationManager) {
+        this.userService = userService;
+        this.authenticationManager = authenticationManager;
+    }
     private AuthenticationManager authenticationManager;
-
-    @Autowired
     private UserService userService;
 
     @PostMapping("/login")
