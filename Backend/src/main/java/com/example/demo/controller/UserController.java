@@ -38,27 +38,28 @@ public class UserController {
     @PostMapping("/signup")
     public String createUser(@RequestBody TransactionUsers transactionUsers) {
         userService.saveUser(transactionUsers);
+        return "success";
 
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<TransactionUsers> updateUser(@PathVariable Long id, @RequestBody TransactionUsers transactionUsersDetails) {
-        TransactionUsers transactionUsers = userRepository.findById(id).orElseThrow(() -> new RuntimeException("TransactionUsers not found"));
-
-        transactionUsers.setFullName(transactionUsersDetails.getFullName());
-        transactionUsers.setPhone(transactionUsersDetails.getPhone());
-        transactionUsers.setDOB(transactionUsersDetails.getDOB());
-        transactionUsers.setEmail(transactionUsersDetails.getEmail());
-
-        TransactionUsers updatedTransactionUsers = userRepository.save(transactionUsers);
-        return ResponseEntity.ok(updatedTransactionUsers);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        TransactionUsers transactionUsers = userRepository.findById(id).orElseThrow(() -> new RuntimeException("TransactionUsers not found"));
-        userRepository.delete(transactionUsers);
-        return ResponseEntity.noContent().build();
-    }
+//    @PutMapping("/{id}")
+//    public ResponseEntity<TransactionUsers> updateUser(@PathVariable Long id, @RequestBody TransactionUsers transactionUsersDetails) {
+//        TransactionUsers transactionUsers = userRepository.findById(id).orElseThrow(() -> new RuntimeException("TransactionUsers not found"));
+//
+//        transactionUsers.setFullName(transactionUsersDetails.getFullName());
+//        transactionUsers.setPhone(transactionUsersDetails.getPhone());
+//        transactionUsers.setDOB(transactionUsersDetails.getDOB());
+//        transactionUsers.setEmail(transactionUsersDetails.getEmail());
+//
+//        TransactionUsers updatedTransactionUsers = userRepository.save(transactionUsers);
+//        return ResponseEntity.ok(updatedTransactionUsers);
+//    }
+//
+//    @DeleteMapping("/{id}")
+//    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+//        TransactionUsers transactionUsers = userRepository.findById(id).orElseThrow(() -> new RuntimeException("TransactionUsers not found"));
+//        userRepository.delete(transactionUsers);
+//        return ResponseEntity.noContent().build();
+//    }
 }
 
