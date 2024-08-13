@@ -1,24 +1,32 @@
 package com.example.demo.service;
 
+import com.example.demo.config.JwtUtil;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.TransactionUsers;
 import com.example.demo.Dao.UserDao;
+import com.example.demo.model.UserDetail;
+import com.github.alenfive.rocketapi.entity.vo.LoginVo;
 import org.hibernate.service.spi.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class UserService implements UserDetailsService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
 
     private final UserDao userDao;
 
@@ -39,9 +47,6 @@ public class UserService implements UserDetailsService {
         return userDao.findByUsername(username);
     }
 
-    public void saveUser(TransactionUsers user) throws DataIntegrityViolationException {
-        userDao.save(user);
-    }
 
     public void updateUser(Long id, TransactionUsers updatedUser) throws UserNotFoundException {
         Optional<TransactionUsers> existingUserOptional = userDao.findById(id);
@@ -74,9 +79,6 @@ public class UserService implements UserDetailsService {
         TransactionUsers transactionUsers = userDao.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        return org.springframework.security.core.userdetails.User.withUsername(transactionUsers.getUsername())
-                .password(transactionUsers.getPassword())
-                .authorities("USER")  // 默认权限
-                .build();
+        return new UserDetail(transactionUsers, Collections.emptyList());
     }
 }

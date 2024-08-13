@@ -32,6 +32,9 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	// Spring Boot DevTools
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	//	JWT (JSON Web Token)
+	implementation 'com.github.alenfive:rocket-api-boot-starter:2.4.7.RELEASE'
+	implementation 'io.jsonwebtoken:jjwt:0.12.6'
 }
 
 tasks.named('test') {
