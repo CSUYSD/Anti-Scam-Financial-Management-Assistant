@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.TransactionUsers;
 import com.example.demo.service.UserService;
+import com.example.demo.service.UserServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +22,14 @@ public class UserController {
 
     private final UserService userService;
 
+    private final UserServiceImpl userServiceImpl;
+
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserServiceImpl userServiceImpl) {
         this.userService = userService;
+        this.userServiceImpl = userServiceImpl;
     }
+
 
     @GetMapping("/allusers")
     public ResponseEntity<List<TransactionUsers>> getAllUsers() {
@@ -40,10 +45,11 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
+//    用户注册功能，接收前端传来的用户信息（对密码进行加密），保存到数据库
     @PostMapping("/signup")
     public ResponseEntity<String> createUser(@RequestBody TransactionUsers transactionUsers) {
         try {
-            userService.saveUser(transactionUsers);
+            userServiceImpl.saveUser(transactionUsers);
             return ResponseEntity.status(HttpStatus.CREATED).body("User has been saved");
         } catch (DataIntegrityViolationException e) {
             logger.error("Error saving user: ", e);

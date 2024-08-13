@@ -13,8 +13,9 @@ public class TransactionUsers {
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
-        @Column()
+        @Column(nullable = false)
         private String username;
+        @Column(nullable = false)
         private String password;
         private String email;
         private String phone;
