@@ -12,6 +12,7 @@ xxxxxxx
   3. H2 in-memory 数据库集成替换了PostgreSQL，配置位于`application.properties`中（负责: 王昌昊）
 
 ## TODO 列表 📋
+- [x] 示例完成✅(隔壁老王）
 
 - [ ] 测试 CRUD 功能
 - [ ] 完成注释和文档编写
