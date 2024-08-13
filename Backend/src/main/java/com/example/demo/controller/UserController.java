@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/restfulapi/users")
+@RequestMapping("/users")
 public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -27,9 +27,9 @@ public class UserController {
     }
 
     @GetMapping("/allusers")
-    public ResponseEntity<String> getAllUsers() {
+    public ResponseEntity<List<TransactionUsers>> getAllUsers() {
         List<TransactionUsers> users = userService.findAll();
-        return ResponseEntity.status(HttpStatus.OK).body("s??");
+        return ResponseEntity.status(HttpStatus.OK).body(users);
     }
 
     @GetMapping("/{id}")
