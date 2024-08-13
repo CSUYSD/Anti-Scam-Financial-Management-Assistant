@@ -1,24 +1,26 @@
 package com.example.demo.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.security.core.userdetails.User;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Data
-public class User {
+public class TransactionUsers {
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
+        @Column()
         private String username;
         private String password;
+        private String email;
+        private String phone;
+        private String DOB;
+        private String fullName;
 
-        @OneToMany(mappedBy = "user")  // 关联到 Account 表
+        @OneToMany(mappedBy = "transactionUsers")  // 关联到 Account 表
         private List<Account> accounts = new ArrayList<>();
 }

@@ -7,7 +7,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,17 +23,19 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // 配置AuthenticationManager
+        AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+        authBuilder.userDetailsService(userService).passwordEncoder(passwordEncoder());
+        AuthenticationManager authManager = authBuilder.build();
+
+        // 配置HttpSecurity
         http
-                .csrf(csrf -> csrf.disable())  // 解决 csrf 的问题
-                .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers("/api/register", "/api/login").permitAll()
-                        .anyRequest().authenticated()
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/login").permitAll() // 允许所有人访问登录页面
+                        .anyRequest().authenticated() // 其他请求需要认证
                 )
-                .formLogin((form) -> form
-                        .loginProcessingUrl("/api/login")
-                        .permitAll()
-                )
-                .logout(logout -> logout.permitAll());  // 解决 logout 的问题
+                .authenticationManager(authManager) // 设置认证管理器
+                .formLogin(formLogin -> formLogin.disable()); // 禁用默认的表单登录
 
         return http.build();
     }
@@ -46,11 +47,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        AuthenticationManagerBuilder authenticationManagerBuilder =
-                http.getSharedObject(AuthenticationManagerBuilder.class);
-        authenticationManagerBuilder
-                .userDetailsService(userService)
-                .passwordEncoder(passwordEncoder());
-        return authenticationManagerBuilder.build();
+        AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+        authBuilder.userDetailsService(userService).passwordEncoder(passwordEncoder());
+        return authBuilder.build();
     }
 }
