@@ -1,7 +1,8 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.User;
+import com.example.demo.model.TransactionUsers;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,45 +10,51 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/RestfulApi/users")
 public class UserController {
 
-    @Autowired
+    private UserService userService;
     private UserRepository userRepository;
+    @Autowired
+    public UserController(UserRepository userRepository, UserService userService) {
+        this.userRepository = userRepository;
+        this.userService = userService;
+    }
+
 
     @GetMapping
-    public List<User> getAllUsers() {
+    public List<TransactionUsers> getAllUsers() {
         return userRepository.findAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-        return ResponseEntity.ok(user);
+    public ResponseEntity<TransactionUsers> getUserById(@PathVariable Long id) {
+        TransactionUsers transactionUsers = userRepository.findById(id).orElseThrow(() -> new RuntimeException("TransactionUsers not found"));
+        return ResponseEntity.ok(transactionUsers);
     }
 
-    @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userRepository.save(user);
+    @PostMapping("/signup")
+    public TransactionUsers createUser(@RequestBody TransactionUsers transactionUsers) {
+        return userRepository.save(transactionUsers);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+    public ResponseEntity<TransactionUsers> updateUser(@PathVariable Long id, @RequestBody TransactionUsers transactionUsersDetails) {
+        TransactionUsers transactionUsers = userRepository.findById(id).orElseThrow(() -> new RuntimeException("TransactionUsers not found"));
 
-        user.setFullName(userDetails.getFullName());
-        user.setAddress(userDetails.getAddress());
-        user.setPhoneNumber(userDetails.getPhoneNumber());
-        user.setEmail(userDetails.getEmail());
+        transactionUsers.setFullName(transactionUsersDetails.getFullName());
+        transactionUsers.setPhone(transactionUsersDetails.getPhone());
+        transactionUsers.setDOB(transactionUsersDetails.getDOB());
+        transactionUsers.setEmail(transactionUsersDetails.getEmail());
 
-        User updatedUser = userRepository.save(user);
-        return ResponseEntity.ok(updatedUser);
+        TransactionUsers updatedTransactionUsers = userRepository.save(transactionUsers);
+        return ResponseEntity.ok(updatedTransactionUsers);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-        userRepository.delete(user);
+        TransactionUsers transactionUsers = userRepository.findById(id).orElseThrow(() -> new RuntimeException("TransactionUsers not found"));
+        userRepository.delete(transactionUsers);
         return ResponseEntity.noContent().build();
     }
 }

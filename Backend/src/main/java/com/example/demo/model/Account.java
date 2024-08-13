@@ -13,6 +13,6 @@ public class Account {
     private String username;
     private String accountName;
     @ManyToOne()
-    private User user;
+    private TransactionUsers transactionUsers;
 
 }
