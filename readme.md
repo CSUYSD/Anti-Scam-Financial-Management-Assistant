@@ -23,7 +23,7 @@ xxxxxxx
   7. 关于登录与注册问题的解决，创建一个新的UserServiceImpl的类型，把login与signup的实现方法封装在里面，原来的UserService实现了UserDetailsService，并且重写了loadUserByUsername方法，会导致配置类与UserService的互相依赖。
 
 ## TODO 列表 📋
-- [x] 示例完成✅(隔壁老王）
+- [ ] $${\color{red}文档优先}$$
 - [ ] 根据文档要求，主题需要有实际社会需求（paper或权威媒体的支持），因此新增防诈骗养老理财选项，见页首。
 - [ ] 测试 CRUD 功能
 - [ ] 完成注释和文档编写
