@@ -34,15 +34,21 @@ public class UserController {
     @GetMapping("/allusers")
     public ResponseEntity<List<TransactionUsers>> getAllUsers() {
         List<TransactionUsers> users = userService.findAll();
-        return ResponseEntity.status(HttpStatus.OK).body(users);
+        if (!users.isEmpty()) {
+            return ResponseEntity.ok(users);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<TransactionUsers> getUserById(@PathVariable Long id) {
         Optional<TransactionUsers> userOptional = userService.findById(id);
-        return userOptional
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        if (userOptional.isPresent()) {
+            return ResponseEntity.ok(userOptional.get());
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 
 //    用户注册功能，接收前端传来的用户信息（对密码进行加密），保存到数据库

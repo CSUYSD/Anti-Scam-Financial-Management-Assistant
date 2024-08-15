@@ -10,11 +10,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -32,10 +27,9 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/h2-console/**").permitAll() // 允许访问H2控制台
-                        .requestMatchers("/login", "/users/signup").permitAll() // 允许访问login和signup页面
                         .anyRequest().authenticated() // 其他请求需要认证
                 )
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**","/login", "/users/signup")) // 禁用H2控制台的CSRF保护
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**")) // 禁用H2控制台的CSRF保护
                 .headers(headers -> headers.disable()) // 允许H2控制台页面使用iframe
                 .formLogin(formLogin -> formLogin.disable()); // 禁用默认的表单登录
 
@@ -44,7 +38,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new CustomMd5PasswordEncoder();
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -52,17 +46,5 @@ public class SecurityConfig {
         AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
         authBuilder.userDetailsService(userService).passwordEncoder(passwordEncoder());
         return authBuilder.build();
-    }
-//    配置跨域请求（CORS）
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedHeaders(Collections.singletonList("*"));
-        configuration.setAllowedMethods(Collections.singletonList("*"));
-        configuration.setAllowedOrigins(Collections.singletonList("*"));
-        configuration.setMaxAge(3600L);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }
