@@ -15,3 +15,6 @@ INSERT INTO  transaction_users (username, password, email, phone, dob, full_name
  ('alice', 'alicepassword', 'alice@example.com', '1112223333', '1988-03-10', 'Alice Johnson'),
  ('bobsmith', 'bobbypass', 'bobsmith@example.com', '4445556666', '1985-04-05', 'Bob Smith'),
  ('charlie', 'charliepass', 'charlie@example.com', '7778889999', '1995-05-20', 'Charlie Brown');
+
+
+
