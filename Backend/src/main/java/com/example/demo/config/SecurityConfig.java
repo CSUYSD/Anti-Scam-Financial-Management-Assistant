@@ -7,6 +7,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -26,12 +27,12 @@ public class SecurityConfig {
         // 配置HttpSecurity
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/h2-console/**").permitAll() // 允许访问H2控制台
+                        .requestMatchers("/h2-console/**", "users/signup").permitAll() // 允许访问H2控制台
                         .anyRequest().authenticated() // 其他请求需要认证
                 )
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**")) // 禁用H2控制台的CSRF保护
-                .headers(headers -> headers.disable()) // 允许H2控制台页面使用iframe
-                .formLogin(formLogin -> formLogin.disable()); // 禁用默认的表单登录
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "users")) // 禁用H2控制台的CSRF保护
+                .headers(AbstractHttpConfigurer::disable) // 允许H2控制台页面使用iframe
+                .formLogin(AbstractHttpConfigurer::disable); // 禁用默认的表单登录
 
         return http.build();
     }
