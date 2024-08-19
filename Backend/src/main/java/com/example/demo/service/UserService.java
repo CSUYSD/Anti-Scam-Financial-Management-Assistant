@@ -1,6 +1,5 @@
 package com.example.demo.service;
 
-import com.example.demo.config.JwtUtil;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.TransactionUsers;
 import com.example.demo.Dao.UserDao;
