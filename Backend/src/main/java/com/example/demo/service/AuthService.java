@@ -20,14 +20,14 @@ import java.util.Map;
 import java.util.Objects;
 
 @Service
-public class UserServiceImpl {
+public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
     private final UserDao userDao;
     private final AuthenticationManager authenticationManager;
 
     @Autowired
-    public UserServiceImpl(PasswordEncoder passwordEncoder, UserDao userDao, AuthenticationManager authenticationManager) {
+    public AuthService(PasswordEncoder passwordEncoder, UserDao userDao, AuthenticationManager authenticationManager) {
         this.passwordEncoder = passwordEncoder;
         this.userDao = userDao;
         this.authenticationManager = authenticationManager;
