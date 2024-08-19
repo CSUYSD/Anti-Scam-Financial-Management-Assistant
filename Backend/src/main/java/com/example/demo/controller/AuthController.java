@@ -27,14 +27,12 @@ public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
     private final UserServiceImpl userServiceImpl;
-
+    private final AuthenticationManager authenticationManager;
     @Autowired
     public AuthController(UserServiceImpl userServiceImpl, AuthenticationManager authenticationManager) {
         this.userServiceImpl = userServiceImpl;
         this.authenticationManager = authenticationManager;
     }
-    private AuthenticationManager authenticationManager;
-    private UserServiceImpl userService;
 
 //    用户登录功能，接收前端传来的用户名和密码，进行身份验证
     @PostMapping("/login")
