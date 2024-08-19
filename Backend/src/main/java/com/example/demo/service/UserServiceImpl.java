@@ -22,16 +22,15 @@ import java.util.Objects;
 @Service
 public class UserServiceImpl {
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
+    private final PasswordEncoder passwordEncoder;
     private final UserDao userDao;
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
     @Autowired
-    public UserServiceImpl(UserDao userDao) {
+    public UserServiceImpl(PasswordEncoder passwordEncoder, UserDao userDao, AuthenticationManager authenticationManager) {
+        this.passwordEncoder = passwordEncoder;
         this.userDao = userDao;
+        this.authenticationManager = authenticationManager;
     }
 
     public void saveUser(TransactionUsers user) throws DataIntegrityViolationException {
