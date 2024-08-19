@@ -3,7 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.TransactionUsers;
 import com.example.demo.service.UserService;
-import com.example.demo.service.UserServiceImpl;
+import com.example.demo.service.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,12 +22,12 @@ public class UserController {
 
     private final UserService userService;
 
-    private final UserServiceImpl userServiceImpl;
+    private final AuthService authService;
 
     @Autowired
-    public UserController(UserService userService, UserServiceImpl userServiceImpl) {
+    public UserController(UserService userService, AuthService authService) {
         this.userService = userService;
-        this.userServiceImpl = userServiceImpl;
+        this.authService = authService;
     }
 
 
@@ -55,7 +55,7 @@ public class UserController {
     @PostMapping("/signup")
     public ResponseEntity<String> createUser(@RequestBody TransactionUsers transactionUsers) {
         try {
-            userServiceImpl.saveUser(transactionUsers);
+            authService.saveUser(transactionUsers);
             return ResponseEntity.status(HttpStatus.CREATED).body("User has been saved");
         } catch (DataIntegrityViolationException e) {
             logger.error("Error saving user: ", e);
