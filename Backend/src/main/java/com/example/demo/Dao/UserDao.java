@@ -1,6 +1,5 @@
 package com.example.demo.Dao;
 
-
 import com.example.demo.model.TransactionUsers;
 import org.springframework.data.jpa.repository.JpaRepository;
 

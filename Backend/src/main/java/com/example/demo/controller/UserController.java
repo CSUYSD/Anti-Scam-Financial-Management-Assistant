@@ -2,8 +2,10 @@ package com.example.demo.controller;
 
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.TransactionUsers;
+import com.example.demo.model.testMessage;
 import com.example.demo.service.UserService;
 import com.example.demo.service.AuthService;
+import com.example.demo.utility.RabbitMQProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +32,8 @@ public class UserController {
         this.authService = authService;
     }
 
+    @Autowired
+    private RabbitMQProducer rabbitMQProducer;
 
     @GetMapping("/allusers")
     public ResponseEntity<List<TransactionUsers>> getAllUsers() {
@@ -90,5 +94,11 @@ public class UserController {
             logger.error("Unexpected error deleting user: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error occurred: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/rabbit")
+    public String testRabbitMQ(@RequestBody String message) {
+        rabbitMQProducer.sendMessage(message);
+        return message;
     }
 }
