@@ -3,6 +3,7 @@ package com.example.demo.config;
 import com.example.demo.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -23,17 +24,24 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Profile("dev")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // 配置HttpSecurity
+//        // 配置HttpSecurity
+//        http
+//                .authorizeHttpRequests(authorize -> authorize
+//                        .requestMatchers("/h2-console/**", "users/signup", "login").permitAll() // 允许访问H2控制台
+//                        .anyRequest().authenticated() // 其他请求需要认证
+//                )
+//                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "users/signup", "login")) // 禁用H2控制台的CSRF保护
+//                .headers(AbstractHttpConfigurer::disable) // 允许H2控制台页面使用iframe
+//                .formLogin(AbstractHttpConfigurer::disable); // 禁用默认的表单登录
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/h2-console/**", "users/signup").permitAll() // 允许访问H2控制台
-                        .anyRequest().authenticated() // 其他请求需要认证
+                        .anyRequest().permitAll() // 允许开发环境中的所有请求
                 )
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "users")) // 禁用H2控制台的CSRF保护
-                .headers(AbstractHttpConfigurer::disable) // 允许H2控制台页面使用iframe
-                .formLogin(AbstractHttpConfigurer::disable); // 禁用默认的表单登录
-
+                .csrf(AbstractHttpConfigurer::disable) // 禁用CSRF保护
+                .headers(AbstractHttpConfigurer::disable) // 允许H2控制台使用iframe
+                .formLogin(AbstractHttpConfigurer::disable);
         return http.build();
     }
 

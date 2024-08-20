@@ -28,6 +28,6 @@ public class AuthController {
 //    用户登录功能，接收前端传来的用户名和密码，进行身份验证
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody LoginVo loginVo) {
-        return authService.login(loginVo);
+            return authService.login(loginVo);
     }
 }
