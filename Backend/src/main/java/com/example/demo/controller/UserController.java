@@ -2,7 +2,6 @@ package com.example.demo.controller;
 
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.TransactionUsers;
-import com.example.demo.model.testMessage;
 import com.example.demo.service.UserService;
 import com.example.demo.service.AuthService;
 import com.example.demo.utility.RabbitMQProducer;
