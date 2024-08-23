@@ -1,0 +1,4 @@
+.vscode
+myenv
+#用自己的API key 替换
+/AgentAPI/.env
