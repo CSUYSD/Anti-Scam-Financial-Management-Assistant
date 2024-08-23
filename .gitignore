@@ -21,6 +21,8 @@ yarn.lock
 *.bak
 *.swp
 
+AgentApi\venv
+**/venv/
 ### Eclipse ###
 .metadata
 bin/
