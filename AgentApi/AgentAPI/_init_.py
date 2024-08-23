@@ -1,8 +1,8 @@
 # 初始化模块
 
 # 导入必要的模块
-from ..chat_agent import create_chain, tools, user_memories
-from ..chat_agent_controllor import app, callback, channel
+from chat_agent import create_chain, tools, user_memories
+from chat_agent_controllor import app, callback, channel
 
 # 设置版本号
 __version__ = "0.1.0"
