@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.service.impl.AuthServiceImpl;
 import com.github.alenfive.rocketapi.entity.vo.LoginVo;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,5 +30,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody LoginVo loginVo) {
             return authServiceImpl.login(loginVo);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        return authServiceImpl.logout(request);
     }
 }
