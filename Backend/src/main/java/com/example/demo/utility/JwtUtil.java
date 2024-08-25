@@ -1,5 +1,6 @@
 package com.example.demo.utility;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -12,7 +13,7 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final SecretKey key;
+    private static SecretKey key;
     private final long expirationTime;
 
     // 从配置文件中读取密钥和过期时间
@@ -61,5 +62,11 @@ public class JwtUtil {
             System.out.println("无效的JWT令牌: " + e.getMessage());
             return false;
         }
+    }
+    public static Claims parseJWT(String token) {
+        return Jwts.parser()
+                .setSigningKey(key)
+                .parseClaimsJws(token)
+                .getBody();
     }
 }

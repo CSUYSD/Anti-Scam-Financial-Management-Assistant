@@ -1,5 +1,6 @@
-package com.example.demo.config;
+package com.example.demo.config.security;
 
+import com.example.demo.config.security.filter.JwtAuthenticationTokenFilter;
 import com.example.demo.service.impl.UserServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,32 +10,46 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final UserServiceImpl userServiceImpl;
+    private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
 
-    public SecurityConfig(UserServiceImpl userServiceImpl) {
+    public SecurityConfig(UserServiceImpl userServiceImpl, JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter) {
         this.userServiceImpl = userServiceImpl;
+        this.jwtAuthenticationTokenFilter = jwtAuthenticationTokenFilter;
     }
 
     @Bean
     @Profile("dev")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        // 配置HttpSecurity
+//        启用请求拦截器，对请求进行权限验证
 //        http
-//                .authorizeHttpRequests(authorize -> authorize
-//                        .requestMatchers("/h2-console/**", "users/signup", "login").permitAll() // 允许访问H2控制台
-//                        .anyRequest().authenticated() // 其他请求需要认证
-//                )
-//                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "users/signup", "login")) // 禁用H2控制台的CSRF保护
-//                .headers(AbstractHttpConfigurer::disable) // 允许H2控制台页面使用iframe
-//                .formLogin(AbstractHttpConfigurer::disable); // 禁用默认的表单登录
+//            .authorizeHttpRequests(authorize -> authorize
+//                .requestMatchers("/h2-console/**", "/users/signup", "/auth/login").permitAll()
+//                .anyRequest().authenticated()
+//            )
+//            .csrf(csrf -> csrf
+//                .ignoringRequestMatchers("/h2-console/**", "/users/signup", "/auth/login")
+//            )
+//            .headers(headers -> headers
+//                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+//            )
+//            .sessionManagement(session -> session
+//                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+//            )
+//            .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
+//            .formLogin(AbstractHttpConfigurer::disable)
+//            .httpBasic(AbstractHttpConfigurer::disable);
 
         //开发环境中的配置：允许所有端点的权限
         http
