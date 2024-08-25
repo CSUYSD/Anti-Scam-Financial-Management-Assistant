@@ -13,7 +13,7 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private static SecretKey key;
+    private final SecretKey key;
     private final long expirationTime;
 
     // 从配置文件中读取密钥和过期时间
@@ -63,10 +63,15 @@ public class JwtUtil {
             return false;
         }
     }
-    public static Claims parseJWT(String token) {
-        return Jwts.parser()
-                .setSigningKey(key)
-                .parseClaimsJws(token)
-                .getBody();
+    public Claims parseJWT(String token) throws JwtException {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(this.key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (JwtException e) {
+            throw new JwtException("Failed to parse JWT token", e);
+        }
     }
 }
