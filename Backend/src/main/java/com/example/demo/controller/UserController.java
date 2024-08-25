@@ -2,8 +2,8 @@ package com.example.demo.controller;
 
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.TransactionUsers;
-import com.example.demo.service.UserService;
-import com.example.demo.service.AuthService;
+import com.example.demo.service.impl.UserServiceImpl;
+import com.example.demo.service.impl.AuthServiceImpl;
 import com.example.demo.utility.RabbitMQProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,14 +21,14 @@ import java.util.Optional;
 public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
-    private final UserService userService;
+    private final UserServiceImpl userServiceImpl;
 
-    private final AuthService authService;
+    private final AuthServiceImpl authServiceImpl;
 
     @Autowired
-    public UserController(UserService userService, AuthService authService) {
-        this.userService = userService;
-        this.authService = authService;
+    public UserController(UserServiceImpl userServiceImpl, AuthServiceImpl authServiceImpl) {
+        this.userServiceImpl = userServiceImpl;
+        this.authServiceImpl = authServiceImpl;
     }
 
     @Autowired
@@ -36,7 +36,7 @@ public class UserController {
 
     @GetMapping("/allusers")
     public ResponseEntity<List<TransactionUsers>> getAllUsers() {
-        List<TransactionUsers> users = userService.findAll();
+        List<TransactionUsers> users = userServiceImpl.findAll();
         if (!users.isEmpty()) {
             return ResponseEntity.ok(users);
         } else {
@@ -46,7 +46,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<TransactionUsers> getUserById(@PathVariable Long id) {
-        Optional<TransactionUsers> userOptional = userService.findById(id);
+        Optional<TransactionUsers> userOptional = userServiceImpl.findById(id);
         if (userOptional.isPresent()) {
             return ResponseEntity.ok(userOptional.get());
         } else {
@@ -58,7 +58,7 @@ public class UserController {
     @PostMapping("/signup")
     public ResponseEntity<String> createUser(@RequestBody TransactionUsers transactionUsers) {
         try {
-            authService.saveUser(transactionUsers);
+            authServiceImpl.saveUser(transactionUsers);
             return ResponseEntity.status(HttpStatus.CREATED).body("User has been saved");
         } catch (DataIntegrityViolationException e) {
             logger.error("Error saving user: ", e);
@@ -69,7 +69,7 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody TransactionUsers transactionUsersDetails) {
         try {
-            userService.updateUser(id, transactionUsersDetails);
+            userServiceImpl.updateUser(id, transactionUsersDetails);
             return ResponseEntity.ok("User updated successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -82,7 +82,7 @@ public class UserController {
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         try {
-            userService.deleteUser(id);
+            userServiceImpl.deleteUser(id);
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
