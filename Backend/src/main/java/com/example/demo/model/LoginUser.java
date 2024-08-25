@@ -1,6 +1,6 @@
 package com.example.demo.model;
 
-import com.example.demo.model.TransactionUsers;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
