@@ -1,12 +1,6 @@
 import asyncio
 
-from uvicorn._types import (
-    ASGIReceiveCallable,
-    ASGISendCallable,
-    HTTPResponseBodyEvent,
-    HTTPResponseStartEvent,
-    Scope,
-)
+from uvicorn._types import ASGIReceiveCallable, ASGISendCallable, Scope
 
 CLOSE_HEADER = (b"connection", b"close")
 
@@ -22,7 +16,7 @@ class FlowControl:
         self._is_writable_event.set()
 
     async def drain(self) -> None:
-        await self._is_writable_event.wait()
+        await self._is_writable_event.wait()  # pragma: full coverage
 
     def pause_reading(self) -> None:
         if not self.read_paused:
@@ -35,32 +29,26 @@ class FlowControl:
             self._transport.resume_reading()
 
     def pause_writing(self) -> None:
-        if not self.write_paused:
+        if not self.write_paused:  # pragma: full coverage
             self.write_paused = True
             self._is_writable_event.clear()
 
     def resume_writing(self) -> None:
-        if self.write_paused:
+        if self.write_paused:  # pragma: full coverage
             self.write_paused = False
             self._is_writable_event.set()
 
 
-async def service_unavailable(
-    scope: "Scope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
-) -> None:
-    response_start: "HTTPResponseStartEvent" = {
-        "type": "http.response.start",
-        "status": 503,
-        "headers": [
-            (b"content-type", b"text/plain; charset=utf-8"),
-            (b"connection", b"close"),
-        ],
-    }
-    await send(response_start)
-
-    response_body: "HTTPResponseBodyEvent" = {
-        "type": "http.response.body",
-        "body": b"Service Unavailable",
-        "more_body": False,
-    }
-    await send(response_body)
+async def service_unavailable(scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 503,
+            "headers": [
+                (b"content-type", b"text/plain; charset=utf-8"),
+                (b"content-length", b"19"),
+                (b"connection", b"close"),
+            ],
+        }
+    )
+    await send({"type": "http.response.body", "body": b"Service Unavailable", "more_body": False})
