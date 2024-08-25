@@ -24,6 +24,9 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     @Autowired
     private RedisTemplate<String, LoginUser> redisTemplate;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = request.getHeader("token");
@@ -34,7 +37,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
         String userid;
         try {
-            Claims claims = JwtUtil.parseJWT(token);
+            Claims claims = jwtUtil.parseJWT(token);
             userid = claims.getSubject();
         } catch (Exception e) {
             throw new RuntimeException("Invalid token");
