@@ -3,6 +3,7 @@ package com.example.demo.config.security.filter;
 import com.example.demo.model.LoginUser;
 import com.example.demo.utility.JwtUtil;
 import io.jsonwebtoken.Claims;
+import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,8 +22,8 @@ import java.util.Objects;
 @Component
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private RedisTemplate<String, LoginUser> redisTemplate;
+    @Resource(name = "myRedisTemplate")
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -44,7 +45,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         }
 
         String redisKey = "login:" + userid;
-        LoginUser loginUser = redisTemplate.opsForValue().get(redisKey);
+        LoginUser loginUser = (LoginUser) redisTemplate.opsForValue().get(redisKey);
         if(Objects.isNull(loginUser)) {
             throw new RuntimeException("User not logged in");
         }

@@ -18,7 +18,7 @@ import java.time.Duration;
 @EnableCaching // 可选，如果您想明确控制缓存的启用
 public class RedisConfig {
 
-    @Bean
+    @Bean(name = "myRedisTemplate")
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
