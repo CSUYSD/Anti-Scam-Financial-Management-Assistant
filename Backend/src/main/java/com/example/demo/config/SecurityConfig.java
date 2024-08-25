@@ -1,6 +1,6 @@
 package com.example.demo.config;
 
-import com.example.demo.service.UserService;
+import com.example.demo.service.impl.UserServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -17,10 +17,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final UserService userService;
+    private final UserServiceImpl userServiceImpl;
 
-    public SecurityConfig(UserService userService) {
-        this.userService = userService;
+    public SecurityConfig(UserServiceImpl userServiceImpl) {
+        this.userServiceImpl = userServiceImpl;
     }
 
     @Bean
@@ -35,12 +35,14 @@ public class SecurityConfig {
 //                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "users/signup", "login")) // 禁用H2控制台的CSRF保护
 //                .headers(AbstractHttpConfigurer::disable) // 允许H2控制台页面使用iframe
 //                .formLogin(AbstractHttpConfigurer::disable); // 禁用默认的表单登录
+
+        //开发环境中的配置：允许所有端点的权限
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll() // 允许开发环境中的所有请求
+                        .anyRequest().permitAll()
                 )
-                .csrf(AbstractHttpConfigurer::disable) // 禁用CSRF保护
-                .headers(AbstractHttpConfigurer::disable) // 允许H2控制台使用iframe
+                .csrf(AbstractHttpConfigurer::disable)
+                .headers(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable);
         return http.build();
     }
@@ -53,7 +55,7 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
         AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        authBuilder.userDetailsService(userService).passwordEncoder(passwordEncoder());
+        authBuilder.userDetailsService(userServiceImpl).passwordEncoder(passwordEncoder());
         return authBuilder.build();
     }
 }
