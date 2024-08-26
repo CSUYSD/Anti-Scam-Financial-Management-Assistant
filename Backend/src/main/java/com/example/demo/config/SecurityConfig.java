@@ -1,6 +1,8 @@
 package com.example.demo.config;
 
 import com.example.demo.service.impl.UserServiceImpl;
+import com.example.demo.utility.JwtUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -18,9 +20,11 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final UserServiceImpl userServiceImpl;
-
-    public SecurityConfig(UserServiceImpl userServiceImpl) {
+    private final JwtUtil jwtUtil;
+    @Autowired
+    public SecurityConfig(UserServiceImpl userServiceImpl, JwtUtil jwtUtil) {
         this.userServiceImpl = userServiceImpl;
+        this.jwtUtil = jwtUtil;
     }
 
     @Bean

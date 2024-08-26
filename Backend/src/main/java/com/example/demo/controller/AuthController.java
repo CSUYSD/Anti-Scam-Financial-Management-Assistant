@@ -1,17 +1,21 @@
 package com.example.demo.controller;
 
-import com.example.demo.service.impl.AuthServiceImpl;
-import com.github.alenfive.rocketapi.entity.vo.LoginVo;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.http.ResponseEntity;
 
-import java.util.Map;
+import com.example.demo.model.TransactionUsers;
+import com.example.demo.service.impl.AuthServiceImpl;
+import com.github.alenfive.rocketapi.entity.vo.LoginVo;
 
 @RestController
 public class AuthController {
@@ -24,10 +28,21 @@ public class AuthController {
         this.authServiceImpl = authServiceImpl;
         this.authenticationManager = authenticationManager;
     }
-
-//    用户登录功能，接收前端传来的用户名和密码，进行身份验证
+    // 登录，接收前端传来的用户名和密码，进行身份验证
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody LoginVo loginVo) {
-            return authServiceImpl.login(loginVo);
+        return authServiceImpl.login(loginVo);
+    }
+
+    // 注册，接收前端传来的用户信息（对密码进行加密），保存到数据库
+    @PostMapping("/signup")
+    public ResponseEntity<String> createUser(@RequestBody TransactionUsers transactionUsers) {
+        try {
+            authServiceImpl.saveUser(transactionUsers);
+            return ResponseEntity.status(HttpStatus.CREATED).body("用户已成功保存");
+        } catch (DataIntegrityViolationException e) {
+            logger.error("保存用户时出错: ", e);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("保存用户时出错: " + e.getMessage());
+        }
     }
 }

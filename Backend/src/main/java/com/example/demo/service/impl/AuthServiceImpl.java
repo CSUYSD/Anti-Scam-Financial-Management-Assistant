@@ -49,7 +49,8 @@ public class AuthServiceImpl {
     public ResponseEntity<Map<String, Object>> login (LoginVo loginVo) {
         //通过用户名和密码生成一个UsernamePasswordAuthenticationToken对象
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(loginVo.getUsername(), loginVo.getPassword());
-        //authenticate方法会调用UserServiceImpl的loadUserByUsername方法进行身份验证
+
+        //authenticate方法会调用UserDetails loadUserByUsername方法进行身份验证
         Authentication authenticate = authenticationManager.authenticate(usernamePasswordAuthenticationToken);
 
         if (Objects.isNull(authenticate)) {
