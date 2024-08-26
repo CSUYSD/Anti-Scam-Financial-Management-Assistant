@@ -1,9 +1,9 @@
-package com.example.demo.service.impl;
+package com.example.demo.service;
 
 import com.example.demo.Dao.UserDao;
-import com.example.demo.utility.JwtUtil;
 import com.example.demo.model.TransactionUsers;
 import com.example.demo.model.UserDetail;
+import com.example.demo.utility.JWT.JwtUtil;
 import com.github.alenfive.rocketapi.entity.vo.LoginVo;
 import org.hibernate.service.spi.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,14 +14,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 @Service
-public class AuthServiceImpl {
+public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
     private final UserDao userDao;
@@ -29,7 +28,7 @@ public class AuthServiceImpl {
     private final JwtUtil jwtUtil;
 
     @Autowired
-    public AuthServiceImpl(PasswordEncoder passwordEncoder, UserDao userDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil) {
+    public AuthService(PasswordEncoder passwordEncoder, UserDao userDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil) {
         this.passwordEncoder = passwordEncoder;
         this.userDao = userDao;
         this.authenticationManager = authenticationManager;
