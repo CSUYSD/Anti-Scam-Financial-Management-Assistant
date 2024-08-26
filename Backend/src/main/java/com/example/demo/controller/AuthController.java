@@ -2,7 +2,6 @@ package com.example.demo.controller;
 
 import java.util.Map;
 
-import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,32 +15,34 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.model.TransactionUsers;
-import com.example.demo.service.impl.AuthServiceImpl;
+import com.example.demo.service.AuthService;
 import com.github.alenfive.rocketapi.entity.vo.LoginVo;
+
+import jakarta.validation.Valid;
 
 @Validated
 @RestController
 public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
-    private final AuthServiceImpl authServiceImpl;
+    private final AuthService authService;
     private final AuthenticationManager authenticationManager;
     @Autowired
-    public AuthController(AuthServiceImpl authServiceImpl, AuthenticationManager authenticationManager) {
-        this.authServiceImpl = authServiceImpl;
+    public AuthController(AuthService authService, AuthenticationManager authenticationManager) {
+        this.authService = authService;
         this.authenticationManager = authenticationManager;
     }
     // 登录，接收前端传来的用户名和密码，进行身份验证
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginVo loginVo) {
-        return authServiceImpl.login(loginVo);
+    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginVo loginVo) {
+        return authService.login(loginVo);
     }
 
     // 注册，接收前端传来的用户信息（对密码进行加密），保存到数据库
     @PostMapping("/signup")
     public ResponseEntity<String> createUser(@Valid @RequestBody TransactionUsers transactionUsers) {
         try {
-            authServiceImpl.saveUser(transactionUsers);
+            authService.saveUser(transactionUsers);
             return ResponseEntity.status(HttpStatus.CREATED).body("用户已成功保存");
         } catch (DataIntegrityViolationException e) {
             logger.error("保存用户时出错: ", e);
