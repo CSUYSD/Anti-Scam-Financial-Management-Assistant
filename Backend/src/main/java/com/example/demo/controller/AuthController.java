@@ -34,7 +34,8 @@ public class AuthController {
     }
     // 登录，接收前端传来的用户名和密码，进行身份验证
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginVo loginVo) {
+    public ResponseEntity<?> login(@RequestBody LoginVo loginVo) {
+        logger.info("收到登录请求: {}", loginVo.getUsername());
         return authService.login(loginVo);
     }
 

@@ -6,12 +6,16 @@ import com.example.demo.model.UserDetail;
 import com.example.demo.utility.JWT.JwtUtil;
 import com.github.alenfive.rocketapi.entity.vo.LoginVo;
 import org.hibernate.service.spi.ServiceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +25,7 @@ import java.util.Objects;
 
 @Service
 public class AuthService {
-
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     private final PasswordEncoder passwordEncoder;
     private final UserDao userDao;
     private final AuthenticationManager authenticationManager;
@@ -46,24 +50,28 @@ public class AuthService {
     }
 
         //用户登录功能，接收前端传来的用户名和密码，进行身份验证
-    public ResponseEntity<Map<String, Object>> login (LoginVo loginVo) {
-        //通过用户名和密码生成一个UsernamePasswordAuthenticationToken对象
-        UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(loginVo.getUsername(), loginVo.getPassword());
-
-        //authenticate方法会调用UserDetails loadUserByUsername方法进行身份验证
-        Authentication authenticate = authenticationManager.authenticate(usernamePasswordAuthenticationToken);
-
-        if (Objects.isNull(authenticate)) {
-            throw new ServiceException("error of username or password");
+        public ResponseEntity<Map<String, Object>> login(LoginVo loginVo) {
+            logger.info("尝试登录用户: {}", loginVo.getUsername());
+            try {
+                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginVo.getUsername(), loginVo.getPassword());
+                Authentication authentication = authenticationManager.authenticate(authenticationToken);
+    
+                UserDetail userDetail = (UserDetail) authentication.getPrincipal();
+                TransactionUsers transactionUsers = userDetail.getTransactionUsers();
+    
+                String token = jwtUtil.generateToken(transactionUsers.getId(), transactionUsers.getUsername());
+                Map<String, Object> response = new HashMap<>();
+                response.put("token", token);
+                response.put("username", transactionUsers.getUsername());
+    
+                logger.info("用户 {} 登录成功", loginVo.getUsername());
+                return ResponseEntity.ok(response);
+            } catch (AuthenticationException e) {
+                logger.error("用户 {} 登录失败: {}", loginVo.getUsername(), e.getMessage());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "用户名或密码错误"));
+            } catch (Exception e) {
+                logger.error("登录过程中发生错误: ", e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "登录过程中发生错误"));
+            }
         }
-        //校验成功，强转对象
-        UserDetail userDetail = (UserDetail) authenticate.getPrincipal();
-        TransactionUsers transactionUsers = userDetail.getTransactionUsers();
-
-        //生成token
-        String token = jwtUtil.generateToken(transactionUsers.getId(), transactionUsers.getUsername());
-        Map<String, Object> map = new HashMap<>();
-        map.put("token", token);
-        return ResponseEntity.ok(map);
-    }
 }
