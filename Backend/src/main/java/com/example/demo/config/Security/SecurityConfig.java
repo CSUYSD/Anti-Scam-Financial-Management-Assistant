@@ -28,18 +28,15 @@ import jakarta.servlet.http.HttpServletResponse;
 public class SecurityConfig {
 
     private final UserDetailService userDetailService;
-    private final JwtUtil jwtUtil;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
     private final JwtLogoutHandler jwtLogoutHandler;
     @Autowired
     public SecurityConfig(
             UserDetailService userDetailService,
-            JwtUtil jwtUtil,
             JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter,
             JwtLogoutHandler jwtLogoutHandler)
     {
         this.userDetailService = userDetailService;
-        this.jwtUtil = jwtUtil;
         this.jwtAuthenticationTokenFilter = jwtAuthenticationTokenFilter;
         this.jwtLogoutHandler = jwtLogoutHandler;
     }
@@ -47,7 +44,8 @@ public class SecurityConfig {
     @Bean
     @Profile("prod")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
+    //生产环境下的配置
+        http
         .authorizeHttpRequests(authorize -> authorize
             .requestMatchers("/api/auth/**").permitAll()
             .anyRequest().authenticated()
@@ -70,6 +68,8 @@ public class SecurityConfig {
                 response.setStatus(HttpServletResponse.SC_OK);
             })
         );
+
+        //开发环境下的配置
         // http
         //         .authorizeHttpRequests(authorize -> authorize
         //                 .anyRequest().permitAll()
