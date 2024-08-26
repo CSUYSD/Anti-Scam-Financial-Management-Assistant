@@ -42,41 +42,27 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Profile("prod")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    //生产环境下的配置
         http
-        .authorizeHttpRequests(authorize -> authorize
-            .requestMatchers("/api/auth/**").permitAll()
-            .anyRequest().authenticated()
-        )
-        // 禁用 CSRF 保护
-        .csrf(AbstractHttpConfigurer::disable)
-        // 禁用 HTTP 头保护
-        .headers(AbstractHttpConfigurer::disable)
-        // 禁用表单登录
-        .formLogin(AbstractHttpConfigurer::disable)
-        // 禁用会话管理
-        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        // 添加 JWT 过滤器
-        .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
-        // 添加注销处理器
-        .logout(logout -> logout
-            .logoutUrl("/api/auth/logout")
-            .addLogoutHandler(jwtLogoutHandler)
-            .logoutSuccessHandler((request, response, authentication) -> {
-                response.setStatus(HttpServletResponse.SC_OK);
-            })
-        );
-
-        //开发环境下的配置
-        // http
-        //         .authorizeHttpRequests(authorize -> authorize
-        //                 .anyRequest().permitAll()
-        //         )
-        //         .csrf(AbstractHttpConfigurer::disable)
-        //         .headers(AbstractHttpConfigurer::disable)
-        //         .formLogin(AbstractHttpConfigurer::disable);
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/signup", "/login", "/h2-console/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/h2-console/**", "/signup", "/login")
+            )
+            .headers(headers -> headers
+                .frameOptions(frameOptions -> frameOptions.sameOrigin())
+            )
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .addLogoutHandler(jwtLogoutHandler)
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    response.setStatus(HttpServletResponse.SC_OK);
+                })
+            );
 
         return http.build();
     }
