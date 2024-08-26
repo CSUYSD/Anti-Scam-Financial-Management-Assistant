@@ -1,20 +1,27 @@
 package com.example.demo.controller;
 
-import com.example.demo.exception.UserNotFoundException;
-import com.example.demo.model.TransactionUsers;
-import com.example.demo.service.impl.UserServiceImpl;
-import com.example.demo.service.impl.AuthServiceImpl;
-import com.example.demo.utility.RabbitMQProducer;
+import java.util.List;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Optional;
+import com.example.demo.exception.UserNotFoundException;
+import com.example.demo.model.TransactionUsers;
+import com.example.demo.service.impl.UserServiceImpl;
+import com.example.demo.utility.RabbitMQProducer;
 
 @RestController
 @RequestMapping("/users")
@@ -23,12 +30,9 @@ public class UserController {
 
     private final UserServiceImpl userServiceImpl;
 
-    private final AuthServiceImpl authServiceImpl;
-
     @Autowired
-    public UserController(UserServiceImpl userServiceImpl, AuthServiceImpl authServiceImpl) {
+    public UserController(UserServiceImpl userServiceImpl) {
         this.userServiceImpl = userServiceImpl;
-        this.authServiceImpl = authServiceImpl;
     }
 
     @Autowired
@@ -54,15 +58,13 @@ public class UserController {
         }
     }
 
-//    用户注册功能，接收前端传来的用户信息（对密码进行加密），保存到数据库
-    @PostMapping("/signup")
-    public ResponseEntity<String> createUser(@RequestBody TransactionUsers transactionUsers) {
-        try {
-            authServiceImpl.saveUser(transactionUsers);
-            return ResponseEntity.status(HttpStatus.CREATED).body("User has been saved");
-        } catch (DataIntegrityViolationException e) {
-            logger.error("Error saving user: ", e);
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Error saving user: " + e.getMessage());
+    @GetMapping("/username/{username}")
+    public ResponseEntity<TransactionUsers> getUserByUsername(@PathVariable String username) {
+        Optional<TransactionUsers> userOptional = userServiceImpl.findByUsername(username);
+        if (userOptional.isPresent()) {
+            return ResponseEntity.ok(userOptional.get());
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
@@ -79,11 +81,12 @@ public class UserController {
         }
     }
 
+
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         try {
             userServiceImpl.deleteUser(id);
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            return ResponseEntity.status(HttpStatus.OK).body("User deleted successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (DataIntegrityViolationException e) {
