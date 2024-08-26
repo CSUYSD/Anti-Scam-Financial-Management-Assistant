@@ -17,8 +17,8 @@ public class JwtUtil {
 
     private final SecretKey key;
     private final long expirationTime;
-    private Hashtable<String, String> invalidTokens = new Hashtable<>();
-    private Set<String> tokenBlacklist = ConcurrentHashMap.newKeySet();
+    private final Hashtable<String, String> invalidTokens = new Hashtable<>();
+    private final Set<String> tokenBlacklist = ConcurrentHashMap.newKeySet();
 
     // 从配置文件中读取密钥和过期时间
     public JwtUtil(@Value("${jwt.secret}") String secret,
