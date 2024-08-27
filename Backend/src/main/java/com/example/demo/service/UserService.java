@@ -38,7 +38,6 @@ public class UserService {
         return userDao.findByUsername(username);
     }
 
-
     public void updateUser(Long id, TransactionUsers updatedUser) throws UserNotFoundException {
         Optional<TransactionUsers> existingUserOptional = userDao.findById(id);
 

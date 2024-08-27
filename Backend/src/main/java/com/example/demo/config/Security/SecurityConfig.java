@@ -17,6 +17,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import java.util.Arrays;
+import java.util.List;
 
 import com.example.demo.service.UserDetailService;
 import com.example.demo.utility.JWT.JwtUtil;
@@ -54,6 +57,14 @@ public class SecurityConfig {
             .headers(headers -> headers
                 .frameOptions(frameOptions -> frameOptions.sameOrigin())
             )
+            .cors(cors -> cors.configurationSource(request -> {
+                var corsConfiguration = new CorsConfiguration();
+                corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000"));
+                corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                corsConfiguration.setAllowedHeaders(List.of("*"));
+                corsConfiguration.setAllowCredentials(true);
+                return corsConfiguration;
+            }))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
             .logout(logout -> logout
