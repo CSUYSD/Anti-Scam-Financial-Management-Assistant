@@ -5,8 +5,10 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-AgentApi/.env
-AgentApi/venv
+./AgentApi/.env
+./AgentApi/venv
+AgentApi\venv
+**/venv/
 
 node_modules/
 Frontend/node_modules/
