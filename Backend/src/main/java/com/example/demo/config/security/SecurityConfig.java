@@ -1,64 +1,79 @@
 package com.example.demo.config.security;
 
-import com.example.demo.config.security.filter.JwtAuthenticationTokenFilter;
-import com.example.demo.service.impl.UserServiceImpl;
+import com.example.demo.utility.JWT.JwtAuthenticationTokenFilter;
+import com.example.demo.utility.JWT.JwtLogoutHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.example.demo.service.UserDetailService;
+
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.cors.CorsConfiguration;
+
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final UserServiceImpl userServiceImpl;
+    private final UserDetailService userDetailService;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
-
-    public SecurityConfig(UserServiceImpl userServiceImpl, JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter) {
-        this.userServiceImpl = userServiceImpl;
+    private final JwtLogoutHandler jwtLogoutHandler;
+    @Autowired
+    public SecurityConfig(
+            UserDetailService userDetailService,
+            JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter,
+            JwtLogoutHandler jwtLogoutHandler)
+    {
+        this.userDetailService = userDetailService;
         this.jwtAuthenticationTokenFilter = jwtAuthenticationTokenFilter;
+        this.jwtLogoutHandler = jwtLogoutHandler;
     }
 
     @Bean
-    @Profile("dev")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        启用请求拦截器，对请求进行权限验证
-//        http
-//            .authorizeHttpRequests(authorize -> authorize
-//                .requestMatchers("/h2-console/**", "/users/signup", "/auth/login").permitAll()
-//                .anyRequest().authenticated()
-//            )
-//            .csrf(csrf -> csrf
-//                .ignoringRequestMatchers("/h2-console/**", "/users/signup", "/auth/login")
-//            )
-//            .headers(headers -> headers
-//                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
-//            )
-//            .sessionManagement(session -> session
-//                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-//            )
-//            .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
-//            .formLogin(AbstractHttpConfigurer::disable)
-//            .httpBasic(AbstractHttpConfigurer::disable);
-
-        //开发环境中的配置：允许所有端点的权限
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll()
+                        .requestMatchers("/signup", "/login", "/h2-console/**").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .csrf(AbstractHttpConfigurer::disable)
-                .headers(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable);
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/h2-console/**", "/signup", "/login")
+                )
+                .headers(headers -> headers
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+                )
+                .cors(cors -> cors.configurationSource(request -> {
+                    var corsConfiguration = new CorsConfiguration();
+                    corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000"));
+                    corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    corsConfiguration.setAllowedHeaders(List.of("*"));
+                    corsConfiguration.setAllowCredentials(true);
+                    return corsConfiguration;
+                }))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .addLogoutHandler(jwtLogoutHandler)
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                        })
+                );
+
         return http.build();
     }
 
@@ -68,9 +83,14 @@ public class SecurityConfig {
     }
 
     @Bean
+    public UserDetailsService userDetailsService() {
+        return userDetailService;
+    }
+
+    @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
         AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        authBuilder.userDetailsService(userServiceImpl).passwordEncoder(passwordEncoder());
+        authBuilder.userDetailsService(userDetailsService()).passwordEncoder(passwordEncoder());
         return authBuilder.build();
     }
 }
