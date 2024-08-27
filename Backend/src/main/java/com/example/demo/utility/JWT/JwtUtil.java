@@ -1,20 +1,24 @@
-package com.example.demo.utility;
+package com.example.demo.utility.JWT;
 
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
+import jakarta.servlet.http.HttpServletRequest;
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.Hashtable;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class JwtUtil {
 
     private final SecretKey key;
     private final long expirationTime;
+    private final Hashtable<String, String> invalidTokens = new Hashtable<>();
+    private final Set<String> tokenBlacklist = ConcurrentHashMap.newKeySet();
 
     // 从配置文件中读取密钥和过期时间
     public JwtUtil(@Value("${jwt.secret}") String secret,
@@ -55,6 +59,9 @@ public class JwtUtil {
     }
 
     public boolean validateToken(String token) {
+        if (tokenBlacklist.contains(token)) {
+            return false;
+        }
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
@@ -63,15 +70,17 @@ public class JwtUtil {
             return false;
         }
     }
-    public Claims parseJWT(String token) throws JwtException {
-        try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(this.key)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (JwtException e) {
-            throw new JwtException("Failed to parse JWT token", e);
+
+    public String extractTokenFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
         }
+        return null;
     }
+
+    public void invalidateToken(String token) {
+        tokenBlacklist.add(token);
+    }
+
 }
