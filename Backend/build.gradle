@@ -13,7 +13,7 @@ java {
 	}
 }
 
-reposi1tories {
+repositories {
 	mavenCentral()
 }
 
