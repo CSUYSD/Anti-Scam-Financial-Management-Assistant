@@ -1,4 +1,4 @@
-package com.example.demo.config.security;
+package com.example.demo.config.Security;
 
 import com.example.demo.utility.JWT.JwtAuthenticationTokenFilter;
 import com.example.demo.utility.JWT.JwtLogoutHandler;
