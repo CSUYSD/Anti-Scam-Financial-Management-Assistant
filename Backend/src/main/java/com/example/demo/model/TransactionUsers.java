@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
@@ -26,7 +27,7 @@ public class TransactionUsers {
         @Pattern(
                 regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
                 message = "Password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character"
-                )
+        )
         private String password;
 
         @Column(nullable = false)
@@ -41,5 +42,6 @@ public class TransactionUsers {
         private String fullName;
 
         @OneToMany(mappedBy = "transactionUsers")  // 关联到 Account 表
+        @JsonManagedReference
         private List<Account> accounts = new ArrayList<>();
 }

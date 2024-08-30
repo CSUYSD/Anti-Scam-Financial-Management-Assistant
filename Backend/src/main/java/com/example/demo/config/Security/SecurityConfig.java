@@ -43,27 +43,35 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        http
+//            .authorizeHttpRequests(authorize -> authorize
+//                .requestMatchers("/signup", "/login", "/h2-console/**").permitAll()
+//                .anyRequest().authenticated()
+//            )
+//            .csrf(csrf -> csrf
+//                .ignoringRequestMatchers("/h2-console/**", "/signup", "/login")
+//            )
+//            .headers(headers -> headers
+//                .frameOptions(frameOptions -> frameOptions.sameOrigin())
+//            )
+//            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+//            .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
+//            .logout(logout -> logout
+//                .logoutUrl("/logout")
+//                .addLogoutHandler(jwtLogoutHandler)
+//                .logoutSuccessHandler((request, response, authentication) -> {
+//                    response.setStatus(HttpServletResponse.SC_OK);
+//                })
+//            );
+//
+//        return http.build();
         http
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/signup", "/login", "/h2-console/**").permitAll()
-                .anyRequest().authenticated()
-            )
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**", "/signup", "/login")
-            )
-            .headers(headers -> headers
-                .frameOptions(frameOptions -> frameOptions.sameOrigin())
-            )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .addLogoutHandler(jwtLogoutHandler)
-                .logoutSuccessHandler((request, response, authentication) -> {
-                    response.setStatus(HttpServletResponse.SC_OK);
-                })
-            );
-
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().permitAll() // 允许开发环境中的所有请求
+                )
+                .csrf(AbstractHttpConfigurer::disable) // 禁用CSRF保护
+                .headers(AbstractHttpConfigurer::disable) // 允许H2控制台使用iframe
+                .formLogin(AbstractHttpConfigurer::disable);
         return http.build();
     }
 
