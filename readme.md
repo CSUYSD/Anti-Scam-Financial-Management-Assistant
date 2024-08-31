@@ -112,6 +112,7 @@ Use Redis caching for registered users with non-expired tokens to improve perfor
 
 ### 6.1 Entity Relationship Diagram
 
+![image](https://github.com/user-attachments/assets/35b6e149-74ff-4c1f-9a3b-cbae7b1eefb4)
 - The database design revolves around the `TranscationUser`.
 - There are five tables in the ERD: `TranscationUser`, `HistoryReport`, `Account`, `TranscationRecord`, and `TranscationCategory`.
 
