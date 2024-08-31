@@ -119,24 +119,21 @@ Use Redis caching for registered users with non-expired tokens to improve perfor
 ![image](https://github.com/user-attachments/assets/19ae8461-132b-4b5d-8ab0-25046423180e)
 
 ### 7.1 Display User Login/Registration Interface Design
+![image](https://github.com/user-attachments/assets/029c5c1a-c864-45d0-afd2-3e67c167ce1f)
+
+![image](https://github.com/user-attachments/assets/12d9d197-da14-4a89-b9ff-7e9fbd1655c8)
 
 ### 7.2 Display User Information Interface
+![image](https://github.com/user-attachments/assets/75371133-3de7-4651-9d52-d95f97847c30)
 
 ### 7.3 Display the User's Account Interface
+![image](https://github.com/user-attachments/assets/ee47dce1-f1fa-4a40-bad8-079d45df8663)
 
 ### 7.4 Main Function Interface of The Software
 
 - Visual display of consumption information of user-specified accounts and AI-based early warning of transactions.
-- CRUD operations for users' transaction information and the ability to upload transaction records.
+![image](https://github.com/user-attachments/assets/81dd4f7c-ae84-40db-a2b7-f069994a9c4f) 
+- Users' transaction information and the ability to upload transaction records.
+![4071724917072_ pic](https://github.com/user-attachments/assets/c7fe2dfd-85bb-4a19-99a6-7e231badaaa8)
 - Real-time chat interface between users and AI financial management assistant.
-
-## 8. Project Plan
-
-### 8.1 Gantt Chart
-
-This Gantt chart displays a project's schedule and completion status. The chart includes 10 tasks, each with specific start and end dates, duration, and completion percentage.
-
-- The project planning and requirements analysis tasks were completed on time, taking 14 days from July 29, 2024, to August 11, 2024.
-- The system design task is nearly finished, with a progress of 93.9%. It started on August 12, 2024, and is scheduled to end on August 28, 2024.
-- The remaining tasks, such as UI/UX design, frontend development, backend development, integration and testing, user acceptance testing, deployment and release, project completion and documentation, and maintenance and support, are planned to begin gradually from late August to October 2024.
-
+![4081724917096_ pic](https://github.com/user-attachments/assets/83ffea9b-0e74-49b5-8d2d-00617d611adb)
