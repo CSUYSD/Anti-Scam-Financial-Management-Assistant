@@ -1,4 +1,4 @@
-# Project Proposal
+# Project Description
 
 ## Anti-fraud Financial Management Assistant
 
