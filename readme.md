@@ -1,11 +1,7 @@
-# 5619 Project Proposal
+# Project Proposal
 
 ## Anti-fraud Financial Management Assistant
 
-- **Changhao Wang**: 530357966
-- **Guocheng Song**: 540244847
-- **Mengdi Wen**: 530787185
-- **Wenbo Jia**: 520575080
 
 30.08.2024
 
