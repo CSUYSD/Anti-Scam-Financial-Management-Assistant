@@ -95,4 +95,47 @@ Users can create multiple accounts after successfully logging in. This feature i
 
 ## 5. Non-functional Requirements
 
-### 5
+### 5.1 Security
+
+**Password Encryption Operations** (Changhao Wang):  
+For users with existing usernames in the database, the system will encrypt the passwords they send using the Bcrypt algorithm. It will then query the database using their usernames and compare the encrypted passwords.
+
+**Token Encryption Operation** (Guocheng Song):  
+When a user logs in with the correct username and password, a token is created with a specific expiration time. The token's payload, which contains the username and user ID but no private information like the password, is encrypted using HS256 to enhance security. The token's signature is encrypted using a designated key. The token is then stored in Redis for future comparison. For users without a token, only login and signup actions are allowed. Any attempts to access other functions will be blocked by the spring security interceptor.
+
+### 5.2 Performance
+
+**Use Cache Redis** (Wenbo Jia):  
+Use Redis caching for registered users with non-expired tokens to improve performance by caching their tokens, commonly used URLs, and other information.
+
+## 6. Database Design
+
+### 6.1 Entity Relationship Diagram
+
+- The database design revolves around the `TranscationUser`.
+- There are five tables in the ERD: `TranscationUser`, `HistoryReport`, `Account`, `TranscationRecord`, and `TranscationCategory`.
+
+## 7. Mockups
+
+### 7.1 Display User Login/Registration Interface Design
+
+### 7.2 Display User Information Interface
+
+### 7.3 Display the User's Account Interface
+
+### 7.4 Main Function Interface of The Software
+
+- Visual display of consumption information of user-specified accounts and AI-based early warning of transactions.
+- CRUD operations for users' transaction information and the ability to upload transaction records.
+- Real-time chat interface between users and AI financial management assistant.
+
+## 8. Project Plan
+
+### 8.1 Gantt Chart
+
+This Gantt chart displays a project's schedule and completion status. The chart includes 10 tasks, each with specific start and end dates, duration, and completion percentage.
+
+- The project planning and requirements analysis tasks were completed on time, taking 14 days from July 29, 2024, to August 11, 2024.
+- The system design task is nearly finished, with a progress of 93.9%. It started on August 12, 2024, and is scheduled to end on August 28, 2024.
+- The remaining tasks, such as UI/UX design, frontend development, backend development, integration and testing, user acceptance testing, deployment and release, project completion and documentation, and maintenance and support, are planned to begin gradually from late August to October 2024.
+
