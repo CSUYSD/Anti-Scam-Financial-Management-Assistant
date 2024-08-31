@@ -116,6 +116,7 @@ Use Redis caching for registered users with non-expired tokens to improve perfor
 - There are five tables in the ERD: `TranscationUser`, `HistoryReport`, `Account`, `TranscationRecord`, and `TranscationCategory`.
 
 ## 7. Mockups
+![image](https://github.com/user-attachments/assets/19ae8461-132b-4b5d-8ab0-25046423180e)
 
 ### 7.1 Display User Login/Registration Interface Design
 
