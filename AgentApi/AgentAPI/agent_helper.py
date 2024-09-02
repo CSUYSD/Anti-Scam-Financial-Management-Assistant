@@ -15,8 +15,12 @@ from dotenv import load_dotenv
 import os
 print("============agent initializing============")
 
-load_dotenv(".env")
+load_dotenv("../.env")
 tavily_api_key = os.environ["TAVILY_API_KEY"]
+openai_api_key = os.environ["OPENAI_API_KEY"]
+langsmith_api_key = os.environ["LANGCHAIN_API_KEY"]
+langsmith_endpoint = os.environ["LANGCHAIN_ENDPOINT"]
+langsmith_tracing_v2 = os.environ["LANGCHAIN_TRACING_V2"]
 
 # 创建一个代理
 def create_agent(llm, tools, system_message: str):
