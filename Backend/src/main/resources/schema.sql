@@ -16,5 +16,10 @@ INSERT INTO  transaction_users (username, password, email, phone, dob, full_name
  ('bobsmith', 'bobbypass', 'bobsmith@example.com', '4445556666', '1985-04-05', 'Bob Smith'),
  ('charlie', 'charliepass', 'charlie@example.com', '7778889999', '1995-05-20', 'Charlie Brown');
 
+CREATE TABLE user_roles (
+                           id INTEGER PRIMARY KEY,
+                           role_id INTEGER NOT NULL,
+                           role VARCHAR(50) NOT NULL
+);
 
 
