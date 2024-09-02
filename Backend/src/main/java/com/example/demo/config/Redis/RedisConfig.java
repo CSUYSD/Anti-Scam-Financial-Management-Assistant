@@ -1,4 +1,4 @@
-package com.example.demo.config.redis;
+package com.example.demo.config.Redis;
 
 
 import org.springframework.cache.annotation.EnableCaching;
