@@ -7,8 +7,18 @@ import lombok.Data;
 @Data
 public class UserRole {
     @Id
-    private Integer role_id;
-    @Column(unique = true)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer id;
+
+    @Column(name = "role_id", nullable = false)
+    private Integer roleId;
+
+    @Column(name = "role", nullable = false, unique = true)
     private String role;
-    public String getRole() {return role;}
+
+    public String getRole() {
+        return role;
+    }
+
 }
