@@ -2,6 +2,7 @@
 import operator
 import functools
 import os
+import json
 import agent_helper
 from typing import Annotated, Sequence, TypedDict, Literal
 from langchain_core.messages import BaseMessage, AIMessage, HumanMessage, ToolMessage
@@ -23,15 +24,32 @@ class AgentState(TypedDict):
 # Helper function to create a node for a given agent
 def agent_node(state, agent, name):
     result = agent.invoke(state)
+    messages_to_add = []
     # We convert the agent output into a format that is suitable to append to the global state
-    if isinstance(result, ToolMessage):
-        pass
+    if isinstance(result, ToolMessage) and result.additional_kwargs.get("tool_calls"):
+        # 处理工具调用
+        for tool_call in result.additional_kwargs["tool_calls"]:
+            tool_name = tool_call["function"]["name"]
+            tool_args = json.loads(tool_call["function"]["arguments"])
+            # 执行工具调用
+            tool_result = tool_node.invoke({"name": tool_name, "arguments": tool_args})
+            # 创建工具响应消息
+            tool_message = ToolMessage(
+                tool_call_id=tool_call["id"],
+                content=str(tool_result),  # 将工具结果转换为字符串
+                name=tool_name
+            )
+            messages_to_add.append(tool_message)
+        
+        # 再次调用代理处理工具响应
+        follow_up = agent.invoke({**state, "messages": state["messages"] + messages_to_add})
+        messages_to_add.append(follow_up)
+
     else:
-        result = AIMessage(**result.dict(exclude={"type", "name"}), name=name)
+        messages_to_add = [result]
+
     return {
-        "messages": [result],
-        # Since we have a strict workflow, we can
-        # track the sender so we know who to pass to next.
+        "messages": messages_to_add,
         "sender": name,
     }
 load_dotenv(dotenv_path='.env')
