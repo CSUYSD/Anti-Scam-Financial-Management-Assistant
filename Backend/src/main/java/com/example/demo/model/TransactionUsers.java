@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
@@ -41,5 +42,6 @@ public class TransactionUsers {
         private String fullName;
 
         @OneToMany(mappedBy = "transactionUsers")  // 关联到 Account 表
+        @JsonManagedReference
         private List<Account> accounts = new ArrayList<>();
 }
