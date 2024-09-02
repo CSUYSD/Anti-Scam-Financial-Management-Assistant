@@ -59,7 +59,7 @@ public class AuthService {
                 UserDetail userDetail = (UserDetail) authentication.getPrincipal();
                 TransactionUsers transactionUsers = userDetail.getTransactionUsers();
     
-                String token = jwtUtil.generateToken(transactionUsers.getId(), transactionUsers.getUsername());
+                String token = jwtUtil.generateToken(transactionUsers.getId(), transactionUsers.getUsername(), transactionUsers.getRole().getRole_id());
                 Map<String, Object> response = new HashMap<>();
                 response.put("token", token);
                 response.put("username", transactionUsers.getUsername());
