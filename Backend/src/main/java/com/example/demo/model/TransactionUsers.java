@@ -44,4 +44,12 @@ public class TransactionUsers {
         @OneToMany(mappedBy = "transactionUsers")  // 关联到 Account 表
         @JsonManagedReference
         private List<Account> accounts = new ArrayList<>();
+
+        @ManyToOne
+        @JoinColumn(name = "role_id")
+        private UserRole role;
+
+        public UserRole getRole() {
+                return role;
+        }
 }
