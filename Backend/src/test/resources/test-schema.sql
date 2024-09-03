@@ -15,7 +15,7 @@ INSERT INTO user_roles (role_id, role) VALUES
 -- 然后创建 transaction_users 表
 DROP TABLE IF EXISTS transaction_users;
 CREATE TABLE transaction_users (
-    id SERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,

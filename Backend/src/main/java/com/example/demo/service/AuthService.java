@@ -79,7 +79,7 @@ public class AuthService {
             TransactionUsers transactionUsers = userDetail.getTransactionUsers();
 
             // 获取用户角色
-            String token = jwtUtil.generateToken(transactionUsers.getId(), transactionUsers.getUsername(),transactionUsers.getRole().getRole_id());
+            String token = jwtUtil.generateToken(transactionUsers.getId(), transactionUsers.getUsername(),transactionUsers.getRole().getRoleName());
 
             // 创建LoginUser对象并存入Redis
             LoginUser loginUser = new LoginUser(transactionUsers, token);
