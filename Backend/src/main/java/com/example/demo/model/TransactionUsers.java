@@ -12,6 +12,7 @@ import java.util.List;
 
 @Entity
 @Data
+@Cacheable
 public class TransactionUsers {
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
