@@ -35,6 +35,14 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
             throws ServletException, IOException {
+        // 对公开端点的请求不进行 JWT 验证
+        if (request.getRequestURI().contains("/h2-console")
+                || request.getRequestURI().equals("/signup")
+                || request.getRequestURI().equals("/login")){
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 1. 提取 token
         String token = jwtUtil.extractTokenFromRequest(request);
 

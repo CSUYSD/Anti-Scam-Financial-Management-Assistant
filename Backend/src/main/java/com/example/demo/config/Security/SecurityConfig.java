@@ -3,6 +3,7 @@ package com.example.demo.config.Security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -44,7 +45,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/signup", "/login", "/h2-console/**").permitAll()
-                .requestMatchers("/account/**").hasRole("USER")
+                .requestMatchers("/account/**", "/records/**").hasRole("USER")
                 .requestMatchers("/users/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
@@ -74,7 +75,7 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userDetailService.loadUserByUsername(username);
+        return userDetailService;
     }
 
     @Bean
