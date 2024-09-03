@@ -26,11 +26,10 @@ public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
     private final AuthService authService;
-    private final AuthenticationManager authenticationManager;
+
     @Autowired
     public AuthController(AuthService authService, AuthenticationManager authenticationManager) {
         this.authService = authService;
-        this.authenticationManager = authenticationManager;
     }
     // 登录，接收前端传来的用户名和密码，进行身份验证
     @PostMapping("/login")
