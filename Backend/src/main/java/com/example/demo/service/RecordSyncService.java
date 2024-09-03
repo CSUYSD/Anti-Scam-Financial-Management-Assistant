@@ -8,13 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class TransactionSyncService {
+public class RecordSyncService {
 
     private final TransactionRecordDao transactionRecordDao;
     private final TransactionRecordESDao transactionRecordESDao;
 
-    public TransactionSyncService(TransactionRecordDao transactionRecordDao,
-                                  TransactionRecordESDao transactionRecordESDao) {
+    public RecordSyncService(TransactionRecordDao transactionRecordDao,
+                             TransactionRecordESDao transactionRecordESDao) {
         this.transactionRecordDao = transactionRecordDao;
         this.transactionRecordESDao = transactionRecordESDao;
     }

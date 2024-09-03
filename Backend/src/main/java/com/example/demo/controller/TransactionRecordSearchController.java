@@ -1,7 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.TransactionRecordES;
-import com.example.demo.service.TransactionService;
+import com.example.demo.service.RecordService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.web.bind.annotation.*;
@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/transactions-search")
 public class TransactionRecordSearchController {
 
-    private final TransactionService transactionService;
+    private final RecordService recordService;
 
-    public TransactionRecordSearchController(TransactionService transactionService) {
-        this.transactionService = transactionService;
+    public TransactionRecordSearchController(RecordService recordService) {
+        this.recordService = recordService;
     }
 
     @GetMapping("/search")
@@ -21,7 +21,7 @@ public class TransactionRecordSearchController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return transactionService.searchTransactions(keyword, page, size);
+        return recordService.searchTransactions(keyword, page, size);
     }
 
     @GetMapping("/advanced-search")
@@ -30,11 +30,11 @@ public class TransactionRecordSearchController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) Double minAmount,
             @RequestParam(required = false) Double maxAmount) {
-        return transactionService.advancedSearch(description, type, minAmount, maxAmount);
+        return recordService.advancedSearch(description, type, minAmount, maxAmount);
     }
 
     @GetMapping("/{id}")
     public TransactionRecordES getTransactionById(@PathVariable String id) {
-        return transactionService.getTransactionById(id);
+        return recordService.getTransactionById(id);
     }
 }
