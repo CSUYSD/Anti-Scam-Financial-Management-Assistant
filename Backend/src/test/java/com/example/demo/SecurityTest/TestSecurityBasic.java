@@ -30,7 +30,7 @@ public class TestSecurityBasic {
     public void testJwtGenerateToken() {
         Long userId = 10L;
         String username = "testuser";
-        String jwt = jwtUtil.generateToken(userId, username, 1);
+        String jwt = jwtUtil.generateToken(userId, username, "ROLE_ADMIN");
         assertThat(jwt).isNotNull();
     }
 
@@ -38,7 +38,7 @@ public class TestSecurityBasic {
     public void testJwtValidateToken() {
         Long userId = 10L;
         String username = "testuser";
-        String jwt = jwtUtil.generateToken(userId, username, 1);
+        String jwt = jwtUtil.generateToken(userId, username, "ROLE_ADMIN");
         assertThat(jwtUtil.validateToken(jwt)).isTrue();
     }
 
@@ -46,7 +46,7 @@ public class TestSecurityBasic {
     public void testJwtGetUserId() {
         Long userId = 10L;
         String username = "testuser";
-        String jwt = jwtUtil.generateToken(userId, username, 1);
+        String jwt = jwtUtil.generateToken(userId, username, "ROLE_ADMIN");
         assertThat(jwtUtil.getUserIdFromToken(jwt)).isEqualTo(userId);
     }
 
@@ -54,7 +54,7 @@ public class TestSecurityBasic {
     public void testJwtGetUsername() {
         Long userId = 10L;
         String username = "testuser";
-        String jwt = jwtUtil.generateToken(userId, username, 1);
+        String jwt = jwtUtil.generateToken(userId, username,"ROLE_ADMIN");
         assertThat(jwtUtil.getUsernameFromToken(jwt)).isEqualTo(username);
     }
 
@@ -63,8 +63,8 @@ public class TestSecurityBasic {
     public void testJwtGetRole() {
         Long userId = 10L;
         String username = "testuser";
-        String jwt = jwtUtil.generateToken(userId, username, 1);
-        assertThat(jwtUtil.getRoleIdFromToken(jwt)).isEqualTo(1);
+        String jwt = jwtUtil.generateToken(userId, username, "ROLE_ADMIN");
+        assertThat(jwtUtil.getRoleFromToken(jwt)).isEqualTo("ROLE_ADMIN");
     }
     
 }
