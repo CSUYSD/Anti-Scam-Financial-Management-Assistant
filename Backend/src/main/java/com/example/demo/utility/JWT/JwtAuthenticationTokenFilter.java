@@ -1,5 +1,6 @@
 package com.example.demo.utility.JWT;
 
+import com.example.demo.model.UserDetail;
 import com.example.demo.service.UserDetailService;
 
 import jakarta.servlet.FilterChain;
@@ -12,11 +13,18 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.lang.NonNull;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import java.util.Collection;
 
 import java.io.IOException;
+import java.util.Objects;
+import java.util.Collections;
 
+import org.apache.http.impl.bootstrap.HttpServer;
 
 @Component
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
@@ -45,16 +53,23 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
         // 2. 验证 token
         if (token != null && jwtUtil.validateToken(token)) {
+
+            // 3. 从 token 中提取用户信息
             Long userId = jwtUtil.getUserIdFromToken(token);
+            String role = jwtUtil.getRoleFromToken(token);
             UserDetails userDetails = userDetailService.loadUserById(userId);
+            // 在过滤时直接从token��获取用户的角色信息，直接授权，绕开从userdetail里获取role info
+            Collection<? extends GrantedAuthority> authorities =
+                Collections.singletonList(new SimpleGrantedAuthority(role));
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
+            // 4. 将用户信息存入 SecurityContext，在后续的请求中可以直接获取用户信息
+            UsernamePasswordAuthenticationToken authentication = 
+                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            logger.debug("User authenticated: " + userDetails.getUsername() + " with authorities: " + userDetails.getAuthorities());
         } else {
-            logger.debug("Invalid token or no token provided");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Invalid token");
+            return;
         }
         // 5. 继续执行过滤器链
         filterChain.doFilter(request, response);
