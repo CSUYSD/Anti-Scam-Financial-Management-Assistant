@@ -1,7 +1,5 @@
 package com.example.demo.service;
 
-import java.util.Collections;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -28,7 +26,7 @@ public class UserDetailService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         //给用户赋予一个角色，并将其封装成UserDetail对象
         UserRole userRole = transactionUsers.getRole();
-        GrantedAuthority authority = new SimpleGrantedAuthority(userRole.getRole());
+        GrantedAuthority authority = new SimpleGrantedAuthority(userRole.getRoleName());
         
         return new UserDetail(transactionUsers, authority);
     }
@@ -38,7 +36,7 @@ public class UserDetailService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         UserRole userRole = transactionUsers.getRole();
-        GrantedAuthority authority = new SimpleGrantedAuthority(userRole.getRole());
+        GrantedAuthority authority = new SimpleGrantedAuthority(userRole.getRoleName());
         return new UserDetail(transactionUsers, authority);
     }
     
