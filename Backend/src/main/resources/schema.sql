@@ -1,4 +1,16 @@
-DROP TAble if exists transaction_users ;
+-- 先删除 user_roles 表（如果存在）
+DROP TABLE IF EXISTS user_roles;
+DROP TABLE IF EXISTS transaction_users;
+
+-- 创建 user_roles 表
+CREATE TABLE user_roles (
+                            role_id INTEGER PRIMARY KEY,
+                            role VARCHAR(50) NOT NULL
+);
+
+INSERT INTO user_roles (role_id, role) VALUES
+                                           (1, 'ROLE_ADMIN'),
+                                           (2, 'ROLE_USER');
 CREATE TABLE transaction_users (
                                    id SERIAL PRIMARY KEY,
                                    username VARCHAR(255) NOT NULL,
@@ -6,7 +18,11 @@ CREATE TABLE transaction_users (
                                    email VARCHAR(255) NOT NULL,
                                    phone VARCHAR(20),
                                    dob DATE,
-                                   full_name VARCHAR(255)
+                                   full_name VARCHAR(255),
+                                   role_id INTEGER,
+                                   CONSTRAINT fk_role
+                                       FOREIGN KEY (role_id)
+                                           REFERENCES user_roles(role_id)
 );
 
 INSERT INTO  transaction_users (username, password, email, phone, dob, full_name) VALUES
@@ -16,10 +32,5 @@ INSERT INTO  transaction_users (username, password, email, phone, dob, full_name
  ('bobsmith', 'bobbypass', 'bobsmith@example.com', '4445556666', '1985-04-05', 'Bob Smith'),
  ('charlie', 'charliepass', 'charlie@example.com', '7778889999', '1995-05-20', 'Charlie Brown');
 
-CREATE TABLE user_roles (
-                            id SERIAL PRIMARY KEY,
-                            role_id INTEGER NOT NULL,
-                            role VARCHAR(50) NOT NULL UNIQUE
-);
 
 

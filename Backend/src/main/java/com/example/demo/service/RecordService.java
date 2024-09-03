@@ -15,17 +15,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class TransactionService {
+public class RecordService {
 
     private final TransactionRecordDao transactionRecordDao;
-    private final TransactionSyncService transactionSyncService;
+    private final RecordSyncService recordSyncService;
     private final TransactionRecordESDao transactionRecordESDao;
     private final ElasticsearchOperations elasticsearchOperations;
 
 
-    public TransactionService(TransactionRecordDao transactionRecordDao, TransactionSyncService transactionSyncService, TransactionRecordESDao transactionRecordESDao, ElasticsearchOperations elasticsearchOperations) {
+    public RecordService(TransactionRecordDao transactionRecordDao, RecordSyncService recordSyncService, TransactionRecordESDao transactionRecordESDao, ElasticsearchOperations elasticsearchOperations) {
         this.transactionRecordDao = transactionRecordDao;
-        this.transactionSyncService = transactionSyncService;
+        this.recordSyncService = recordSyncService;
         this.transactionRecordESDao = transactionRecordESDao;
         this.elasticsearchOperations = elasticsearchOperations;
     }
@@ -34,7 +34,7 @@ public class TransactionService {
     // Save transaction record to database and sync to Elasticsearch
     public TransactionRecord saveTransaction(TransactionRecord transactionRecord) {
         TransactionRecord savedRecord = transactionRecordDao.save(transactionRecord);
-        transactionSyncService.syncToElasticsearch(savedRecord);
+        recordSyncService.syncToElasticsearch(savedRecord);
         return savedRecord;
     }
 

@@ -58,14 +58,9 @@ public class AuthService {
         // Encode the password before saving the user
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        // 获取或创建 USER 角色
-        UserRole userRole = userRoleDao.findByRole("USER")
-                .orElseGet(() -> {
-                    UserRole newRole = new UserRole();
-                    newRole.setRole("USER");
-                    newRole.setRoleId(1); // 假设 1 代表 USER 角色
-                    return userRoleDao.save(newRole);
-                });
+        // 获取 USER 角色
+        UserRole userRole = userRoleDao.findByRole("ROLE_USER")
+                .orElseThrow(() -> new RuntimeException("Default user role not found"));
 
         // 设置用户角色
         user.setRole(userRole);
@@ -83,9 +78,8 @@ public class AuthService {
             UserDetail userDetail = (UserDetail) authentication.getPrincipal();
             TransactionUsers transactionUsers = userDetail.getTransactionUsers();
 
-            // 使用 getRoleId() 而不是 getRole_id()
-            Integer roleId = transactionUsers.getRole() != null ? transactionUsers.getRole().getRoleId() : null;
-            String token = jwtUtil.generateToken(transactionUsers.getId(), transactionUsers.getUsername(), roleId);
+            // 获取用户角色
+            String token = jwtUtil.generateToken(transactionUsers.getId(), transactionUsers.getUsername(),transactionUsers.getRole().getRole_id());
 
             // 创建LoginUser对象并存入Redis
             LoginUser loginUser = new LoginUser(transactionUsers, token);
