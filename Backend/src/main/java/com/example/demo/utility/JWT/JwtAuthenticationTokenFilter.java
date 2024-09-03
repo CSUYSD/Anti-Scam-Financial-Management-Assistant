@@ -12,14 +12,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.lang.NonNull;
 
 import java.io.IOException;
-import java.util.Objects;
 
-import org.apache.http.impl.bootstrap.HttpServer;
 
 @Component
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
@@ -48,20 +45,16 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
         // 2. 验证 token
         if (token != null && jwtUtil.validateToken(token)) {
-
-            // 3. 从 token 中提取用户信息
             Long userId = jwtUtil.getUserIdFromToken(token);
-
             UserDetails userDetails = userDetailService.loadUserById(userId);
 
-            // 4. 将用户信息存入 SecurityContext，在后续的请求中可以直接获取用户信息
-            UsernamePasswordAuthenticationToken authentication = 
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            logger.debug("User authenticated: " + userDetails.getUsername() + " with authorities: " + userDetails.getAuthorities());
         } else {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid token");
-            return;
+            logger.debug("Invalid token or no token provided");
         }
         // 5. 继续执行过滤器链
         filterChain.doFilter(request, response);

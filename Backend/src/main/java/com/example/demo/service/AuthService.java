@@ -79,7 +79,7 @@ public class AuthService {
             TransactionUsers transactionUsers = userDetail.getTransactionUsers();
 
             // 获取用户角色
-            String token = jwtUtil.generateToken(transactionUsers.getId(), transactionUsers.getUsername(),transactionUsers.getRole().getRole_id());
+            String token = jwtUtil.generateToken(transactionUsers.getId(), transactionUsers.getUsername(),transactionUsers.getRole().getRoleName());
 
             // 创建LoginUser对象并存入Redis
             LoginUser loginUser = new LoginUser(transactionUsers, token);
@@ -89,6 +89,7 @@ public class AuthService {
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
             response.put("username", transactionUsers.getUsername());
+            response.put("role", transactionUsers.getRole().getRoleName());
 
             logger.info("用户 {} 登录成功", loginVo.getUsername());
             return ResponseEntity.ok(response);
