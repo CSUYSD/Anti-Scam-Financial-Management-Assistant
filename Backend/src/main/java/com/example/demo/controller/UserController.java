@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,23 +50,17 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @Cacheable(value = "users", key = "#id")
     public ResponseEntity<TransactionUsers> getUserById(@PathVariable Long id) {
         Optional<TransactionUsers> userOptional = userService.findById(id);
-        if (userOptional.isPresent()) {
-            return ResponseEntity.ok(userOptional.get());
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @GetMapping("/username/{username}")
+    @Cacheable(value = "users", key = "#username")
     public ResponseEntity<TransactionUsers> getUserByUsername(@PathVariable String username) {
         Optional<TransactionUsers> userOptional = userService.findByUsername(username);
-        if (userOptional.isPresent()) {
-            return ResponseEntity.ok(userOptional.get());
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PutMapping("/{id}")

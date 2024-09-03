@@ -27,7 +27,6 @@ yarn.lock
 *.swp
 
 AgentApi\venv
-**/venv/
 ### Eclipse ###
 .metadata
 bin/

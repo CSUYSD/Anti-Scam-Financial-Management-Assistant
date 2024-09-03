@@ -11,7 +11,6 @@ import java.util.List;
 
 @Entity
 @Data
-@Cacheable
 public class TransactionUsers {
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,10 +23,10 @@ public class TransactionUsers {
 
         @Column(nullable = false)
         @NotBlank
-        @Pattern(
-                regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-                message = "Password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character"
-                )
+//        @Pattern(
+//                regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+//                message = "Password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character"
+//        )
         private String password;
 
         @Column(nullable = false)
