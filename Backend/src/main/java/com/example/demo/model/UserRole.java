@@ -8,7 +8,8 @@ import lombok.Data;
 public class UserRole {
     @Id
     private Integer role_id;
+
     @Column(unique = true)
     private String role;
-    public String getRole() {return role;}
+    public String getRoleName() {return role;}
 }
