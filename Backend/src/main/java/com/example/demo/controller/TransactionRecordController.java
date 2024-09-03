@@ -1,7 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.TransactionRecord;
-import com.example.demo.service.TransactionService;
+import com.example.demo.service.RecordService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,15 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/transactions")
 public class TransactionRecordController {
 
-    private final TransactionService transactionService;
+    private final RecordService recordService;
 
-    public TransactionRecordController(TransactionService transactionService) {
-        this.transactionService = transactionService;
+    public TransactionRecordController(RecordService recordService) {
+        this.recordService = recordService;
     }
 
     @PostMapping("/save")
     public ResponseEntity<TransactionRecord> saveTransaction(@RequestBody TransactionRecord transactionRecord) {
-        TransactionRecord savedRecord = transactionService.saveTransaction(transactionRecord);
+        TransactionRecord savedRecord = recordService.saveTransaction(transactionRecord);
         return ResponseEntity.ok(savedRecord);
     }
 
