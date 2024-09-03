@@ -28,6 +28,7 @@ ELEC5619 document
 		非功能需求：
 			-高性能：使用缓存redis
 			-安全性：https协议
+			-高可用：使用rabbitMQ作为后端与AI服务层的跨语言通信中介
 
 	2.DB的ERD（小温）
 
@@ -37,7 +38,7 @@ ELEC5619 document
 	1.甘特图
 	2.分工（下周决定）
 
-写作：
+写作：(小温)
 	1.要有cover page，页码，结构一致
 	2.语法
 
