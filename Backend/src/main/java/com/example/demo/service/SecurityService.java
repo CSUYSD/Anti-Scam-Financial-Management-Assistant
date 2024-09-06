@@ -1,13 +1,9 @@
 package com.example.demo.service;
 
-import com.example.demo.Dao.UserDao;
-import com.example.demo.Dao.UserRoleDao;
-import com.example.demo.model.LoginUser;
-import com.example.demo.model.TransactionUser;
-import com.example.demo.model.Security.UserDetail;
-import com.example.demo.model.UserRole;
-import com.example.demo.utility.JWT.JwtUtil;
-import com.github.alenfive.rocketapi.entity.vo.LoginVo;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +19,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import com.example.demo.Dao.UserDao;
+import com.example.demo.Dao.UserRoleDao;
+import com.example.demo.model.Redis.LoginUser;
+import com.example.demo.model.Security.UserDetail;
+import com.example.demo.model.TransactionUser;
+import com.example.demo.model.UserRole;
+import com.example.demo.utility.JWT.JwtUtil;
+import com.github.alenfive.rocketapi.entity.vo.LoginVo;
 
 @Service
 public class SecurityService {
@@ -81,9 +82,8 @@ public class SecurityService {
 
             // 创建LoginUser对象并存入Redis
             LoginUser loginUser = new LoginUser(transactionUser, token);
-            String redisKey = "login:" + transactionUser.getId();
-            redisTemplate.opsForValue().set(redisKey, loginUser, 24, TimeUnit.HOURS);
-
+            String redisKey = "login_user:" + transactionUser.getId();
+            redisTemplate.opsForValue().set(redisKey, loginUser, 1, TimeUnit.HOURS);
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
             response.put("username", transactionUser.getUsername());
