@@ -7,12 +7,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.Dao.UserDao;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.DTO.TransactionUserDTO;
+import com.example.demo.model.Redis.LoginUser;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.utility.JWT.JwtUtil;
 
@@ -21,11 +23,12 @@ public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private final UserDao userDao;
     private final JwtUtil jwtUtil;
-
+    private final RedisTemplate<String, Object> redisTemplate;
     @Autowired
-    public UserService(UserDao userDao, JwtUtil jwtUtil) {
+    public UserService(UserDao userDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
         this.userDao = userDao;
         this.jwtUtil = jwtUtil;
+        this.redisTemplate = redisTemplate;
     }
 
     public List<TransactionUser> findAll() {
@@ -66,11 +69,21 @@ public class UserService {
         userDao.deleteById(id);
     }
 
-    public Optional<TransactionUserDTO> getUserInfoByUserId(String token) throws DataIntegrityViolationException {
+    public Optional<TransactionUserDTO> getUserInfoByUserId(String token) {
         token = token.replace("Bearer ", "");
         Long userId = jwtUtil.getUserIdFromToken(token);
-        Optional<TransactionUser> userOptional = userDao.findById(userId);
-        TransactionUser user = userOptional.get();
+        String redisKey = "login_user:" + userId;
+        LoginUser loginUser = (LoginUser) redisTemplate.opsForValue().get(redisKey);
+        
+        // if (loginUser != null) {
+            return Optional.of(getUserInfoFromRedis(loginUser));
+        // } else {
+        //     return userDao.findById(userId)
+        //             .map(this::convertToDTO);
+        // }
+    }
+
+    private TransactionUserDTO convertToDTO(TransactionUser user) {
         TransactionUserDTO userDTO = new TransactionUserDTO();
         userDTO.setUsername(user.getUsername());
         userDTO.setEmail(user.getEmail());
@@ -79,12 +92,23 @@ public class UserService {
         userDTO.setFullName(user.getFullName());
 
         List<Account> accounts = user.getAccounts();
-        if (!accounts.isEmpty()) {
-            userDTO.setAccountName(accounts.get(0).getAccountName());
-        } else {
-            userDTO.setAccountName("No linked account");
-        }
-        return Optional.of(userDTO);
+        userDTO.setAccountName(accounts.isEmpty() ? "No linked account" : accounts.get(0).getAccountName());
+
+        return userDTO;
     }
 
+    private static TransactionUserDTO getUserInfoFromRedis(LoginUser loginUser) {
+        TransactionUserDTO userDTO = new TransactionUserDTO();
+        TransactionUser user = loginUser.getUser();
+        userDTO.setUsername(user.getUsername());
+        userDTO.setEmail(user.getEmail());
+        userDTO.setPhone(user.getPhone());
+        userDTO.setDOB(user.getDOB());
+        userDTO.setFullName(user.getFullName());
+
+        List<Account> accounts = user.getAccounts();
+        userDTO.setAccountName(accounts.isEmpty() ? "No linked account" : accounts.get(0).getAccountName());
+
+        return userDTO;
+    }
 }

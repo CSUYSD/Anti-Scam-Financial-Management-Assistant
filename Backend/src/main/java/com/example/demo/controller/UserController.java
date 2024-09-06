@@ -102,7 +102,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
         TransactionUserDTO user_info = userService.getUserInfoByUserId(token).orElse(null);
-        if (user_info == null) {
+        if (user_info == null ) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
         return ResponseEntity.ok(user_info);
