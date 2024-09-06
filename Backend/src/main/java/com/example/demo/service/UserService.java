@@ -1,51 +1,53 @@
 package com.example.demo.service;
 
-import com.example.demo.exception.UserNotFoundException;
-import com.example.demo.model.TransactionUsers;
-import com.example.demo.Dao.UserDao;
-import com.example.demo.model.UserDetail;
+import java.util.List;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import com.example.demo.Dao.UserDao;
+import com.example.demo.exception.UserNotFoundException;
+import com.example.demo.model.Account;
+import com.example.demo.model.DTO.TransactionUserDTO;
+import com.example.demo.model.TransactionUser;
+import com.example.demo.utility.JWT.JwtUtil;
 
 @Service
 public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-
-
     private final UserDao userDao;
+    private final JwtUtil jwtUtil;
 
     @Autowired
-    public UserService(UserDao userDao) {
+    public UserService(UserDao userDao, JwtUtil jwtUtil) {
         this.userDao = userDao;
+        this.jwtUtil = jwtUtil;
     }
 
-    public List<TransactionUsers> findAll() {
+    public List<TransactionUser> findAll() {
         return userDao.findAll();
     }
 
-    public Optional<TransactionUsers> findById(Long id) {
+    public Optional<TransactionUser> findById(Long id) {
         return userDao.findById(id);
     }
 
-    public Optional<TransactionUsers> findByUsername(String username) {
+    public Optional<TransactionUser> findByUsername(String username) {
         return userDao.findByUsername(username);
     }
 
-    public void updateUser(Long id, TransactionUsers updatedUser) throws UserNotFoundException {
-        Optional<TransactionUsers> existingUserOptional = userDao.findById(id);
+    public void updateUser(Long id, TransactionUser updatedUser) throws UserNotFoundException {
+        Optional<TransactionUser> existingUserOptional = userDao.findById(id);
 
         if (!existingUserOptional.isPresent()) {
             throw new UserNotFoundException("User not found");
         }
 
-        TransactionUsers existingUser = existingUserOptional.get();
+        TransactionUser existingUser = existingUserOptional.get();
         existingUser.setFullName(updatedUser.getFullName());
         existingUser.setEmail(updatedUser.getEmail());
         existingUser.setPhone(updatedUser.getPhone());
@@ -55,7 +57,7 @@ public class UserService {
     }
 
     public void deleteUser(Long id) throws UserNotFoundException, DataIntegrityViolationException {
-        Optional<TransactionUsers> userOptional = userDao.findById(id);
+        Optional<TransactionUser> userOptional = userDao.findById(id);
 
         if (!userOptional.isPresent()) {
             throw new UserNotFoundException("User not found");
@@ -64,5 +66,25 @@ public class UserService {
         userDao.deleteById(id);
     }
 
+    public Optional<TransactionUserDTO> getUserInfoByUserId(String token) throws DataIntegrityViolationException {
+        token = token.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        Optional<TransactionUser> userOptional = userDao.findById(userId);
+        TransactionUser user = userOptional.get();
+        TransactionUserDTO userDTO = new TransactionUserDTO();
+        userDTO.setUsername(user.getUsername());
+        userDTO.setEmail(user.getEmail());
+        userDTO.setPhone(user.getPhone());
+        userDTO.setDOB(user.getDOB());
+        userDTO.setFullName(user.getFullName());
+
+        List<Account> accounts = user.getAccounts();
+        if (!accounts.isEmpty()) {
+            userDTO.setAccountName(accounts.get(0).getAccountName());
+        } else {
+            userDTO.setAccountName("No linked account");
+        }
+        return Optional.of(userDTO);
+    }
 
 }

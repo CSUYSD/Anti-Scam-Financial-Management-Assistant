@@ -17,14 +17,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.exception.UserNotFoundException;
-import com.example.demo.model.TransactionUsers;
+import com.example.demo.model.DTO.TransactionUserDTO;
+import com.example.demo.model.TransactionUser;
 import com.example.demo.service.UserService;
 import com.example.demo.utility.RabbitMQProducer;
-
 @RestController
 @RequestMapping("/users")
 @Validated
@@ -42,8 +43,8 @@ public class UserController {
     private RabbitMQProducer rabbitMQProducer;
 
     @GetMapping("/allusers")
-    public ResponseEntity<List<TransactionUsers>> getAllUsers() {
-        List<TransactionUsers> users = userService.findAll();
+    public ResponseEntity<List<TransactionUser>> getAllUsers() {
+        List<TransactionUser> users = userService.findAll();
         if (!users.isEmpty()) {
             return ResponseEntity.ok(users);
         } else {
@@ -53,22 +54,22 @@ public class UserController {
 
     @GetMapping("/{id}")
     @Cacheable(value = "users", key = "#id")
-    public ResponseEntity<TransactionUsers> getUserById(@PathVariable Long id) {
-        Optional<TransactionUsers> userOptional = userService.findById(id);
+    public ResponseEntity<TransactionUser> getUserById(@PathVariable Long id) {
+        Optional<TransactionUser> userOptional = userService.findById(id);
         return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @GetMapping("/username/{username}")
     @Cacheable(value = "users", key = "#username")
-    public ResponseEntity<TransactionUsers> getUserByUsername(@PathVariable String username) {
-        Optional<TransactionUsers> userOptional = userService.findByUsername(username);
+    public ResponseEntity<TransactionUser> getUserByUsername(@PathVariable String username) {
+        Optional<TransactionUser> userOptional = userService.findByUsername(username);
         return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody TransactionUsers transactionUsersDetails) {
+    public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody TransactionUser transactionUserDetails) {
         try {
-            userService.updateUser(id, transactionUsersDetails);
+            userService.updateUser(id, transactionUserDetails);
             return ResponseEntity.ok("User updated successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -79,7 +80,7 @@ public class UserController {
     }
 
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("delete/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         try {
             userService.deleteUser(id);
@@ -93,6 +94,18 @@ public class UserController {
             logger.error("Unexpected error deleting user: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error occurred: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/info")
+    public ResponseEntity<TransactionUserDTO> getCurrentUserInfo(@RequestHeader("Authorization") String token) {
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+        TransactionUserDTO user_info = userService.getUserInfoByUserId(token).orElse(null);
+        if (user_info == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+        return ResponseEntity.ok(user_info);
     }
 
     @PostMapping("/rabbit")

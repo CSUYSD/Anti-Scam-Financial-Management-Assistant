@@ -1,30 +1,25 @@
 package com.example.demo.utility.JWT;
 
-import com.example.demo.model.UserDetail;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
 import com.example.demo.service.UserDetailService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.lang.NonNull;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import java.util.Collection;
-
-import java.io.IOException;
-import java.util.Objects;
-import java.util.Collections;
-
-import org.apache.http.impl.bootstrap.HttpServer;
 
 @Component
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
@@ -48,8 +43,11 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 1. 提取 token
-        String token = jwtUtil.extractTokenFromRequest(request);
+        // 确保从请求头中提取 token 时去除了可能的前缀（如 "Bearer "）和多余的空格
+        String token = request.getHeader("Authorization");
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7).trim();
+        }
 
         // 2. 验证 token
         if (token != null && jwtUtil.validateToken(token)) {
@@ -58,7 +56,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             Long userId = jwtUtil.getUserIdFromToken(token);
             String role = jwtUtil.getRoleFromToken(token);
             UserDetails userDetails = userDetailService.loadUserById(userId);
-            // 在过滤时直接从token��获取用户的角色信息，直接授权，绕开从userdetail里获取role info
+            // 在过滤时直接从token获取用户的角色信息，直接授权，绕开从userdetail里获取role info
             Collection<? extends GrantedAuthority> authorities =
                 Collections.singletonList(new SimpleGrantedAuthority(role));
 
