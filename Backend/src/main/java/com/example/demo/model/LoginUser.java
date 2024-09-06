@@ -15,12 +15,12 @@ public class LoginUser implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private TransactionUsers user;
+    private TransactionUser user;
     private String token;
     private Long loginTime;
     private Long expireTime;
 
-    public LoginUser(TransactionUsers user, String token) {
+    public LoginUser(TransactionUser user, String token) {
         this.user = user;
         this.token = token;
         this.loginTime = System.currentTimeMillis();

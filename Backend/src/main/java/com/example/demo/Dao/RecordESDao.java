@@ -7,7 +7,7 @@ import org.springframework.data.elasticsearch.repository.ElasticsearchRepository
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface TransactionRecordESDao extends ElasticsearchRepository<TransactionRecordES, String> {
+public interface RecordESDao extends ElasticsearchRepository<TransactionRecordES, String> {
     Page<TransactionRecordES> findByTransactionDescriptionContainingOrTransactionTypeContaining(
             String description, String type, Pageable pageable);
 }
