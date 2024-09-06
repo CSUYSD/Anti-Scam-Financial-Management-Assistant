@@ -1,12 +1,13 @@
-package com.example.demo.model;
+package com.example.demo.model.Redis;
 
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
+
+import com.example.demo.model.Account;
+import com.example.demo.model.TransactionUser;
+
+import lombok.*;
 
 @Data
 @NoArgsConstructor
