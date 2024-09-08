@@ -1,4 +1,4 @@
-package com.example.demo.service;
+package com.example.demo.service.Security;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,8 +6,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.Dao.UserDao;
 import com.example.demo.Dao.UserRoleDao;
+import com.example.demo.exception.UserAlreadyExistsException;
+import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.model.Redis.LoginUser;
 import com.example.demo.model.Security.UserDetail;
 import com.example.demo.model.TransactionUser;
@@ -49,19 +51,18 @@ public class SecurityService {
     }
 
     @Transactional
-    public void saveUser(TransactionUser user) throws DataIntegrityViolationException {
-        //检查用户名是否已存在
-        if (userDao.findByUsername(user.getUsername()).isPresent()) {
-            throw new DataIntegrityViolationException("User already exists");
+    public void saveUser(TransactionUserDTO userDTO) {
+        if (userDao.findByUsername(userDTO.getUsername()).isPresent()) {
+            throw new UserAlreadyExistsException("User already exists");
         }
-        // Encode the password before saving the user
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
-        // 获取 USER 角色
         UserRole userRole = userRoleDao.findByRole("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("Default user role not found"));
 
-        // 设置用户角色
+        TransactionUser user = new TransactionUser();
+        BeanUtils.copyProperties(userDTO, user);
         user.setRole(userRole);
 
         userDao.save(user);
@@ -79,9 +80,17 @@ public class SecurityService {
 
             // 获取用户角色
             String token = jwtUtil.generateToken(transactionUser.getId(), transactionUser.getUsername(), transactionUser.getRole().getRoleName());
-
+            String accountName = transactionUser.getAccounts().isEmpty() || transactionUser.getAccounts().get(0) == null ? "No linked account" : transactionUser.getAccounts().get(0).getAccountName();
             // 创建LoginUser对象并存入Redis
-            LoginUser loginUser = new LoginUser(transactionUser, token);
+            LoginUser loginUser = new LoginUser(
+                transactionUser.getId(),
+                transactionUser.getUsername(),
+                transactionUser.getEmail(),
+                transactionUser.getPhone(),
+                transactionUser.getFullName(),
+                accountName,
+                token
+            );
             String redisKey = "login_user:" + transactionUser.getId();
             redisTemplate.opsForValue().set(redisKey, loginUser, 1, TimeUnit.HOURS);
             Map<String, Object> response = new HashMap<>();

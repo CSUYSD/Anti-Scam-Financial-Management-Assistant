@@ -1,10 +1,16 @@
 package com.example.demo.model;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -33,20 +39,19 @@ public class TransactionUser {
         private String password;
         @Column(nullable = false)
         @NotBlank
-        @Email
         private String email;
         private String phone;
-        private String DOB;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        @JsonDeserialize(using = LocalDateDeserializer.class)
+        @JsonSerialize(using = LocalDateSerializer.class)
+        private LocalDate dob;
         private String fullName;
         
         @OneToMany(mappedBy = "transactionUser")  // 关联到 Account 表
-        @JsonIgnore
         private List<Account> accounts = new ArrayList<>();
         @ManyToOne
         @JoinColumn(name = "role_id")
-        @JsonIgnore
         private UserRole role;
-
 
         public UserRole getRole() {
                 return role;

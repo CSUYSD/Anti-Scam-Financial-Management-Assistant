@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.Dao.UserDao;
 import com.example.demo.exception.UserNotFoundException;
@@ -17,6 +18,8 @@ import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.model.Redis.LoginUser;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.utility.JWT.JwtUtil;
+
+
 
 @Service
 public class UserService {
@@ -69,18 +72,29 @@ public class UserService {
         userDao.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
     public Optional<TransactionUserDTO> getUserInfoByUserId(String token) {
         token = token.replace("Bearer ", "");
         Long userId = jwtUtil.getUserIdFromToken(token);
         String redisKey = "login_user:" + userId;
         LoginUser loginUser = (LoginUser) redisTemplate.opsForValue().get(redisKey);
         
-        // if (loginUser != null) {
+//        if (loginUser != null) {
             return Optional.of(getUserInfoFromRedis(loginUser));
-        // } else {
-        //     return userDao.findById(userId)
-        //             .map(this::convertToDTO);
-        // }
+//        } else {
+//            return userDao.findById(userId)
+//                    .map(this::convertToDTO);
+//        }
+    }
+
+    private TransactionUserDTO getUserInfoFromRedis(LoginUser loginUser) {
+        TransactionUserDTO userDTO = new TransactionUserDTO();
+        userDTO.setUsername(loginUser.getUsername());
+        userDTO.setEmail(loginUser.getEmail());
+        userDTO.setPhone(loginUser.getPhone());
+        userDTO.setFullName(loginUser.getFullName());
+        userDTO.setAccountName(loginUser.getAccountName());
+        return userDTO;
     }
 
     private TransactionUserDTO convertToDTO(TransactionUser user) {
@@ -88,26 +102,9 @@ public class UserService {
         userDTO.setUsername(user.getUsername());
         userDTO.setEmail(user.getEmail());
         userDTO.setPhone(user.getPhone());
-        userDTO.setDOB(user.getDOB());
         userDTO.setFullName(user.getFullName());
-
         List<Account> accounts = user.getAccounts();
-        userDTO.setAccountName(accounts.isEmpty() ? "No linked account" : accounts.get(0).getAccountName());
-
-        return userDTO;
-    }
-
-    private static TransactionUserDTO getUserInfoFromRedis(LoginUser loginUser) {
-        TransactionUserDTO userDTO = new TransactionUserDTO();
-        TransactionUser user = loginUser.getUser();
-        userDTO.setUsername(user.getUsername());
-        userDTO.setEmail(user.getEmail());
-        userDTO.setPhone(user.getPhone());
-        userDTO.setDOB(user.getDOB());
-        userDTO.setFullName(user.getFullName());
-
-        List<Account> accounts = user.getAccounts();
-        userDTO.setAccountName(accounts.isEmpty() ? "No linked account" : accounts.get(0).getAccountName());
+        userDTO.setAccountName(accounts != null && !accounts.isEmpty() ? accounts.get(0).getAccountName() : "No linked account");
 
         return userDTO;
     }

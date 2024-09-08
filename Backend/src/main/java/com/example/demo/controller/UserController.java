@@ -53,7 +53,6 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @Cacheable(value = "users", key = "#id")
     public ResponseEntity<TransactionUser> getUserById(@PathVariable Long id) {
         Optional<TransactionUser> userOptional = userService.findById(id);
         return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
