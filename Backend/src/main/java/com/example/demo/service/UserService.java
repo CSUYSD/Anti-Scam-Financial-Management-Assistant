@@ -21,6 +21,7 @@ import com.example.demo.utility.JWT.JwtUtil;
 
 
 
+
 @Service
 public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
@@ -54,7 +55,6 @@ public class UserService {
         }
 
         TransactionUser existingUser = existingUserOptional.get();
-        existingUser.setFullName(updatedUser.getFullName());
         existingUser.setEmail(updatedUser.getEmail());
         existingUser.setPhone(updatedUser.getPhone());
         existingUser.setPassword(updatedUser.getPassword());
@@ -72,6 +72,20 @@ public class UserService {
         userDao.deleteById(id);
     }
 
+    public void updateAvatar(String token, String avatar) throws UserNotFoundException {
+        token = token.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        Optional<TransactionUser> userOptional = userDao.findById(userId);
+
+        if (!userOptional.isPresent()) {
+            throw new UserNotFoundException("User not found");
+        }
+        
+        TransactionUser user = userOptional.get();
+        user.setAvatar(avatar);
+        userDao.save(user);
+    }
+
     @Transactional(readOnly = true)
     public Optional<TransactionUserDTO> getUserInfoByUserId(String token) {
         token = token.replace("Bearer ", "");
@@ -79,12 +93,12 @@ public class UserService {
         String redisKey = "login_user:" + userId;
         LoginUser loginUser = (LoginUser) redisTemplate.opsForValue().get(redisKey);
         
-//        if (loginUser != null) {
+        if (loginUser != null) {
             return Optional.of(getUserInfoFromRedis(loginUser));
-//        } else {
-//            return userDao.findById(userId)
-//                    .map(this::convertToDTO);
-//        }
+        } else {
+            return userDao.findById(userId)
+                    .map(this::convertToDTO);
+        }
     }
 
     private TransactionUserDTO getUserInfoFromRedis(LoginUser loginUser) {
@@ -92,7 +106,7 @@ public class UserService {
         userDTO.setUsername(loginUser.getUsername());
         userDTO.setEmail(loginUser.getEmail());
         userDTO.setPhone(loginUser.getPhone());
-        userDTO.setFullName(loginUser.getFullName());
+        userDTO.setAvatar(loginUser.getAvatar());
         userDTO.setAccountName(loginUser.getAccountName());
         return userDTO;
     }
@@ -102,10 +116,9 @@ public class UserService {
         userDTO.setUsername(user.getUsername());
         userDTO.setEmail(user.getEmail());
         userDTO.setPhone(user.getPhone());
-        userDTO.setFullName(user.getFullName());
+        userDTO.setAvatar(user.getAvatar());
         List<Account> accounts = user.getAccounts();
         userDTO.setAccountName(accounts != null && !accounts.isEmpty() ? accounts.get(0).getAccountName() : "No linked account");
-
         return userDTO;
     }
 }

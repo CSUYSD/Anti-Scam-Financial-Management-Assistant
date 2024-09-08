@@ -1,4 +1,4 @@
-package com.example.demo.Dao;
+package com.example.demo.Dao.ESDao;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
