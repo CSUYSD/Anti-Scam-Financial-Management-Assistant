@@ -87,7 +87,7 @@ public class SecurityService {
                 transactionUser.getUsername(),
                 transactionUser.getEmail(),
                 transactionUser.getPhone(),
-                transactionUser.getFullName(),
+                transactionUser.getAvatar(),
                 accountName,
                 token
             );
