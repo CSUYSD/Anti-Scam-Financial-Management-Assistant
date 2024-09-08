@@ -1,12 +1,13 @@
-package com.example.demo.model;
+package com.example.demo.model.Redis;
 
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
+
+import com.example.demo.model.Account;
+import com.example.demo.model.TransactionUser;
+
+import lombok.*;
 
 @Data
 @NoArgsConstructor
@@ -15,12 +16,12 @@ public class LoginUser implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private TransactionUsers user;
+    private TransactionUser user;
     private String token;
     private Long loginTime;
     private Long expireTime;
 
-    public LoginUser(TransactionUsers user, String token) {
+    public LoginUser(TransactionUser user, String token) {
         this.user = user;
         this.token = token;
         this.loginTime = System.currentTimeMillis();
