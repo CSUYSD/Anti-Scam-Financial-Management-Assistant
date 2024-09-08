@@ -29,8 +29,7 @@ public class TransactionUserDTO {
     private String phone;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dob;
-
-    private String fullName;
+    private String avatar;
 
     private String accountName;
 }

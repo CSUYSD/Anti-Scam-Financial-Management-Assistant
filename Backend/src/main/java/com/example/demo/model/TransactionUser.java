@@ -45,9 +45,10 @@ public class TransactionUser {
         @JsonDeserialize(using = LocalDateDeserializer.class)
         @JsonSerialize(using = LocalDateSerializer.class)
         private LocalDate dob;
-        private String fullName;
+        private String avatar;
         
-        @OneToMany(mappedBy = "transactionUser")  // 关联到 Account 表
+        // 关联到 Account 表
+        @OneToMany(mappedBy = "transactionUser")
         private List<Account> accounts = new ArrayList<>();
         @ManyToOne
         @JoinColumn(name = "role_id")
