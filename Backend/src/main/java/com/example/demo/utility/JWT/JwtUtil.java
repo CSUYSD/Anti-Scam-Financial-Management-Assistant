@@ -1,16 +1,19 @@
 package com.example.demo.utility.JWT;
 
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import jakarta.servlet.http.HttpServletRequest;
-import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.crypto.SecretKey;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Component
 public class JwtUtil {
@@ -42,6 +45,7 @@ public class JwtUtil {
     }
 
     public String getUsernameFromToken(String token) {
+        token = token.trim();
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -51,6 +55,7 @@ public class JwtUtil {
     }
 
     public Long getUserIdFromToken(String token) {
+        token = token.trim();
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -60,6 +65,7 @@ public class JwtUtil {
     }
 
     public String getRoleFromToken(String token) {
+        token = token.trim();
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
