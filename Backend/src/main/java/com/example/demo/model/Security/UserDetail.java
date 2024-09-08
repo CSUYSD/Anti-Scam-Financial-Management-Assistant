@@ -1,5 +1,6 @@
-package com.example.demo.model;
+package com.example.demo.model.Security;
 
+import com.example.demo.model.TransactionUser;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
@@ -10,15 +11,15 @@ import java.util.Collection;
 @Getter
 @Setter
 public class UserDetail extends User {
-    private TransactionUsers transactionUsers;
+    private TransactionUser transactionUser;
 
     // 修改构造函数，接受单个 GrantedAuthority
-    public UserDetail(TransactionUsers user, Collection<? extends GrantedAuthority> authorities) {
+    public UserDetail(TransactionUser user, Collection<? extends GrantedAuthority> authorities) {
         super(user.getUsername(), user.getPassword(), authorities);
-        this.transactionUsers = user;
+        this.transactionUser = user;
     }
 
-    public void setTransactionUsers(TransactionUsers transactionUsers) {
-        this.transactionUsers = transactionUsers;
+    public void setTransactionUser(TransactionUser transactionUser) {
+        this.transactionUser = transactionUser;
     }
 }

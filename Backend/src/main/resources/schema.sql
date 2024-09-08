@@ -13,8 +13,8 @@ INSERT INTO user_roles (role_id, role) VALUES
 (2, 'ROLE_USER');
 
 -- 然后创建 transaction_users 表
-DROP TABLE IF EXISTS transaction_users;
-CREATE TABLE transaction_users (
+DROP TABLE IF EXISTS transaction_user;
+CREATE TABLE transaction_user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE transaction_users (
         REFERENCES user_roles(role_id)
 );
 
-INSERT INTO transaction_users (username, password, email, phone, dob, full_name, role_id) VALUES
+INSERT INTO transaction_user (username, password, email, phone, dob, full_name, role_id) VALUES
 ('johndoe', 'password123', 'johndoe@example.com', '1234567890', '1990-01-15', 'John Doe', 1),
 ('janedoe', 'securepassword', 'janedoe@example.com', '0987654321', '1992-02-25', 'Jane Doe', 2),
 ('alice', 'alicepassword', 'alice@example.com', '1112223333', '1988-03-10', 'Alice Johnson', 2),

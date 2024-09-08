@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.example.demo.Dao.UserDao;
-import com.example.demo.model.TransactionUsers;
+import com.example.demo.model.TransactionUser;
 import com.example.demo.utility.JWT.JwtUtil;
 import static com.google.common.truth.Truth.assertThat;
 
@@ -21,7 +21,7 @@ public class TestSecurityBasic {
 
     @Test
     public void testDatabaseInitialization() {
-        List<TransactionUsers> users = userDao.findAll();
+        List<TransactionUser> users = userDao.findAll();
         assertThat(users).isNotEmpty();
         assertThat(users.size()).isEqualTo(5);
     }
