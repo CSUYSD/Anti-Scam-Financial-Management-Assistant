@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+<<<<<<< HEAD
 import com.example.demo.Dao.AccountDao;
 import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
@@ -87,3 +88,7 @@ public class AccountService {
         accountDao.save(existingAccount);
     }
 }
+=======
+public class AccountService {
+}
+>>>>>>> 2d84234ffa497742be8ba04f4af4df7490abdd29

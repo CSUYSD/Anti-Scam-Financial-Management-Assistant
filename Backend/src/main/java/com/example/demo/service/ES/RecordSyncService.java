@@ -1,7 +1,7 @@
-package com.example.demo.service;
+package com.example.demo.service.ES;
 
-import com.example.demo.Dao.TransactionRecordDao;
-import com.example.demo.Dao.TransactionRecordESDao;
+import com.example.demo.Dao.RecordDao;
+import com.example.demo.Dao.ESDao.RecordESDao;
 import com.example.demo.model.TransactionRecordES;
 import com.example.demo.model.TransactionRecord;
 import org.springframework.stereotype.Service;
@@ -10,20 +10,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RecordSyncService {
 
-    private final TransactionRecordDao transactionRecordDao;
-    private final TransactionRecordESDao transactionRecordESDao;
+    private final RecordDao recordDao;
+    private final RecordESDao recordESDao;
 
-    public RecordSyncService(TransactionRecordDao transactionRecordDao,
-                             TransactionRecordESDao transactionRecordESDao) {
-        this.transactionRecordDao = transactionRecordDao;
-        this.transactionRecordESDao = transactionRecordESDao;
+    public RecordSyncService(RecordDao recordDao,
+                             RecordESDao recordESDao) {
+        this.recordDao = recordDao;
+        this.recordESDao = recordESDao;
     }
 
     @Transactional
     //   Save transaction record to database and sync to Elasticsearch
     public void syncToElasticsearch(TransactionRecord transactionRecord) {
         TransactionRecordES esRecord = convertToESEntity(transactionRecord);
-        transactionRecordESDao.save(esRecord);
+        recordESDao.save(esRecord);
     }
 
 //    Convert TransactionRecord to TransactionRecordES

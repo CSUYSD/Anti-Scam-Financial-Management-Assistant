@@ -67,7 +67,7 @@ public class AccountController {
         }
     }
 
-    @GetMapping("/info")
+    @GetMapping("/all")
     public String getAccountInfo() {
         return "Account Information";
     }
