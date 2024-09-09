@@ -14,9 +14,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/accounts")
+@RequestMapping("/account")
 public class AccountController {
     private static final Logger logger = LoggerFactory.getLogger(AccountController.class);
 
@@ -64,6 +67,11 @@ public class AccountController {
         }
     }
 
+    @GetMapping("/info")
+    public String getAccountInfo() {
+        return "Account Information";
+    }
+}
     @GetMapping("/byAccountName")
     public ResponseEntity<Account> getAccountByAccountName(@RequestParam String accountName) {
         Optional<Account> accountOptional = accountService.findByAccountName(accountName);

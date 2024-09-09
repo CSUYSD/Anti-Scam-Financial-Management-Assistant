@@ -44,6 +44,9 @@ dependencies {
 	//	redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.apache.commons:commons-pool2:2.11.1' // 添加 commons-pool2 依赖
+
+	// elastic search
+	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 }
 
 tasks.named('test') {

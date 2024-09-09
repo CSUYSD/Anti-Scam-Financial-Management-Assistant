@@ -25,7 +25,7 @@ public class TestJwtTokenFilter {
         // 创建一个有效的JWT
         Long userId = 1L;
         String username = "johndoe";
-        String jwt = jwtUtil.generateToken(userId, username, 2);
+        String jwt = jwtUtil.generateToken(userId, username, "ROLE_ADMIN");
 
     // 发送一个带有JWT的请求
     mockMvc.perform(MockMvcRequestBuilders.get("/users/allusers")
