@@ -94,10 +94,12 @@ public class TransactionUserService {
         Long userId = jwtUtil.getUserIdFromToken(token);
         String redisKey = "login_user:" + userId;
         LoginUser loginUser = (LoginUser) redisTemplate.opsForValue().get(redisKey);
-        
+
+        // 如果 Redis 中有用户信息，直接返回
         if (loginUser != null) {
             return Optional.of(getUserInfoFromRedis(loginUser));
         } else {
+            // 如果 Redis 中没有用户信息，从数据库中获取
             return transactionUserDao.findById(userId)
                     .map(this::convertToDTO);
         }
@@ -120,7 +122,9 @@ public class TransactionUserService {
         userDTO.setPhone(user.getPhone());
         userDTO.setAvatar(user.getAvatar());
         List<Account> accounts = user.getAccounts();
-        userDTO.setAccountName(accounts != null && !accounts.isEmpty() ? accounts.get(0).getAccountName() : "No linked account");
+        for (Account account : accounts) {
+            userDTO.getAccountName().add(account.getAccountName());
+        }
         return userDTO;
     }
 }

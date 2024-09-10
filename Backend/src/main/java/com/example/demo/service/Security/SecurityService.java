@@ -1,6 +1,8 @@
 package com.example.demo.service.Security;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +26,7 @@ import com.example.demo.Dao.UserRoleDao;
 import com.example.demo.exception.PasswordNotCorrectException;
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
+import com.example.demo.model.Account;
 import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.model.Redis.LoginUser;
 import com.example.demo.model.Security.UserDetail;
@@ -82,7 +85,12 @@ public class SecurityService {
 
             // 获取用户角色
             String token = jwtUtil.generateToken(transactionUser.getId(), transactionUser.getUsername(), transactionUser.getRole().getRoleName());
-            String accountName = transactionUser.getAccounts().isEmpty() || transactionUser.getAccounts().get(0) == null ? "No linked account" : transactionUser.getAccounts().get(0).getAccountName();
+            // 获取用户账户名
+            List<Account> accounts = transactionUser.getAccounts();
+            List<String> accountName = new ArrayList<>();
+            for (Account account : accounts) {
+                accountName.add(account.getAccountName());
+            }
             // 创建LoginUser对象并存入Redis
             LoginUser loginUser = new LoginUser(
                 transactionUser.getId(),
