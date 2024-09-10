@@ -8,15 +8,16 @@ import Income from "@/pages/income/index.jsx";
 import {Payments} from "@mui/icons-material";
 import Reports from "@/pages/report/index.jsx";
 import UserProfile from "@/pages/userProfile/index.jsx";
+import Account from "@/pages/account/index.jsx";
 
 
 const router = createBrowserRouter([
     {
         path: '/',
         element: (
-            // <AuthRoute>
+             <AuthRoute>
                 <Layout/>
-            // </AuthRoute>
+             </AuthRoute>
         ),
         children : [
             {
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
                 element: <Reports/>
             }
         ]
+    },
+    {
+        path: '/account',
+        element: <Account/>,
     },
     {
         path: '/login',
