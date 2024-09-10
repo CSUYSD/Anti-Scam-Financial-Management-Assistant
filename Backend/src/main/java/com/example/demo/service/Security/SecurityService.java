@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.Dao.UserDao;
 import com.example.demo.Dao.UserRoleDao;
 import com.example.demo.exception.UserAlreadyExistsException;
+import com.example.demo.exception.PasswordNotCorrectException;
 import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.model.Redis.LoginUser;
 import com.example.demo.model.Security.UserDetail;
@@ -29,6 +30,8 @@ import com.example.demo.model.TransactionUser;
 import com.example.demo.model.UserRole;
 import com.example.demo.utility.JWT.JwtUtil;
 import com.github.alenfive.rocketapi.entity.vo.LoginVo;
+import com.example.demo.exception.UserNotFoundException;
+import java.util.Optional;
 
 @Service
 public class SecurityService {
@@ -106,5 +109,32 @@ public class SecurityService {
             logger.error("登录过程中发生错误: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "登录过程中发生错误"));
         }
+    }
+
+    // update password
+    public void updatePassword(String token, Map<String, String> oldAndNewPwd) throws UserNotFoundException, PasswordNotCorrectException {
+        token = token.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        Optional<TransactionUser> userOptional = userDao.findById(userId);
+
+        if (!userOptional.isPresent()) {
+            throw new UserNotFoundException("User not found");
+        }
+    
+        TransactionUser user = userOptional.get();
+        // get old password and new password from request
+        String oldPassword = oldAndNewPwd.get("oldPassword");
+        String newPassword = oldAndNewPwd.get("newPassword");
+        // encode old password
+        String encodedOldPassword = passwordEncoder.encode(oldPassword);
+        // check if old password is correct
+        if (!encodedOldPassword.equals(user.getPassword())) {
+            throw new PasswordNotCorrectException("Original password is incorrect");
+        }
+        // encode new password
+        String encodedNewPassword = passwordEncoder.encode(newPassword);
+        // set new password
+        user.setPassword(encodedNewPassword);
+        userDao.save(user);
     }
 }
