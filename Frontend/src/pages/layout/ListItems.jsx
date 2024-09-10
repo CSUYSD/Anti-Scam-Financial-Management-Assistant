@@ -29,17 +29,11 @@ export const mainListItems = (
             </ListItemIcon>
             <ListItemText primary="Dashboard" />
         </ListItemButton>
-        <ListItemButton component={NavLink} to="/income" sx={activeStyle}>
+        <ListItemButton component={NavLink} to="/transaction" sx={activeStyle}>
             <ListItemIcon>
                 <AttachMoneyIcon/>
             </ListItemIcon>
-            <ListItemText primary="Income" />
-        </ListItemButton>
-        <ListItemButton component={NavLink} to="/payment" sx={activeStyle}>
-            <ListItemIcon>
-                <PaymentIcon />
-            </ListItemIcon>
-            <ListItemText primary="Payments" />
+            <ListItemText primary="Transaction" />
         </ListItemButton>
         <ListItemButton component={NavLink} to="/report" sx={activeStyle}>
             <ListItemIcon>
