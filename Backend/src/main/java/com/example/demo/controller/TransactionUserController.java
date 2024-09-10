@@ -3,16 +3,16 @@ package com.example.demo.controller;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,19 +24,19 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.model.TransactionUser;
-import com.example.demo.service.UserService;
+import com.example.demo.service.TransactionUserService;
 import com.example.demo.utility.RabbitMQProducer;
+
 @RestController
 @RequestMapping("/users")
-@Validated
-public class UserController {
-    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+public class TransactionUserController {
+    private static final Logger logger = LoggerFactory.getLogger(TransactionUserController.class);
 
-    private final UserService userService;
+    private final TransactionUserService transactionUserService;
 
     @Autowired
-    public UserController(UserService userService) {
-        this.userService = userService;
+    public TransactionUserController(TransactionUserService transactionUserService) {
+        this.transactionUserService = transactionUserService;
     }
 
     @Autowired
@@ -44,7 +44,7 @@ public class UserController {
 
     @GetMapping("/allusers")
     public ResponseEntity<List<TransactionUser>> getAllUsers() {
-        List<TransactionUser> users = userService.findAll();
+        List<TransactionUser> users = transactionUserService.findAll();
         if (!users.isEmpty()) {
             return ResponseEntity.ok(users);
         } else {
@@ -53,23 +53,21 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @Cacheable(value = "users", key = "#id")
     public ResponseEntity<TransactionUser> getUserById(@PathVariable Long id) {
-        Optional<TransactionUser> userOptional = userService.findById(id);
+        Optional<TransactionUser> userOptional = transactionUserService.findById(id);
         return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @GetMapping("/username/{username}")
-    @Cacheable(value = "users", key = "#username")
     public ResponseEntity<TransactionUser> getUserByUsername(@PathVariable String username) {
-        Optional<TransactionUser> userOptional = userService.findByUsername(username);
+        Optional<TransactionUser> userOptional = transactionUserService.findByUsername(username);
         return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/update/{id}")
     public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody TransactionUser transactionUserDetails) {
         try {
-            userService.updateUser(id, transactionUserDetails);
+            transactionUserService.updateUser(id, transactionUserDetails);
             return ResponseEntity.ok("User updated successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -83,7 +81,7 @@ public class UserController {
     @DeleteMapping("delete/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         try {
-            userService.deleteUser(id);
+            transactionUserService.deleteUser(id);
             return ResponseEntity.status(HttpStatus.OK).body("User deleted successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -96,21 +94,38 @@ public class UserController {
         }
     }
 
+
     @GetMapping("/info")
     public ResponseEntity<TransactionUserDTO> getCurrentUserInfo(@RequestHeader("Authorization") String token) {
         if (token == null || token.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
-        TransactionUserDTO user_info = userService.getUserInfoByUserId(token).orElse(null);
+        TransactionUserDTO user_info = transactionUserService.getUserInfoByUserId(token).orElse(null);
         if (user_info == null ) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
         return ResponseEntity.ok(user_info);
     }
 
+    // Update avatar
+    @PatchMapping("/updateAvatar")
+    public ResponseEntity<String> updateAvatar(@RequestHeader("Authorization") String token, @URL String avatar) {
+        try {
+            transactionUserService.updateAvatar(token, avatar);
+            return ResponseEntity.ok("Avatar updated successfully");
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error updating avatar: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating avatar: " + e.getMessage());
+        }
+    }
+
+
     @PostMapping("/rabbit")
     public String testRabbitMQ(@RequestBody String message) {
         rabbitMQProducer.sendMessage(message);
         return message;
     }
+
 }

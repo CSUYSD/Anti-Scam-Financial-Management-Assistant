@@ -1,9 +1,14 @@
 package com.example.demo.model;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,13 +18,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.validation.constraints.Email;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Entity
 @Data
+@Table(name = "transaction_users")
 public class TransactionUser {
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,20 +39,20 @@ public class TransactionUser {
         private String password;
         @Column(nullable = false)
         @NotBlank
-        @Email
         private String email;
         private String phone;
-        private String DOB;
-        private String fullName;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        @JsonDeserialize(using = LocalDateDeserializer.class)
+        @JsonSerialize(using = LocalDateSerializer.class)
+        private LocalDate dob;
+        private String avatar;
         
-        @OneToMany(mappedBy = "transactionUser")  // 关联到 Account 表
-        @JsonIgnore
+        // 关联到 Account 表
+        @OneToMany(mappedBy = "transactionUser")
         private List<Account> accounts = new ArrayList<>();
         @ManyToOne
         @JoinColumn(name = "role_id")
-        @JsonIgnore
         private UserRole role;
-
 
         public UserRole getRole() {
                 return role;
