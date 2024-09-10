@@ -4,7 +4,7 @@ import {createBrowserRouter} from "react-router-dom";
 import AuthRoute from "../components/AuthRoute";
 import Dashboard from "../pages/dashboard";
 import Layout from "@/pages/layout/index.jsx";
-import Income from "@/pages/income/index.jsx";
+import Income from "@/pages/transaction/index.jsx";
 import {Payments} from "@mui/icons-material";
 import Reports from "@/pages/report/index.jsx";
 import UserProfile from "@/pages/userProfile/index.jsx";
@@ -26,7 +26,7 @@ const router = createBrowserRouter([
                 element: <Dashboard/>
             },
             {
-                path: 'income',
+                path: 'transaction',
                 element: <Income/>
             },
             {
