@@ -19,7 +19,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
-import com.example.demo.service.UserDetailService;
+import com.example.demo.service.Security.UserDetailService;
 import com.example.demo.utility.JWT.JwtAuthenticationTokenFilter;
 import com.example.demo.utility.JWT.JwtLogoutHandler;
 

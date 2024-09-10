@@ -19,10 +19,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.Dao.UserDao;
+import com.example.demo.Dao.TransactionUserDao;
 import com.example.demo.Dao.UserRoleDao;
-import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.PasswordNotCorrectException;
+import com.example.demo.exception.UserAlreadyExistsException;
+import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.model.Redis.LoginUser;
 import com.example.demo.model.Security.UserDetail;
@@ -30,23 +31,21 @@ import com.example.demo.model.TransactionUser;
 import com.example.demo.model.UserRole;
 import com.example.demo.utility.JWT.JwtUtil;
 import com.github.alenfive.rocketapi.entity.vo.LoginVo;
-import com.example.demo.exception.UserNotFoundException;
-import java.util.Optional;
 
 @Service
 public class SecurityService {
     private static final Logger logger = LoggerFactory.getLogger(SecurityService.class);
     private final PasswordEncoder passwordEncoder;
-    private final UserDao userDao;
+    private final TransactionUserDao transactionUserDao;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserRoleDao userRoleDao;
 
     @Autowired
-    public SecurityService(PasswordEncoder passwordEncoder, UserDao userDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRoleDao userRoleDao) {
+    public SecurityService(PasswordEncoder passwordEncoder, TransactionUserDao transactionUserDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRoleDao userRoleDao) {
         this.passwordEncoder = passwordEncoder;
-        this.userDao = userDao;
+        this.transactionUserDao = transactionUserDao;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
@@ -55,7 +54,7 @@ public class SecurityService {
 
     @Transactional
     public void saveUser(TransactionUserDTO userDTO) {
-        if (userDao.findByUsername(userDTO.getUsername()).isPresent()) {
+        if (transactionUserDao.findByUsername(userDTO.getUsername()).isPresent()) {
             throw new UserAlreadyExistsException("User already exists");
         }
         
@@ -68,7 +67,7 @@ public class SecurityService {
         BeanUtils.copyProperties(userDTO, user);
         user.setRole(userRole);
 
-        userDao.save(user);
+        transactionUserDao.save(user);
     }
 
     //用户登录功能，接收前端传来的用户名和密码，进行身份验证
@@ -115,26 +114,20 @@ public class SecurityService {
     public void updatePassword(String token, Map<String, String> oldAndNewPwd) throws UserNotFoundException, PasswordNotCorrectException {
         token = token.replace("Bearer ", "");
         Long userId = jwtUtil.getUserIdFromToken(token);
-        Optional<TransactionUser> userOptional = userDao.findById(userId);
+        TransactionUser user = transactionUserDao.findById(userId)
+            .orElseThrow(() -> new UserNotFoundException("用户未找到"));
 
-        if (!userOptional.isPresent()) {
-            throw new UserNotFoundException("User not found");
+        String oldPassword = oldAndNewPwd.get("oldpassword");
+        String newPassword = oldAndNewPwd.get("newpassword");
+
+        // 使用 PasswordEncoder 的 matches 方法验证旧密码
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new PasswordNotCorrectException("原密码不正确");
         }
-    
-        TransactionUser user = userOptional.get();
-        // get old password and new password from request
-        String oldPassword = oldAndNewPwd.get("oldPassword");
-        String newPassword = oldAndNewPwd.get("newPassword");
-        // encode old password
-        String encodedOldPassword = passwordEncoder.encode(oldPassword);
-        // check if old password is correct
-        if (!encodedOldPassword.equals(user.getPassword())) {
-            throw new PasswordNotCorrectException("Original password is incorrect");
-        }
-        // encode new password
+
+        // 加密新密码
         String encodedNewPassword = passwordEncoder.encode(newPassword);
-        // set new password
         user.setPassword(encodedNewPassword);
-        userDao.save(user);
+        transactionUserDao.save(user);
     }
 }
