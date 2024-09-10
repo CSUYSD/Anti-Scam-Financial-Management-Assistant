@@ -1,4 +1,4 @@
-package com.example.demo.service;
+package com.example.demo.service.Security;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,8 +6,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +19,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.Dao.UserDao;
+import com.example.demo.Dao.TransactionUserDao;
 import com.example.demo.Dao.UserRoleDao;
+import com.example.demo.exception.PasswordNotCorrectException;
+import com.example.demo.exception.UserAlreadyExistsException;
+import com.example.demo.exception.UserNotFoundException;
+import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.model.Redis.LoginUser;
 import com.example.demo.model.Security.UserDetail;
 import com.example.demo.model.TransactionUser;
@@ -32,16 +36,16 @@ import com.github.alenfive.rocketapi.entity.vo.LoginVo;
 public class SecurityService {
     private static final Logger logger = LoggerFactory.getLogger(SecurityService.class);
     private final PasswordEncoder passwordEncoder;
-    private final UserDao userDao;
+    private final TransactionUserDao transactionUserDao;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserRoleDao userRoleDao;
 
     @Autowired
-    public SecurityService(PasswordEncoder passwordEncoder, UserDao userDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRoleDao userRoleDao) {
+    public SecurityService(PasswordEncoder passwordEncoder, TransactionUserDao transactionUserDao, AuthenticationManager authenticationManager, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRoleDao userRoleDao) {
         this.passwordEncoder = passwordEncoder;
-        this.userDao = userDao;
+        this.transactionUserDao = transactionUserDao;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
@@ -49,22 +53,21 @@ public class SecurityService {
     }
 
     @Transactional
-    public void saveUser(TransactionUser user) throws DataIntegrityViolationException {
-        //检查用户名是否已存在
-        if (userDao.findByUsername(user.getUsername()).isPresent()) {
-            throw new DataIntegrityViolationException("User already exists");
+    public void saveUser(TransactionUserDTO userDTO) {
+        if (transactionUserDao.findByUsername(userDTO.getUsername()).isPresent()) {
+            throw new UserAlreadyExistsException("User already exists");
         }
-        // Encode the password before saving the user
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
-        // 获取 USER 角色
         UserRole userRole = userRoleDao.findByRole("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("Default user role not found"));
 
-        // 设置用户角色
+        TransactionUser user = new TransactionUser();
+        BeanUtils.copyProperties(userDTO, user);
         user.setRole(userRole);
 
-        userDao.save(user);
+        transactionUserDao.save(user);
     }
 
     //用户登录功能，接收前端传来的用户名和密码，进行身份验证
@@ -79,9 +82,17 @@ public class SecurityService {
 
             // 获取用户角色
             String token = jwtUtil.generateToken(transactionUser.getId(), transactionUser.getUsername(), transactionUser.getRole().getRoleName());
-
+            String accountName = transactionUser.getAccounts().isEmpty() || transactionUser.getAccounts().get(0) == null ? "No linked account" : transactionUser.getAccounts().get(0).getAccountName();
             // 创建LoginUser对象并存入Redis
-            LoginUser loginUser = new LoginUser(transactionUser, token);
+            LoginUser loginUser = new LoginUser(
+                transactionUser.getId(),
+                transactionUser.getUsername(),
+                transactionUser.getEmail(),
+                transactionUser.getPhone(),
+                transactionUser.getAvatar(),
+                accountName,
+                token
+            );
             String redisKey = "login_user:" + transactionUser.getId();
             redisTemplate.opsForValue().set(redisKey, loginUser, 1, TimeUnit.HOURS);
             Map<String, Object> response = new HashMap<>();
@@ -97,5 +108,26 @@ public class SecurityService {
             logger.error("登录过程中发生错误: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "登录过程中发生错误"));
         }
+    }
+
+    // update password
+    public void updatePassword(String token, Map<String, String> oldAndNewPwd) throws UserNotFoundException, PasswordNotCorrectException {
+        token = token.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        TransactionUser user = transactionUserDao.findById(userId)
+            .orElseThrow(() -> new UserNotFoundException("用户未找到"));
+
+        String oldPassword = oldAndNewPwd.get("oldpassword");
+        String newPassword = oldAndNewPwd.get("newpassword");
+
+        // 使用 PasswordEncoder 的 matches 方法验证旧密码
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new PasswordNotCorrectException("原密码不正确");
+        }
+
+        // 加密新密码
+        String encodedNewPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(encodedNewPassword);
+        transactionUserDao.save(user);
     }
 }
