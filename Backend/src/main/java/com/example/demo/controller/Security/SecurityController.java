@@ -1,5 +1,8 @@
 package com.example.demo.controller.Security;
 
+import java.util.Map;
+
+import com.example.demo.exception.PasswordNotCorrectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,11 +10,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.exception.UserAlreadyExistsException;
+import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.service.Security.SecurityService;
 import com.example.demo.service.UserDetailService;
@@ -49,6 +55,19 @@ public class SecurityController {
         } catch (Exception e) {
             logger.error("保存用户时出错: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("保存用户时发生错误");
+        }
+    }
+
+    //update password
+    @PatchMapping("/updatePwd")
+    public ResponseEntity<String> updatePassword(@RequestHeader("Authorization") String token, @RequestBody Map<String, String> oldAndNewPwd) {
+        try {
+            securityService.updatePassword(token, oldAndNewPwd);
+            return ResponseEntity.ok("Password updated successfully");
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (PasswordNotCorrectException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 

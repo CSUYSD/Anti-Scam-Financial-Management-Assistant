@@ -22,6 +22,7 @@ import com.example.demo.utility.JWT.JwtUtil;
 
 
 
+
 @Service
 public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
@@ -85,6 +86,7 @@ public class UserService {
         user.setAvatar(avatar);
         userDao.save(user);
     }
+
 
     @Transactional(readOnly = true)
     public Optional<TransactionUserDTO> getUserInfoByUserId(String token) {

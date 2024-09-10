@@ -11,7 +11,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -28,6 +27,7 @@ import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.service.UserService;
 import com.example.demo.utility.RabbitMQProducer;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -80,20 +80,6 @@ public class UserController {
     }
 
 
-    // Update avatar
-    @PatchMapping("/update/avatar")
-    public ResponseEntity<String> updateAvatar(@RequestHeader("Authorization") String token, @URL String avatar) {
-        try {
-            userService.updateAvatar(token, avatar);
-            return ResponseEntity.ok("Avatar updated successfully");
-        } catch (UserNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (Exception e) {
-            logger.error("Error updating avatar: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating avatar: " + e.getMessage());
-        }
-    }
-
     @DeleteMapping("delete/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         try {
@@ -110,6 +96,7 @@ public class UserController {
         }
     }
 
+
     @GetMapping("/info")
     public ResponseEntity<TransactionUserDTO> getCurrentUserInfo(@RequestHeader("Authorization") String token) {
         if (token == null || token.isEmpty()) {
@@ -121,6 +108,21 @@ public class UserController {
         }
         return ResponseEntity.ok(user_info);
     }
+
+    // Update avatar
+    @PatchMapping("/updateAvatar")
+    public ResponseEntity<String> updateAvatar(@RequestHeader("Authorization") String token, @URL String avatar) {
+        try {
+            userService.updateAvatar(token, avatar);
+            return ResponseEntity.ok("Avatar updated successfully");
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error updating avatar: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating avatar: " + e.getMessage());
+        }
+    }
+
 
     @PostMapping("/rabbit")
     public String testRabbitMQ(@RequestBody String message) {
