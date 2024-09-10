@@ -71,7 +71,7 @@ public class AccountController {
     public String getAccountInfo() {
         return "Account Information";
     }
-}
+
     @GetMapping("/byAccountName")
     public ResponseEntity<Account> getAccountByAccountName(@RequestParam String accountName) {
         Optional<Account> accountOptional = accountService.findByAccountName(accountName);
@@ -93,8 +93,6 @@ public class AccountController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
-
-
 
     @PostMapping("/create")
     public ResponseEntity<String> createAccount(@RequestBody Account account) {

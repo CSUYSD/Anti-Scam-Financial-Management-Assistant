@@ -65,10 +65,10 @@ public class SecurityController {
             securityService.updatePassword(token, oldAndNewPwd);
             return ResponseEntity.ok("Password updated successfully");
         } catch (UserNotFoundException e) {
+
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (PasswordNotCorrectException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
-
 }

@@ -3,7 +3,7 @@ package com.example.demo.service;
 import java.util.List;
 import java.util.Optional;
 
-import com.example.demo.Dao.RecordESDao;
+import com.example.demo.Dao.ESDao.RecordESDao;
 import com.example.demo.model.TransactionRecordES;
 import com.example.demo.service.ES.RecordSyncService;
 import org.springframework.data.domain.Page;
