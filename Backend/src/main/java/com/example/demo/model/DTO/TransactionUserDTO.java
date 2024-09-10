@@ -1,6 +1,7 @@
 package com.example.demo.model.DTO;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -31,5 +32,5 @@ public class TransactionUserDTO {
     private LocalDate dob;
     private String avatar;
 
-    private String accountName;
+    private List<String> accountName;
 }

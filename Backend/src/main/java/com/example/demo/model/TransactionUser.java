@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
@@ -49,7 +50,9 @@ public class TransactionUser {
         
         // 关联到 Account 表
         @OneToMany(mappedBy = "transactionUser")
+        @JsonManagedReference
         private List<Account> accounts = new ArrayList<>();
+
         @ManyToOne
         @JoinColumn(name = "role_id")
         private UserRole role;
