@@ -20,7 +20,7 @@ import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.service.Security.SecurityService;
-import com.example.demo.service.UserDetailService;
+import com.example.demo.service.Security.UserDetailService;
 import com.github.alenfive.rocketapi.entity.vo.LoginVo;
 
 import jakarta.validation.Valid;

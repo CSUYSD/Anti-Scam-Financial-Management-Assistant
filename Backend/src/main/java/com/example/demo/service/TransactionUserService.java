@@ -11,7 +11,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.Dao.UserDao;
+import com.example.demo.Dao.TransactionUserDao;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.DTO.TransactionUserDTO;
@@ -24,32 +24,32 @@ import com.example.demo.utility.JWT.JwtUtil;
 
 
 @Service
-public class UserService {
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-    private final UserDao userDao;
+public class TransactionUserService {
+    private static final Logger logger = LoggerFactory.getLogger(TransactionUserService.class);
+    private final TransactionUserDao transactionUserDao;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
     @Autowired
-    public UserService(UserDao userDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
-        this.userDao = userDao;
+    public TransactionUserService(TransactionUserDao transactionUserDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
+        this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
     }
 
     public List<TransactionUser> findAll() {
-        return userDao.findAll();
+        return transactionUserDao.findAll();
     }
 
     public Optional<TransactionUser> findById(Long id) {
-        return userDao.findById(id);
+        return transactionUserDao.findById(id);
     }
 
     public Optional<TransactionUser> findByUsername(String username) {
-        return userDao.findByUsername(username);
+        return transactionUserDao.findByUsername(username);
     }
 
     public void updateUser(Long id, TransactionUser updatedUser) throws UserNotFoundException {
-        Optional<TransactionUser> existingUserOptional = userDao.findById(id);
+        Optional<TransactionUser> existingUserOptional = transactionUserDao.findById(id);
 
         if (!existingUserOptional.isPresent()) {
             throw new UserNotFoundException("User not found");
@@ -60,23 +60,23 @@ public class UserService {
         existingUser.setPhone(updatedUser.getPhone());
         existingUser.setPassword(updatedUser.getPassword());
 
-        userDao.save(existingUser);
+        transactionUserDao.save(existingUser);
     }
 
     public void deleteUser(Long id) throws UserNotFoundException, DataIntegrityViolationException {
-        Optional<TransactionUser> userOptional = userDao.findById(id);
+        Optional<TransactionUser> userOptional = transactionUserDao.findById(id);
 
         if (!userOptional.isPresent()) {
             throw new UserNotFoundException("User not found");
         }
 
-        userDao.deleteById(id);
+        transactionUserDao.deleteById(id);
     }
 
     public void updateAvatar(String token, String avatar) throws UserNotFoundException {
         token = token.replace("Bearer ", "");
         Long userId = jwtUtil.getUserIdFromToken(token);
-        Optional<TransactionUser> userOptional = userDao.findById(userId);
+        Optional<TransactionUser> userOptional = transactionUserDao.findById(userId);
 
         if (!userOptional.isPresent()) {
             throw new UserNotFoundException("User not found");
@@ -84,7 +84,7 @@ public class UserService {
         
         TransactionUser user = userOptional.get();
         user.setAvatar(avatar);
-        userDao.save(user);
+        transactionUserDao.save(user);
     }
 
 
@@ -98,7 +98,7 @@ public class UserService {
         if (loginUser != null) {
             return Optional.of(getUserInfoFromRedis(loginUser));
         } else {
-            return userDao.findById(userId)
+            return transactionUserDao.findById(userId)
                     .map(this::convertToDTO);
         }
     }
