@@ -5,7 +5,7 @@ import router from "@/router";
 
 
 const request = axios.create({
-    baseURL: "",
+    baseURL: "http://localhost:8080",
     timeout: 10000,
 });
 
@@ -24,14 +24,14 @@ request.interceptors.request.use((config)=> {
 request.interceptors.response.use((response)=> {
     // 2xx 范围内的状态码都会触发该函数。
 
-    return response.data
+    return response
 }, (error)=> {
     // 超出 2xx 范围的状态码都会触发该函数。
 
     console.log(error);
     if (error.response && error.response.status === 401) {
         removeToken();
-        router.navigate('/login');
+        router.navigate('/login').then(r => console.log(r));
         window.location.reload();
     }
     return Promise.reject(error)
