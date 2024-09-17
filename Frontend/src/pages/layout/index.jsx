@@ -12,12 +12,18 @@ import List from '@mui/material/List';
 import Badge from '@mui/material/Badge';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import { mainListItems, secondaryListItems } from './ListItems';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import SettingsIcon from '@mui/icons-material/Settings';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
-import { motion, AnimatePresence } from 'framer-motion';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Link as MuiLink } from '@mui/material';
+import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { mainListItems, secondaryListItems } from './ListItems';
+
+// Import the logoutAPI function (assuming it's defined in a separate file)
+import { logoutAPI } from '@/api/user.jsx'; // Adjust the import path as needed
 
 const drawerWidth = 240;
 
@@ -65,24 +71,23 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
     }),
 );
 
-const MotionBox = motion(Box);
-
 function Copyright(props) {
     return (
         <Typography variant="body2" color="text.secondary" align="center" {...props}>
             {'Copyright © '}
-            <Link color="inherit" href="https://mui.com/">
+            <MuiLink component={RouterLink} color="inherit" to="/">
                 Your Website
-            </Link>{' '}
+            </MuiLink>{' '}
             {new Date().getFullYear()}
             {'.'}
         </Typography>
     );
 }
 
-const Layout = () => {
+export default function Layout() {
     const [open, setOpen] = useState(true);
     const [mode, setMode] = useState('light');
+    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -109,10 +114,6 @@ const Layout = () => {
                                 default: '#121212',
                                 paper: '#1e1e1e',
                             },
-                            text: {
-                                primary: '#ffffff',
-                                secondary: '#b0bec5',
-                            },
                         }),
                 },
                 components: {
@@ -137,7 +138,7 @@ const Layout = () => {
     );
 
     const toggleDrawer = () => {
-        setOpen(!open);
+        setOpen((prevOpen) => !prevOpen);
     };
 
     const getPageTitle = (path) => {
@@ -147,12 +148,35 @@ const Layout = () => {
         return path.substring(1).charAt(0).toUpperCase() + path.slice(2);
     };
 
-    const handleClick = () => {
-        navigate('userprofile')
-    }
-
     const toggleColorMode = () => {
         setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+    };
+
+    const handleLogout = () => {
+        setLogoutDialogOpen(true);
+    };
+
+    const handleLogoutConfirm = async () => {
+        setLogoutDialogOpen(false);
+        try {
+            await logoutAPI(); // Call the logout API
+            navigate('/login'); // Navigate to the login page after successful logout
+        } catch (error) {
+            console.error('Logout failed:', error);
+            // Handle logout error (e.g., show an error message to the user)
+        }
+    };
+
+    const handleLogoutCancel = () => {
+        setLogoutDialogOpen(false);
+    };
+
+    const handleAccountClick = () => {
+        navigate('/account');
+    };
+
+    const handleUserProfileClick = () => {
+        navigate('/userprofile');
     };
 
     return (
@@ -189,8 +213,11 @@ const Layout = () => {
                         <IconButton color="inherit" onClick={toggleColorMode}>
                             {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                         </IconButton>
-                        <IconButton color="inherit" onClick={handleClick}>
-                            <Badge color="secondary" >
+                        <IconButton color="inherit" onClick={handleAccountClick} aria-label="account settings">
+                            <SettingsIcon />
+                        </IconButton>
+                        <IconButton color="inherit" onClick={handleUserProfileClick} aria-label="user profile">
+                            <Badge color="secondary">
                                 <AccountCircleIcon />
                             </Badge>
                         </IconButton>
@@ -215,8 +242,19 @@ const Layout = () => {
                         <Divider sx={{ my: 1 }} />
                         {secondaryListItems}
                     </List>
+                    <Box sx={{ mt: 'auto', p: 2 }}>
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            startIcon={<LogoutIcon />}
+                            onClick={handleLogout}
+                            fullWidth
+                        >
+                            Logout
+                        </Button>
+                    </Box>
                 </Drawer>
-                <MotionBox
+                <Box
                     component="main"
                     sx={{
                         backgroundColor: (theme) =>
@@ -229,22 +267,29 @@ const Layout = () => {
                     }}
                 >
                     <Toolbar />
-                    <AnimatePresence mode="wait">
-                        <MotionBox
-                            key={location.pathname}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <Outlet />
-                        </MotionBox>
-                    </AnimatePresence>
+                    <Outlet />
                     <Copyright sx={{ pt: 4, pb: 4 }} />
-                </MotionBox>
+                </Box>
             </Box>
+            <Dialog
+                open={logoutDialogOpen}
+                onClose={handleLogoutCancel}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">{"Confirm Logout"}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        Are you sure you want to log out?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleLogoutCancel}>Cancel</Button>
+                    <Button onClick={handleLogoutConfirm} autoFocus>
+                        Logout
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </ThemeProvider>
     );
-};
-
-export default Layout;
+}
