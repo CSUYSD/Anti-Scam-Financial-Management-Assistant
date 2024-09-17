@@ -55,7 +55,7 @@ INSERT INTO transaction_users (username, password, email, phone, dob, role_id, a
 --     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
 --     private List<TransactionRecord> transactionRecords;
 -- }
-CREATE TABLE accounts (
+CREATE TABLE account (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     account_name VARCHAR(255) NOT NULL,
     balance DECIMAL(10, 2) NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE accounts (
 --     private Account account; // 一个账户对应多个交易记录
 -- }
 
-CREATE TABLE transaction_records (
+CREATE TABLE transaction_record (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     income_or_expense VARCHAR(20) NOT NULL,
     transaction_type VARCHAR(20) NOT NULL,
@@ -90,5 +90,5 @@ CREATE TABLE transaction_records (
     transaction_time TIMESTAMP NOT NULL,
     transaction_description VARCHAR(255),
     account_id BIGINT,
-    FOREIGN KEY (account_id) REFERENCES accounts(id)
+    FOREIGN KEY (account_id) REFERENCES account(id)
 );
