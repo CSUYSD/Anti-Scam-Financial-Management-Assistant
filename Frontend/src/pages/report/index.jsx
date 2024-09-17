@@ -1,7 +1,31 @@
 import React, { useState } from 'react'
-import { BarChart, PieChart, Download, Send, CheckCircle } from 'lucide-react'
+import {
+    Box,
+    Typography,
+    TextField,
+    Button,
+    Card,
+    CardContent,
+    Grid,
+    useTheme,
+    IconButton,
+    Fade,
+} from '@mui/material'
+import {
+    BarChart as BarChartIcon,
+    PieChart as PieChartIcon,
+    Download as DownloadIcon,
+    Send as SendIcon,
+    CheckCircle as CheckCircleIcon,
+    Close as CloseIcon
+} from '@mui/icons-material'
+import { motion, AnimatePresence } from 'framer-motion'
+
+const MotionCard = motion(Card)
+const MotionBox = motion(Box)
 
 export default function Reports() {
+    const theme = useTheme()
     const [message, setMessage] = useState('')
     const [showSuccess, setShowSuccess] = useState(false)
     const [chatHistory, setChatHistory] = useState([
@@ -19,7 +43,7 @@ export default function Reports() {
         }
     }
 
-    const handleAction = (action) => {
+    const handleAction = (action) =>  {
         console.log(`Generating ${action} report`)
         setChatHistory(prev => [...prev, { sender: 'AI', message: `I'm generating a ${action} report for you. This may take a moment.` }])
         setShowSuccess(true)
@@ -27,67 +51,126 @@ export default function Reports() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 p-8">
-            {showSuccess && (
-                <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-md flex items-center text-lg z-50">
-                    <CheckCircle className="mr-2 h-6 w-6" />
-                    Report generated successfully
-                </div>
-            )}
-            <div className="w-full max-w-6xl mx-auto bg-white rounded-xl shadow-md p-8">
-                <h2 className="text-4xl font-bold mb-8 text-gray-800">Financial Reports</h2>
+        <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 4 }}>
+            <Fade in={showSuccess}>
+                <Box sx={{
+                    position: 'fixed',
+                    top: theme.spacing(2),
+                    right: theme.spacing(2),
+                    bgcolor: 'success.main',
+                    color: 'white',
+                    px: 3,
+                    py: 1.5,
+                    borderRadius: 2,
+                    boxShadow: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    zIndex: 9999,
+                }}>
+                    <CheckCircleIcon sx={{ mr: 1 }} />
+                    <Typography variant="body1">Report generated successfully</Typography>
+                    <IconButton size="small" onClick={() => setShowSuccess(false)} sx={{ ml: 2, color: 'white' }}>
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+            </Fade>
+            <MotionCard
+                sx={{ maxWidth: 'xl', mx: 'auto' }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+            >
+                <CardContent>
+                    <Typography variant="h4" sx={{ mb: 4 }}>Financial Reports</Typography>
 
-                {/* Chat History */}
-                <div className="mb-8 h-96 overflow-y-auto bg-gray-50 p-6 rounded-lg shadow-inner">
-                    {chatHistory.map((chat, index) => (
-                        <div key={index} className={`mb-4 ${chat.sender === 'User' ? 'text-right' : 'text-left'}`}>
-                            <p className={`font-bold ${chat.sender === 'User' ? 'text-blue-600' : 'text-green-600'}`}>
-                                {chat.sender}:
-                            </p>
-                            <p className={`inline-block px-4 py-2 rounded-lg shadow ${chat.sender === 'User' ? 'bg-blue-100' : 'bg-green-100'}`}>
-                                {chat.message}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Message Input */}
-                <div className="flex items-center mb-6">
-                    <input
-                        type="text"
-                        placeholder="Ask about financial reports"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        className="flex-grow px-4 py-2 text-lg border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 shadow"
-                    />
-                    <button
-                        onClick={handleSendMessage}
-                        className="bg-blue-500 text-white px-6 py-2 rounded-r-md hover:bg-blue-600 transition-colors duration-200 flex items-center"
+                    {/* Chat History */}
+                    <MotionBox
+                        sx={{ mb: 4, height: 400, overflowY: 'auto', bgcolor: 'background.paper', p: 3, borderRadius: 2 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
                     >
-                        <Send className="h-6 w-6" />
-                    </button>
-                </div>
+                        <AnimatePresence>
+                            {chatHistory.map((chat, index) => (
+                                <MotionBox
+                                    key={index}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.3 }}
+                                    sx={{ mb: 2, textAlign: chat.sender === 'User' ? 'right' : 'left' }}
+                                >
+                                    <Typography variant="subtitle2" sx={{ color: chat.sender === 'User' ? 'primary.main' : 'secondary.main' }}>
+                                        {chat.sender}:
+                                    </Typography>
+                                    <Typography variant="body1" sx={{
+                                        display: 'inline-block',
+                                        px: 2,
+                                        py: 1,
+                                        borderRadius: 1,
+                                        bgcolor: chat.sender === 'User' ? 'primary.light' : 'secondary.light',
+                                        color: chat.sender === 'User' ? 'primary.contrastText' : 'secondary.contrastText'
+                                    }}>
+                                        {chat.message}
+                                    </Typography>
+                                </MotionBox>
+                            ))}
+                        </AnimatePresence>
+                    </MotionBox>
 
-                {/* Action Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    {[
-                        { label: 'Income Statement', icon: BarChart },
-                        { label: 'Balance Sheet', icon: PieChart },
-                        { label: 'Cash Flow', icon: Download },
-                    ].map(({ label, icon: Icon }) => (
-                        <button
-                            key={label}
-                            onClick={() => handleAction(label)}
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-colors duration-300 flex items-center justify-center text-lg font-semibold shadow-lg transform hover:scale-105"
+                    {/* Message Input */}
+                    <Box sx={{ display: 'flex', mb: 3 }}>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            placeholder="Ask about financial reports"
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            sx={{ mr: 2 }}
+                        />
+                        <Button
+                            variant="contained"
+                            onClick={handleSendMessage}
+                            startIcon={<SendIcon />}
                         >
-                            <Icon className="h-6 w-6 mr-2" />
-                            {label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-        </div>
+                            Send
+                        </Button>
+                    </Box>
+
+                    {/* Action Buttons */}
+                    <Grid container spacing={3}>
+                        {[
+                            { label: 'Income Statement', icon: BarChartIcon },
+                            { label: 'Balance Sheet', icon: PieChartIcon },
+                            { label: 'Cash Flow', icon: DownloadIcon },
+                        ].map(({ label, icon: Icon }, index) => (
+                            <Grid item xs={12} sm={4} key={label}>
+                                <MotionBox
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                                >
+                                    <Button
+                                        fullWidth
+                                        variant="contained"
+                                        onClick={() => handleAction(label)}
+                                        startIcon={<Icon />}
+                                        sx={{
+                                            py: 2,
+                                            background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.primary.light} 90%)`,
+                                            '&:hover': {
+                                                background: `linear-gradient(45deg, ${theme.palette.primary.dark} 30%, ${theme.palette.primary.main} 90%)`,
+                                            }
+                                        }}
+                                    >
+                                        {label}
+                                    </Button>
+                                </MotionBox>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </CardContent>
+            </MotionCard>
+        </Box>
     )
 }
-
-

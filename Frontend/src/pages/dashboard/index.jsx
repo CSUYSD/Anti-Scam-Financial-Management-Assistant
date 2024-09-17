@@ -1,87 +1,178 @@
 import React from 'react'
-import { BarChart, DollarSign, ShoppingCart } from 'lucide-react'
+import {
+    Typography,
+    Container,
+    Grid,
+    Paper,
+    Box,
+    List,
+    ListItem,
+    ListItemText,
+    Divider,
+    useTheme,
+} from '@mui/material'
+import {
+    AccountBalance as AccountBalanceIcon,
+    TrendingUp as TrendingUpIcon,
+    TrendingDown as TrendingDownIcon,
+} from '@mui/icons-material'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { motion } from 'framer-motion'
 
-const Chart = () => (
-    <div className="h-64 flex items-center justify-center bg-gray-100 rounded-lg">
-        <BarChart className="h-32 w-32 text-blue-500" />
-        <span className="ml-4 text-lg font-semibold">Chart Placeholder</span>
-    </div>
-)
+const weeklyData = [
+    { day: 'Mon', income: 1000, expense: 800 },
+    { day: 'Tue', income: 1500, expense: 1000 },
+    { day: 'Wed', income: 1200, expense: 1100 },
+    { day: 'Thu', income: 1800, expense: 1300 },
+    { day: 'Fri', income: 2000, expense: 1500 },
+    { day: 'Sat', income: 2200, expense: 1800 },
+    { day: 'Sun', income: 1800, expense: 2000 },
+]
 
-const Deposits = () => (
-    <div className="h-full flex flex-col justify-between">
-        <div>
-            <h2 className="text-xl font-semibold mb-2">Recent Deposits</h2>
-            <p className="text-3xl font-bold">$3,024.00</p>
-            <p className="text-gray-500">on 15 March, 2024</p>
-        </div>
-        <a href="#" className="text-blue-500 hover:text-blue-700 transition-colors duration-200">
-            View balance
-        </a>
-    </div>
-)
+const recentRecords = [
+    { id: 1, description: 'Salary', amount: 5000, type: 'income' },
+    { id: 2, description: 'Rent', amount: -1500, type: 'expense' },
+    { id: 3, description: 'Groceries', amount: -200, type: 'expense' },
+    { id: 4, description: 'Freelance work', amount: 1000, type: 'income' },
+    { id: 5, description: 'Utilities', amount: -150, type: 'expense' },
+]
 
-const Orders = () => (
-    <div>
-        <h2 className="text-xl font-semibold mb-4">Recent Orders</h2>
-        <table className="w-full">
-            <thead>
-            <tr className="bg-gray-50">
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Name</th>
-                <th className="px-4 py-2 text-left">Ship To</th>
-                <th className="px-4 py-2 text-left">Payment Method</th>
-                <th className="px-4 py-2 text-left">Sale Amount</th>
-            </tr>
-            </thead>
-            <tbody>
-            {[
-                { date: '16 Mar, 2024', name: 'Elvis Presley', shipTo: 'Tupelo, MS', paymentMethod: 'VISA ⠀•••• 3719', amount: 312.44 },
-                { date: '16 Mar, 2024', name: 'Paul McCartney', shipTo: 'London, UK', paymentMethod: 'VISA ⠀•••• 2574', amount: 866.99 },
-                { date: '16 Mar, 2024', name: 'Tom Scholz', shipTo: 'Boston, MA', paymentMethod: 'MC ⠀•••• 1253', amount: 100.81 },
-                { date: '16 Mar, 2024', name: 'Michael Jackson', shipTo: 'Gary, IN', paymentMethod: 'AMEX ⠀•••• 2000', amount: 654.39 },
-                { date: '15 Mar, 2024', name: 'Bruce Springsteen', shipTo: 'Long Branch, NJ', paymentMethod: 'VISA ⠀•••• 5919', amount: 212.79 },
-            ].map((order, index) => (
-                <tr key={index} className="border-t border-gray-200">
-                    <td className="px-4 py-2">{order.date}</td>
-                    <td className="px-4 py-2">{order.name}</td>
-                    <td className="px-4 py-2">{order.shipTo}</td>
-                    <td className="px-4 py-2">{order.paymentMethod}</td>
-                    <td className="px-4 py-2">${order.amount.toFixed(2)}</td>
-                </tr>
-            ))}
-            </tbody>
-        </table>
-        <div className="mt-4">
-            <a href="#" className="text-blue-500 hover:text-blue-700 transition-colors duration-200">
-                See more orders
-            </a>
-        </div>
-    </div>
-)
+const MotionPaper = motion(Paper)
+
+const BalanceCard = ({ balance }) => {
+    const theme = useTheme()
+    return (
+        <MotionPaper
+            elevation={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            sx={{
+                p: 3,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                color: 'white',
+                height: '100%',
+                borderRadius: 4,
+            }}
+        >
+            <AccountBalanceIcon sx={{ fontSize: 48, mb: 2 }} />
+            <Typography variant="h6" component="div" gutterBottom>Current Balance</Typography>
+            <Typography variant="h3" component="div">${balance.toLocaleString()}</Typography>
+        </MotionPaper>
+    )
+}
+
+const RecentRecordsList = ({ records }) => {
+    const theme = useTheme()
+    return (
+        <MotionPaper
+            elevation={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            sx={{ p: 3, borderRadius: 4 }}
+        >
+            <Typography variant="h6" gutterBottom>Recent Records</Typography>
+            <List>
+                {records.map((record, index) => (
+                    <motion.div
+                        key={record.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                        <ListItem>
+                            <ListItemText
+                                primary={record.description}
+                                secondary={record.type === 'income' ? 'Income' : 'Expense'}
+                            />
+                            <Typography
+                                variant="body2"
+                                color={record.type === 'income' ? 'success.main' : 'error.main'}
+                                sx={{ fontWeight: 'bold' }}
+                            >
+                                {record.type === 'income' ? '+' : '-'}${Math.abs(record.amount).toLocaleString()}
+                            </Typography>
+                        </ListItem>
+                        {index < records.length - 1 && <Divider />}
+                    </motion.div>
+                ))}
+            </List>
+        </MotionPaper>
+    )
+}
+
+const WeeklyChart = ({ data }) => {
+    const theme = useTheme()
+    return (
+        <MotionPaper
+            elevation={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            sx={{ p: 3, borderRadius: 4 }}
+        >
+            <Typography variant="h6" gutterBottom>Weekly Income/Expense</Typography>
+            <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                    <XAxis dataKey="day" stroke={theme.palette.text.secondary} />
+                    <YAxis stroke={theme.palette.text.secondary} />
+                    <Tooltip
+                        contentStyle={{
+                            background: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                            borderRadius: theme.shape.borderRadius,
+                        }}
+                    />
+                    <Legend />
+                    <Line
+                        type="monotone"
+                        dataKey="income"
+                        stroke={theme.palette.success.main}
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        activeDot={{ r: 6 }}
+                        name="Income"
+                    />
+                    <Line
+                        type="monotone"
+                        dataKey="expense"
+                        stroke={theme.palette.error.main}
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        activeDot={{ r: 6 }}
+                        name="Expense"
+                    />
+                </LineChart>
+            </ResponsiveContainer>
+        </MotionPaper>
+    )
+}
 
 export default function Dashboard() {
+    const currentBalance = 10000
+    const theme = useTheme()
+
     return (
-        <div className="min-h-screen bg-gray-100 p-8">
-            <div className="w-full max-w-7xl mx-auto">
-                <h1 className="text-3xl font-semibold mb-8">Dashboard</h1>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-                    <div className="md:col-span-2">
-                        <div className="bg-white rounded-lg shadow-lg p-6">
-                            <h2 className="text-xl font-semibold mb-4">Sales Chart</h2>
-                            <Chart />
-                        </div>
-                    </div>
-                    <div>
-                        <div className="bg-white rounded-lg shadow-lg p-6 h-full">
-                            <Deposits />
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-white rounded-lg shadow-lg p-6">
-                    <Orders />
-                </div>
-            </div>
-        </div>
+        <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
+            <Container maxWidth="lg">
+                <Grid container spacing={3}>
+                    <Grid item xs={12} md={4}>
+                        <BalanceCard balance={currentBalance} />
+                    </Grid>
+                    <Grid item xs={12} md={8}>
+                        <WeeklyChart data={weeklyData} />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <RecentRecordsList records={recentRecords} />
+                    </Grid>
+                </Grid>
+            </Container>
+        </Box>
     )
 }

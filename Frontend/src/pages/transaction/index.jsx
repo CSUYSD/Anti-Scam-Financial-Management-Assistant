@@ -1,20 +1,41 @@
 import React, { useState } from 'react'
-import { Search, Plus, Edit2, Trash2, Download, Upload, CheckCircle, X } from 'lucide-react'
-import { Button, TextField, Checkbox, FormControlLabel } from '@mui/material'
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableRow,
+    Box,
+    Button,
     Card,
     CardContent,
     CardHeader,
-    Typography,
+    Checkbox,
     Collapse,
+    FormControlLabel,
+    Grid,
+    IconButton,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TextField,
+    Typography,
+    useTheme,
+    Fade,
 } from '@mui/material'
+import {
+    Search as SearchIcon,
+    Add as AddIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon,
+    Upload as UploadIcon,
+    CheckCircle as CheckCircleIcon,
+    Close as CloseIcon
+} from '@mui/icons-material'
+import { motion, AnimatePresence } from 'framer-motion'
+
+const MotionCard = motion(Card)
 
 export default function Transaction() {
+    const theme = useTheme()
     const [searchTerm, setSearchTerm] = useState('')
     const [showSuccess, setShowSuccess] = useState(false)
     const [selectedTransactions, setSelectedTransactions] = useState([])
@@ -78,13 +99,13 @@ export default function Transaction() {
     }
 
     const handleEditTransaction = (transaction) => {
-        setEditingTransaction(transaction)
+        setEditingTransaction(transaction.id)
         setTransactionForm(transaction)
         setShowAddForm(true)
     }
 
     const handleUpdateTransaction = () => {
-        setTransactions(prev => prev.map(t => t.id === editingTransaction.id ? transactionForm : t))
+        setTransactions(prev => prev.map(t => t.id === editingTransaction ? transactionForm : t))
         setEditingTransaction(null)
         setTransactionForm({
             income_or_expense: 'Expense',
@@ -100,110 +121,140 @@ export default function Transaction() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 p-8">
-            {showSuccess && (
-                <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-md flex items-center text-lg z-50">
-                    <CheckCircle className="mr-2 h-6 w-6" />
-                    Transaction successful
-                    <button onClick={() => setShowSuccess(false)} className="ml-4">
-                        <X className="h-5 w-5" />
-                    </button>
-                </div>
-            )}
-            <Card className="w-full max-w-7xl mx-auto">
+        <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3 }}>
+            <Fade in={showSuccess}>
+                <Box sx={{
+                    position: 'fixed',
+                    top: theme.spacing(2),
+                    right: theme.spacing(2),
+                    bgcolor: 'success.main',
+                    color: 'white',
+                    px: 3,
+                    py: 1.5,
+                    borderRadius: 2,
+                    boxShadow: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    zIndex: 9999,
+                }}>
+                    <CheckCircleIcon sx={{ mr: 1 }} />
+                    <Typography variant="body1">Transaction successful</Typography>
+                    <IconButton size="small" onClick={() => setShowSuccess(false)} sx={{ ml: 2, color: 'white' }}>
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+            </Fade>
+            <MotionCard
+                sx={{ maxWidth: 'xl', mx: 'auto' }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+            >
                 <CardHeader title={<Typography variant="h4">Transaction Records</Typography>} />
                 <CardContent>
-                    <div className="flex mb-8">
+                    <Box sx={{ display: 'flex', mb: 4 }}>
                         <TextField
                             label="Search Transactions"
                             variant="outlined"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             fullWidth
-                            size="large"
+                            size="medium"
                         />
-                        <Button onClick={handleSearch} variant="contained" size="large" className="ml-4">
-                            <Search className="h-6 w-6 mr-2" />
+                        <Button onClick={handleSearch} variant="contained" size="large" sx={{ ml: 2 }}>
+                            <SearchIcon sx={{ mr: 1 }} />
                             Search
                         </Button>
-                    </div>
+                    </Box>
 
                     <Button
                         onClick={() => setShowAddForm(!showAddForm)}
                         variant="contained"
                         size="large"
-                        className="mb-6"
+                        sx={{ mb: 3 }}
                     >
-                        <Plus className="h-6 w-6 mr-2" />
+                        <AddIcon sx={{ mr: 1 }} />
                         {showAddForm ? 'Hide Form' : 'Add Transaction'}
                     </Button>
 
                     <Collapse in={showAddForm}>
-                        <div className="mb-8 p-6 bg-gray-50 rounded-lg">
-                            <Typography variant="h6" className="mb-4">
+                        <Box sx={{ mb: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
+                            <Typography variant="h6" sx={{ mb: 2 }}>
                                 {editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}
                             </Typography>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <TextField
-                                    label="Transaction Type"
-                                    variant="outlined"
-                                    value={transactionForm.transaction_type}
-                                    onChange={(e) => setTransactionForm({ ...transactionForm, transaction_type: e.target.value })}
-                                    fullWidth
-                                />
-                                <TextField
-                                    label="Amount"
-                                    variant="outlined"
-                                    type="number"
-                                    value={transactionForm.amount}
-                                    onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
-                                    fullWidth
-                                />
-                                <TextField
-                                    label="Transaction Method"
-                                    variant="outlined"
-                                    value={transactionForm.transaction_method}
-                                    onChange={(e) => setTransactionForm({ ...transactionForm, transaction_method: e.target.value })}
-                                    fullWidth
-                                />
-                                <TextField
-                                    label="Transaction Time"
-                                    variant="outlined"
-                                    type="datetime-local"
-                                    value={transactionForm.transaction_time}
-                                    onChange={(e) => setTransactionForm({ ...transactionForm, transaction_time: e.target.value })}
-                                    fullWidth
-                                    InputLabelProps={{ shrink: true }}
-                                />
-                                <TextField
-                                    label="Transaction Description"
-                                    variant="outlined"
-                                    value={transactionForm.transaction_description}
-                                    onChange={(e) => setTransactionForm({ ...transactionForm, transaction_description: e.target.value })}
-                                    fullWidth
-                                />
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={transactionForm.income_or_expense === 'Income'}
-                                            onChange={(e) => setTransactionForm({ ...transactionForm, income_or_expense: e.target.checked ? 'Income' : 'Expense' })}
-                                        />
-                                    }
-                                    label="Is Income"
-                                />
-                            </div>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        label="Transaction Type"
+                                        variant="outlined"
+                                        value={transactionForm.transaction_type}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, transaction_type: e.target.value })}
+                                        fullWidth
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        label="Amount"
+                                        variant="outlined"
+                                        type="number"
+                                        value={transactionForm.amount}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
+                                        fullWidth
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        label="Transaction Method"
+                                        variant="outlined"
+                                        value={transactionForm.transaction_method}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, transaction_method: e.target.value })}
+                                        fullWidth
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        label="Transaction Time"
+                                        variant="outlined"
+                                        type="datetime-local"
+                                        value={transactionForm.transaction_time}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, transaction_time: e.target.value })}
+                                        fullWidth
+                                        InputLabelProps={{ shrink: true }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        label="Transaction Description"
+                                        variant="outlined"
+                                        value={transactionForm.transaction_description}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, transaction_description: e.target.value })}
+                                        fullWidth
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={transactionForm.income_or_expense === 'Income'}
+                                                onChange={(e) => setTransactionForm({ ...transactionForm, income_or_expense: e.target.checked ? 'Income' : 'Expense' })}
+                                            />
+                                        }
+                                        label="Is Income"
+                                    />
+                                </Grid>
+                            </Grid>
                             <Button
                                 onClick={editingTransaction ? handleUpdateTransaction : handleAddTransaction}
                                 variant="contained"
                                 size="large"
-                                className="mt-6"
+                                sx={{ mt: 3 }}
                             >
                                 {editingTransaction ? 'Update Transaction' : 'Add Transaction'}
                             </Button>
-                        </div>
+                        </Box>
                     </Collapse>
 
-                    <div className="overflow-x-auto">
+                    <TableContainer>
                         <Table>
                             <TableHead>
                                 <TableRow>
@@ -227,49 +278,67 @@ export default function Transaction() {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {transactions.map((transaction) => (
-                                    <TableRow key={transaction.id}>
-                                        <TableCell>
-                                            <Checkbox
-                                                checked={selectedTransactions.includes(transaction.id)}
-                                                onChange={() => handleSelectTransaction(transaction.id)}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            {transaction.income_or_expense} - {transaction.transaction_type}
-                                        </TableCell>
-                                        <TableCell className={transaction.income_or_expense === 'Expense' ? 'text-red-500' : 'text-green-500'}>
-                                            ${transaction.amount.toFixed(2)}
-                                        </TableCell>
-                                        <TableCell>{transaction.transaction_method}</TableCell>
-                                        <TableCell>{transaction.transaction_time}</TableCell>
-                                        <TableCell>{transaction.transaction_description}</TableCell>
-                                        <TableCell>
-                                            <Button onClick={() => handleEditTransaction(transaction)} variant="outlined" className="mr-2">
-                                                <Edit2 className="h-5 w-5" />
-                                            </Button>
-                                            <Button onClick={() => setTransactions(prev => prev.filter(t => t.id !== transaction.id))} variant="outlined" color="error">
-                                                <Trash2 className="h-5 w-5" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                <AnimatePresence>
+                                    {transactions.map((transaction) => (
+                                        <motion.tr
+                                            key={transaction.id}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <TableCell>
+                                                <Checkbox
+                                                    checked={selectedTransactions.includes(transaction.id)}
+                                                    onChange={() => handleSelectTransaction(transaction.id)}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                {transaction.income_or_expense} - {transaction.transaction_type}
+                                            </TableCell>
+                                            <TableCell sx={{ color: transaction.income_or_expense === 'Expense' ? 'error.main' : 'success.main' }}>
+                                                ${Number(transaction.amount).toFixed(2)}
+                                            </TableCell>
+                                            <TableCell>{transaction.transaction_method}</TableCell>
+                                            <TableCell>{transaction.transaction_time}</TableCell>
+                                            <TableCell>{transaction.transaction_description}</TableCell>
+                                            <TableCell>
+                                                <IconButton onClick={() => handleEditTransaction(transaction)} color="primary">
+                                                    <EditIcon />
+                                                </IconButton>
+                                                <IconButton onClick={() => setTransactions(prev => prev.filter(t => t.id !== transaction.id))} color="error">
+                                                    <DeleteIcon />
+                                                </IconButton>
+                                            </TableCell>
+                                        </motion.tr>
+                                    ))}
+                                </AnimatePresence>
                             </TableBody>
                         </Table>
-                    </div>
+                    </TableContainer>
 
-                    <div className="mt-8 flex justify-between">
-                        <Button onClick={handleBatchDelete} variant="contained" color="error" size="large" disabled={selectedTransactions.length === 0}>
-                            <Trash2 className="h-6 w-6 mr-2" />
+                    <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between' }}>
+                        <Button
+                            onClick={handleBatchDelete}
+                            variant="contained"
+                            color="error"
+                            size="large"
+                            disabled={selectedTransactions.length === 0}
+                            startIcon={<DeleteIcon />}
+                        >
                             Batch Delete ({selectedTransactions.length})
                         </Button>
-                        <Button onClick={() => handleAction('Upload CSV')} variant="contained" size="large">
-                            <Upload className="h-6 w-6 mr-2" />
+                        <Button
+                            onClick={() => handleAction('Upload CSV')}
+                            variant="contained"
+                            size="large"
+                            startIcon={<UploadIcon />}
+                        >
                             Upload CSV
                         </Button>
-                    </div>
+                    </Box>
                 </CardContent>
-            </Card>
-        </div>
+            </MotionCard>
+        </Box>
     )
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import MuiAppBar from '@mui/material/AppBar';
 import MuiDrawer from '@mui/material/Drawer';
@@ -13,8 +13,11 @@ import Badge from '@mui/material/Badge';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { mainListItems, secondaryListItems } from './ListItems';
-import {Link, Outlet, useLocation, useNavigate} from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const drawerWidth = 240;
 
@@ -62,7 +65,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
     }),
 );
 
-const defaultTheme = createTheme();
+const MotionBox = motion(Box);
 
 function Copyright(props) {
     return (
@@ -78,31 +81,88 @@ function Copyright(props) {
 }
 
 const Layout = () => {
-    const [open, setOpen] = React.useState(true);
+    const [open, setOpen] = useState(true);
+    const [mode, setMode] = useState('light');
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const theme = useMemo(
+        () =>
+            createTheme({
+                palette: {
+                    mode,
+                    ...(mode === 'light'
+                        ? {
+                            primary: {
+                                main: '#3a7bd5',
+                            },
+                            background: {
+                                default: '#f5f7fa',
+                                paper: '#ffffff',
+                            },
+                        }
+                        : {
+                            primary: {
+                                main: '#90caf9',
+                            },
+                            background: {
+                                default: '#121212',
+                                paper: '#1e1e1e',
+                            },
+                            text: {
+                                primary: '#ffffff',
+                                secondary: '#b0bec5',
+                            },
+                        }),
+                },
+                components: {
+                    MuiButton: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: 8,
+                            },
+                        },
+                    },
+                    MuiCard: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: 12,
+                                boxShadow: mode === 'dark' ? '0 4px 6px rgba(0, 0, 0, 0.2)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            },
+                        },
+                    },
+                },
+            }),
+        [mode],
+    );
+
     const toggleDrawer = () => {
         setOpen(!open);
     };
 
-    const location = useLocation();
     const getPageTitle = (path) => {
         if (path === "/") {
-            return "dashboard";
+            return "Dashboard";
         }
-        return path.substring(1);
+        return path.substring(1).charAt(0).toUpperCase() + path.slice(2);
     };
+
     const handleClick = () => {
         navigate('userprofile')
     }
 
+    const toggleColorMode = () => {
+        setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+    };
+
     return (
-        <ThemeProvider theme={defaultTheme}>
+        <ThemeProvider theme={theme}>
             <Box sx={{ display: 'flex' }}>
                 <CssBaseline />
                 <AppBar position="absolute" open={open}>
                     <Toolbar
                         sx={{
-                            pr: '24px', // keep right padding when drawer closed
+                            pr: '24px',
                         }}
                     >
                         <IconButton
@@ -124,11 +184,12 @@ const Layout = () => {
                             noWrap
                             sx={{ flexGrow: 1 }}
                         >
-                            {/*print path name as the title name*/}
-                            <>{getPageTitle(location.pathname)}</>
+                            {getPageTitle(location.pathname)}
                         </Typography>
+                        <IconButton color="inherit" onClick={toggleColorMode}>
+                            {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                        </IconButton>
                         <IconButton color="inherit" onClick={handleClick}>
-                            {/*this is button for user page*/}
                             <Badge color="secondary" >
                                 <AccountCircleIcon />
                             </Badge>
@@ -151,10 +212,11 @@ const Layout = () => {
                     <Divider />
                     <List component="nav">
                         {mainListItems}
+                        <Divider sx={{ my: 1 }} />
                         {secondaryListItems}
                     </List>
                 </Drawer>
-                <Box
+                <MotionBox
                     component="main"
                     sx={{
                         backgroundColor: (theme) =>
@@ -167,9 +229,19 @@ const Layout = () => {
                     }}
                 >
                     <Toolbar />
-                    <Outlet />
-                    <Copyright sx={{ pt: 4 }} />
-                </Box>
+                    <AnimatePresence mode="wait">
+                        <MotionBox
+                            key={location.pathname}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <Outlet />
+                        </MotionBox>
+                    </AnimatePresence>
+                    <Copyright sx={{ pt: 4, pb: 4 }} />
+                </MotionBox>
             </Box>
         </ThemeProvider>
     );
