@@ -2,17 +2,48 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PropTypes from 'prop-types'
 import { logoutAPI } from "@/api/user.jsx"
-import {getToken, removeToken} from "@/utils/index.jsx";
+import { getToken, removeToken } from "@/utils/index.jsx"
+import { XMarkIcon } from '@heroicons/react/24/solid'
 
-function AccountCard({ account, onSelect }) {
+const shakeAnimation = {
+    hover: {
+        x: [0, -5, 5, -5, 5, 0],
+        transition: {
+            duration: 0.4,
+        },
+    },
+}
+
+function AccountCard({ account, onSelect, onDelete }) {
+    const [isHovered, setIsHovered] = useState(false)
+
     return (
         <motion.div
-            className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-md p-6 hover:shadow-lg transition-all"
+            className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-md p-6 hover:shadow-lg transition-all relative"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            whileHover={{ scale: 1.03 }}
+            whileHover="hover"
+            variants={shakeAnimation}
+            onHoverStart={() => setIsHovered(true)}
+            onHoverEnd={() => setIsHovered(false)}
         >
+            <AnimatePresence>
+                {isHovered && (
+                    <motion.button
+                        className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.5 }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(account);
+                        }}
+                    >
+                        <XMarkIcon className="h-6 w-6" />
+                    </motion.button>
+                )}
+            </AnimatePresence>
             <h2 className="text-xl font-semibold text-blue-700 mb-4">{account.name}</h2>
             <p className="text-2xl font-bold text-blue-900 mb-4">
                 ${account.balance.toFixed(2)}
@@ -34,6 +65,7 @@ AccountCard.propTypes = {
         balance: PropTypes.number.isRequired,
     }).isRequired,
     onSelect: PropTypes.func.isRequired,
+    onDelete: PropTypes.func.isRequired,
 }
 
 function Modal({ isOpen, onClose, onSubmit, children, title, submitText }) {
@@ -92,8 +124,10 @@ export default function Account() {
     ])
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
     const [newAccountName, setNewAccountName] = useState('')
     const [username, setUsername] = useState('')
+    const [accountToDelete, setAccountToDelete] = useState(null)
 
     useEffect(() => {
         // Fetch the username from localStorage or your authentication state
@@ -123,6 +157,19 @@ export default function Account() {
     const handleSelectAccount = (account) => {
         console.log('Selected account:', account)
         window.location.href = '/'
+    }
+
+    const handleDeleteAccount = (account) => {
+        setAccountToDelete(account)
+        setIsDeleteModalOpen(true)
+    }
+
+    const confirmDeleteAccount = () => {
+        if (accountToDelete) {
+            setAccounts(accounts.filter(account => account.id !== accountToDelete.id))
+            setIsDeleteModalOpen(false)
+            setAccountToDelete(null)
+        }
     }
 
     const handleLogout = async () => {
@@ -163,6 +210,7 @@ export default function Account() {
                             key={account.id}
                             account={account}
                             onSelect={handleSelectAccount}
+                            onDelete={handleDeleteAccount}
                         />
                     ))}
                 </motion.div>
@@ -200,6 +248,19 @@ export default function Account() {
                 submitText="Logout"
             >
                 <p className="text-lg text-gray-700">Are you sure you want to log out?</p>
+            </Modal>
+
+            <Modal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onSubmit={confirmDeleteAccount}
+                title="Confirm Delete Account"
+                submitText="Delete"
+            >
+                <p className="text-lg text-gray-700">
+                    Are you sure you want to delete the account "{accountToDelete?.name}"?
+                    This action cannot be undone.
+                </p>
             </Modal>
         </div>
     )
