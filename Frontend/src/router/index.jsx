@@ -9,6 +9,8 @@ import {Payments} from "@mui/icons-material";
 import Reports from "@/pages/report/index.jsx";
 import UserProfile from "@/pages/userProfile/index.jsx";
 import Account from "@/pages/account/index.jsx";
+import ContactUs from "@/pages/contactUs/index.jsx";
+import Investment from "@/pages/investment/index.jsx";
 
 
 const router = createBrowserRouter([
@@ -36,7 +38,15 @@ const router = createBrowserRouter([
             {
                 path:'report',
                 element: <Reports/>
-            }
+            },
+            {
+                path:'contact-us',
+                element: <ContactUs/>
+            },
+            {
+                path:'investment',
+                element: <Investment/>
+            },
         ]
     },
     {
