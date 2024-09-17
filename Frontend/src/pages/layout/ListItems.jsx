@@ -8,6 +8,8 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import PaymentIcon from '@mui/icons-material/Payment';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import ContactSupportIcon from '@mui/icons-material/ContactSupport';
 import {NavLink} from "react-router-dom";
 
 const activeStyle = {
@@ -41,31 +43,49 @@ export const mainListItems = (
             </ListItemIcon>
             <ListItemText primary="Reports" />
         </ListItemButton>
+        <ListItemButton component={NavLink} to="/investment" sx={activeStyle}>
+            <ListItemIcon>
+                <AccountBalanceIcon />
+            </ListItemIcon>
+            <ListItemText primary="Investment" />
+        </ListItemButton>
+        <ListItemButton component={NavLink} to="/contact-us" sx={activeStyle}>
+            <ListItemIcon>
+                <ContactSupportIcon />
+            </ListItemIcon>
+            <ListItemText primary="Contact Us" />
+        </ListItemButton>
     </React.Fragment>
 );
 
 export const secondaryListItems = (
     <React.Fragment>
         <ListSubheader component="div" inset>
-            Saved reports
+            Additional Features
         </ListSubheader>
-        <ListItemButton>
-            <ListItemIcon>
-                <AssignmentIcon />
-            </ListItemIcon>
-            <ListItemText primary="Current month" />
-        </ListItemButton>
-        <ListItemButton>
-            <ListItemIcon>
-                <AssignmentIcon />
-            </ListItemIcon>
-            <ListItemText primary="Last quarter" />
-        </ListItemButton>
-        <ListItemButton>
-            <ListItemIcon>
-                <AssignmentIcon />
-            </ListItemIcon>
-            <ListItemText primary="Year-end sale" />
-        </ListItemButton>
+        {/*<ListItemButton component={NavLink} to="/current-month" sx={activeStyle}>*/}
+        {/*    <ListItemIcon>*/}
+        {/*        <AssignmentIcon />*/}
+        {/*    </ListItemIcon>*/}
+        {/*    <ListItemText primary="Current month" />*/}
+        {/*</ListItemButton>*/}
+        {/*<ListItemButton component={NavLink} to="/last-quarter" sx={activeStyle}>*/}
+        {/*    <ListItemIcon>*/}
+        {/*        <AssignmentIcon />*/}
+        {/*    </ListItemIcon>*/}
+        {/*    <ListItemText primary="Last quarter" />*/}
+        {/*</ListItemButton>*/}
+        {/*<ListItemButton component={NavLink} to="/year-end-sale" sx={activeStyle}>*/}
+        {/*    <ListItemIcon>*/}
+        {/*        <AssignmentIcon />*/}
+        {/*    </ListItemIcon>*/}
+        {/*    <ListItemText primary="Year-end sale" />*/}
+        {/*</ListItemButton>*/}
+        {/*<ListItemButton component={NavLink} to="/contact-us" sx={activeStyle}>*/}
+        {/*    <ListItemIcon>*/}
+        {/*        <ContactSupportIcon />*/}
+        {/*    </ListItemIcon>*/}
+        {/*    <ListItemText primary="Contact Us" />*/}
+        {/*</ListItemButton>*/}
     </React.Fragment>
 );
