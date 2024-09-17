@@ -85,11 +85,12 @@ public class SecurityService {
 
             // 获取用户角色
             String token = jwtUtil.generateToken(transactionUser.getId(), transactionUser.getUsername(), transactionUser.getRole().getRoleName());
-            // 获取用户账户名
+            // 获取用户账户信息
             List<Account> accounts = transactionUser.getAccounts();
-            List<String> accountName = new ArrayList<>();
+
+            Map<String, String> accountInfo = new HashMap<>();
             for (Account account : accounts) {
-                accountName.add(account.getAccountName());
+                accountInfo.put(account.getId().toString(), account.getAccountName());
             }
             // 创建LoginUser对象并存入Redis
             LoginUser loginUser = new LoginUser(
@@ -98,10 +99,10 @@ public class SecurityService {
                 transactionUser.getEmail(),
                 transactionUser.getPhone(),
                 transactionUser.getAvatar(),
-                accountName,
+                accountInfo,
                 token
             );
-            String redisKey = "login_user:" + transactionUser.getId();
+            String redisKey = "login_user:" + transactionUser.getId() + ":info";
             redisTemplate.opsForValue().set(redisKey, loginUser, 1, TimeUnit.HOURS);
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);

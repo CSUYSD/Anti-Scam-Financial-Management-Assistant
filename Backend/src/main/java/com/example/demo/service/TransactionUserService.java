@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -111,7 +112,9 @@ public class TransactionUserService {
         userDTO.setEmail(loginUser.getEmail());
         userDTO.setPhone(loginUser.getPhone());
         userDTO.setAvatar(loginUser.getAvatar());
-        userDTO.setAccountName(loginUser.getAccountName());
+
+        List<String> accountNames = new ArrayList<>(loginUser.getAccountInfo().values());
+        userDTO.setAccountName(accountNames);
         return userDTO;
     }
 
