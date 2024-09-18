@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import MuiAppBar from '@mui/material/AppBar';
 import MuiDrawer from '@mui/material/Drawer';
@@ -12,9 +12,18 @@ import List from '@mui/material/List';
 import Badge from '@mui/material/Badge';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import { mainListItems, secondaryListItems } from './ListItems';
-import {Link, Outlet, useLocation, useNavigate} from 'react-router-dom';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import SettingsIcon from '@mui/icons-material/Settings';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Link as MuiLink } from '@mui/material';
+import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { mainListItems, secondaryListItems } from './ListItems';
+
+// Import the logoutAPI function (assuming it's defined in a separate file)
+import { logoutAPI } from '@/api/user.jsx'; // Adjust the import path as needed
 
 const drawerWidth = 240;
 
@@ -62,47 +71,122 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
     }),
 );
 
-const defaultTheme = createTheme();
-
 function Copyright(props) {
     return (
         <Typography variant="body2" color="text.secondary" align="center" {...props}>
             {'Copyright © '}
-            <Link color="inherit" href="https://mui.com/">
+            <MuiLink component={RouterLink} color="inherit" to="/">
                 Your Website
-            </Link>{' '}
+            </MuiLink>{' '}
             {new Date().getFullYear()}
             {'.'}
         </Typography>
     );
 }
 
-const Layout = () => {
-    const [open, setOpen] = React.useState(true);
+export default function Layout() {
+    const [open, setOpen] = useState(true);
+    const [mode, setMode] = useState('light');
+    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const theme = useMemo(
+        () =>
+            createTheme({
+                palette: {
+                    mode,
+                    ...(mode === 'light'
+                        ? {
+                            primary: {
+                                main: '#3a7bd5',
+                            },
+                            background: {
+                                default: '#f5f7fa',
+                                paper: '#ffffff',
+                            },
+                        }
+                        : {
+                            primary: {
+                                main: '#90caf9',
+                            },
+                            background: {
+                                default: '#121212',
+                                paper: '#1e1e1e',
+                            },
+                        }),
+                },
+                components: {
+                    MuiButton: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: 8,
+                            },
+                        },
+                    },
+                    MuiCard: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: 12,
+                                boxShadow: mode === 'dark' ? '0 4px 6px rgba(0, 0, 0, 0.2)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            },
+                        },
+                    },
+                },
+            }),
+        [mode],
+    );
+
     const toggleDrawer = () => {
-        setOpen(!open);
+        setOpen((prevOpen) => !prevOpen);
     };
 
-    const location = useLocation();
     const getPageTitle = (path) => {
         if (path === "/") {
-            return "dashboard";
+            return "Dashboard";
         }
-        return path.substring(1);
+        return path.substring(1).charAt(0).toUpperCase() + path.slice(2);
     };
-    const handleClick = () => {
-        navigate('userprofile')
-    }
+
+    const toggleColorMode = () => {
+        setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+    };
+
+    const handleLogout = () => {
+        setLogoutDialogOpen(true);
+    };
+
+    const handleLogoutConfirm = async () => {
+        setLogoutDialogOpen(false);
+        try {
+            await logoutAPI(); // Call the logout API
+            navigate('/login'); // Navigate to the login page after successful logout
+        } catch (error) {
+            console.error('Logout failed:', error);
+            // Handle logout error (e.g., show an error message to the user)
+        }
+    };
+
+    const handleLogoutCancel = () => {
+        setLogoutDialogOpen(false);
+    };
+
+    const handleAccountClick = () => {
+        navigate('/account');
+    };
+
+    const handleUserProfileClick = () => {
+        navigate('/userprofile');
+    };
 
     return (
-        <ThemeProvider theme={defaultTheme}>
+        <ThemeProvider theme={theme}>
             <Box sx={{ display: 'flex' }}>
                 <CssBaseline />
                 <AppBar position="absolute" open={open}>
                     <Toolbar
                         sx={{
-                            pr: '24px', // keep right padding when drawer closed
+                            pr: '24px',
                         }}
                     >
                         <IconButton
@@ -124,12 +208,16 @@ const Layout = () => {
                             noWrap
                             sx={{ flexGrow: 1 }}
                         >
-                            {/*print path name as the title name*/}
-                            <>{getPageTitle(location.pathname)}</>
+                            {getPageTitle(location.pathname)}
                         </Typography>
-                        <IconButton color="inherit" onClick={handleClick}>
-                            {/*this is button for user page*/}
-                            <Badge color="secondary" >
+                        <IconButton color="inherit" onClick={toggleColorMode}>
+                            {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                        </IconButton>
+                        <IconButton color="inherit" onClick={handleAccountClick} aria-label="account settings">
+                            <SettingsIcon />
+                        </IconButton>
+                        <IconButton color="inherit" onClick={handleUserProfileClick} aria-label="user profile">
+                            <Badge color="secondary">
                                 <AccountCircleIcon />
                             </Badge>
                         </IconButton>
@@ -151,8 +239,20 @@ const Layout = () => {
                     <Divider />
                     <List component="nav">
                         {mainListItems}
+                        <Divider sx={{ my: 1 }} />
                         {secondaryListItems}
                     </List>
+                    <Box sx={{ mt: 'auto', p: 2 }}>
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            startIcon={<LogoutIcon />}
+                            onClick={handleLogout}
+                            fullWidth
+                        >
+                            Logout
+                        </Button>
+                    </Box>
                 </Drawer>
                 <Box
                     component="main"
@@ -168,11 +268,28 @@ const Layout = () => {
                 >
                     <Toolbar />
                     <Outlet />
-                    <Copyright sx={{ pt: 4 }} />
+                    <Copyright sx={{ pt: 4, pb: 4 }} />
                 </Box>
             </Box>
+            <Dialog
+                open={logoutDialogOpen}
+                onClose={handleLogoutCancel}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">{"Confirm Logout"}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        Are you sure you want to log out?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleLogoutCancel}>Cancel</Button>
+                    <Button onClick={handleLogoutConfirm} autoFocus>
+                        Logout
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </ThemeProvider>
     );
-};
-
-export default Layout;
+}
