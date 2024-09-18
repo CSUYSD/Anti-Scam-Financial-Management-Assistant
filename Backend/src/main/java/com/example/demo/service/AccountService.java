@@ -5,14 +5,16 @@ import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.DTO.AccountDTO;
+import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.Dao.AccountDao;
-import java.util.List;
-import java.util.Map;
 
-import com.example.demo.model.Redis.LoginUser;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import com.example.demo.exception.UserNotFoundException;
 
@@ -39,41 +41,45 @@ public class AccountService {
                 .orElseThrow(() -> new AccountNotFoundException("账户未找到，ID: " + id));
     }
 
-    public String createAccount(AccountDTO accountDTO, Long id) throws UserNotFoundException, AccountAlreadyExistException, AccountNotFoundException {
-        String redisKey = "login_user:" + id;
+    public String createAccount(AccountDTO accountDTO, Long userId) throws UserNotFoundException, AccountAlreadyExistException, AccountNotFoundException {
+        String pattern = "login_user:" + userId + ":account*" ;
         // 获取redis用户信息
-        LoginUser loginUser = (LoginUser) redisTemplate.opsForValue().get(redisKey);
-        
-        if (loginUser == null) {
+        Set<String> keys = redisTemplate.keys(pattern);
+        if (keys.isEmpty()) {
             throw new RuntimeException("用户未登录或会话已过期");
         }
-        
         // 检查账户名是否已存在
-        Map<String, String> existsAccount = loginUser.getAccountInfo();
-        for (Map.Entry<String, String> entry : existsAccount.entrySet()) {
-            if (entry.getValue().equals(accountDTO.getName())) {
+        for (String key : keys){
+            if (key.equals("login_user:" + userId + ":account:initial placeholder")){
+                continue;
+            }
+            RedisAccount redisAccount = (RedisAccount) redisTemplate.opsForValue().get(key);
+            if (redisAccount.getName().equals(accountDTO.getName())){
                 throw new AccountAlreadyExistException("账户名已存在");
             }
         }
         
         // 获取用户,从token里找到的id
-        TransactionUser user = transactionUserDao.findById(id)
+        TransactionUser user = transactionUserDao.findById(userId)
             .orElseThrow(() -> new UserNotFoundException("用户不存在"));
         
-        // 创建新账户
+        // 存到PSQL里
         Account newAccount = new Account();
         newAccount.setAccountName(accountDTO.getName());
         newAccount.setTransactionUser(user);
         newAccount.setBalance(0.0);
         accountDao.save(newAccount);
 
-        // 更新 Redis 中的用户信息
-        Long accountId = accountDao.getAccountIDByUserIdAndAccountName(id, accountDTO.getName())
-            .orElseThrow(() -> new AccountNotFoundException("账户未找到"));
-        existsAccount.put(accountId.toString(), accountDTO.getName());
-        loginUser.setAccountInfo(existsAccount);
-        redisTemplate.opsForValue().set(redisKey, loginUser);
+        // 把这个新account加进用户关联的redis里
+        String newAccountKey = "login_user:" + userId + ":account:" + newAccount.getId();
+        RedisAccount newRedisAccount =
+                new RedisAccount(
+                        newAccount.getId(),
+                        newAccount.getAccountName(),
+                        newAccount.getBalance(),
+                        new ArrayList<>());
 
+        redisTemplate.opsForValue().set(newAccountKey, newRedisAccount);
         return "账户创建成功";
     }
 
