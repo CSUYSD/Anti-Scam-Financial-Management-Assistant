@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,8 @@ import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.DTO.TransactionUserDTO;
-import com.example.demo.model.Redis.LoginUser;
+import com.example.demo.model.Redis.RedisAccount;
+import com.example.demo.model.Redis.RedisUser;
 import com.example.demo.model.Security.UserDetail;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.model.UserRole;
@@ -83,31 +85,53 @@ public class SecurityService {
             UserDetail userDetail = (UserDetail) authentication.getPrincipal();
             TransactionUser transactionUser = userDetail.getTransactionUser();
 
-            // 获取用户角色
+            // **生成token
             String token = jwtUtil.generateToken(transactionUser.getId(), transactionUser.getUsername(), transactionUser.getRole().getRoleName());
+
+
+            // **Redis 部分
             // 获取用户账户信息
             List<Account> accounts = transactionUser.getAccounts();
-
-            Map<String, String> accountInfo = new HashMap<>();
-            for (Account account : accounts) {
-                accountInfo.put(account.getId().toString(), account.getAccountName());
-            }
-            // 创建LoginUser对象并存入Redis
-            LoginUser loginUser = new LoginUser(
+            // 创建redisUser并存入Redis
+            RedisUser redisUser = new RedisUser(
                 transactionUser.getId(),
                 transactionUser.getUsername(),
                 transactionUser.getEmail(),
                 transactionUser.getPhone(),
                 transactionUser.getAvatar(),
-                accountInfo,
                 token
             );
-            String redisKey = "login_user:" + transactionUser.getId() + ":info";
-            redisTemplate.opsForValue().set(redisKey, loginUser, 1, TimeUnit.HOURS);
+
+            String redisUserKey = "login_user:" + transactionUser.getId() + ":info";
+            redisTemplate.opsForValue().set(redisUserKey, redisUser, 1, TimeUnit.HOURS);
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
             response.put("username", transactionUser.getUsername());
 
+            // 在创建 redisUser 后，添加以下代码
+            String userAccountsKey = "login_user:" + transactionUser.getId() + ":account:" + "initial placeholder";
+            if (accounts.isEmpty()) {
+                // 如果用户没有账户，设置一个空列表
+                redisTemplate.opsForValue().set(userAccountsKey, new ArrayList<>(), 1, TimeUnit.HOURS);
+            } else {
+                // 如果用户有账户，保存账户 ID 列表
+                List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
+                redisTemplate.opsForValue().set(userAccountsKey, accountIds, 1, TimeUnit.HOURS);
+
+                // 原有的账户信息保存逻辑
+                for (Account account : accounts) {
+                    String redisAccountKey = "login_user:" + transactionUser.getId() + ":account:" + account.getId();
+                    RedisAccount redisAccount = new RedisAccount(
+                            account.getId(),
+                            account.getAccountName(),
+                            account.getBalance(),
+                            account.getTransactionRecords()
+                    );
+                    redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
+                }
+            }
+
+            //**保存
             logger.info("用户 {} 登录成功", loginVo.getUsername());
             return ResponseEntity.ok(response);
         } catch (AuthenticationException e) {

@@ -3,7 +3,9 @@ package com.example.demo.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
+import com.example.demo.model.Redis.RedisAccount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +18,7 @@ import com.example.demo.Dao.TransactionUserDao;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.DTO.TransactionUserDTO;
-import com.example.demo.model.Redis.LoginUser;
+import com.example.demo.model.Redis.RedisUser;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.utility.JWT.JwtUtil;
 
@@ -93,12 +95,14 @@ public class TransactionUserService {
     public Optional<TransactionUserDTO> getUserInfoByUserId(String token) {
         token = token.replace("Bearer ", "");
         Long userId = jwtUtil.getUserIdFromToken(token);
-        String redisKey = "login_user:" + userId;
-        LoginUser loginUser = (LoginUser) redisTemplate.opsForValue().get(redisKey);
+        String userRedisKey = "login_user:" + userId + ":info";
+
+
+        RedisUser redisUser = (RedisUser) redisTemplate.opsForValue().get(userRedisKey);
 
         // 如果 Redis 中有用户信息，直接返回
-        if (loginUser != null) {
-            return Optional.of(getUserInfoFromRedis(loginUser));
+        if (redisUser != null) {
+            return Optional.of(getUserInfoFromRedis(redisUser, userId));
         } else {
             // 如果 Redis 中没有用户信息，从数据库中获取
             return transactionUserDao.findById(userId)
@@ -106,14 +110,23 @@ public class TransactionUserService {
         }
     }
 
-    private TransactionUserDTO getUserInfoFromRedis(LoginUser loginUser) {
+    private TransactionUserDTO getUserInfoFromRedis(RedisUser redisUser, Long userId) {
         TransactionUserDTO userDTO = new TransactionUserDTO();
-        userDTO.setUsername(loginUser.getUsername());
-        userDTO.setEmail(loginUser.getEmail());
-        userDTO.setPhone(loginUser.getPhone());
-        userDTO.setAvatar(loginUser.getAvatar());
+        userDTO.setUsername(redisUser.getUsername());
+        userDTO.setEmail(redisUser.getEmail());
+        userDTO.setPhone(redisUser.getPhone());
+        userDTO.setAvatar(redisUser.getAvatar());
 
-        List<String> accountNames = new ArrayList<>(loginUser.getAccountInfo().values());
+        List<String> accountNames = new ArrayList<>();
+        String keyPattern = "login_user:" + userId + ":account*";
+        Set<String> accountKeys = redisTemplate.keys(keyPattern);
+        for (String key : accountKeys){
+            if (key.equals("login_user:" + userId + ":account:initial placeholder")){
+                continue;
+            }
+            String accountName = ((RedisAccount) redisTemplate.opsForValue().get(key)).getName();
+            accountNames.add(accountName);
+        }
         userDTO.setAccountName(accountNames);
         return userDTO;
     }
