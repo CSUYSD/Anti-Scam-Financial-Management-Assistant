@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ import jakarta.validation.Valid;
 public class AccountController {
     private final JwtUtil jwtUtil;
     private final AccountService accountService;
+    private static final Logger logger = Logger.getLogger(String.valueOf(AccountController.class));
 
     @Autowired
     public AccountController(AccountService accountService, JwtUtil jwtUtil) {
@@ -48,11 +50,11 @@ public class AccountController {
         if (token == null || token.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未提供令牌");
         }
-        Long id = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
 
         try {
             // 尝试创建账户
-            String result = accountService.createAccount(account, id);
+            String result = accountService.createAccount(account, userId);
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
             // 账户创建成功
         } catch (AccountAlreadyExistException e){
@@ -62,6 +64,8 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("用户未找到");
             // 用户未找到
         } catch (Exception e) {
+            logger.severe(e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("服务器错误");
         }
     }
