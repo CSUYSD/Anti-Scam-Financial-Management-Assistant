@@ -58,12 +58,16 @@ INSERT INTO transaction_users (username, password, email, phone, dob, role_id, a
 CREATE TABLE account (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     account_name VARCHAR(255) NOT NULL,
-    balance DECIMAL(10, 2) NOT NULL,
+    balance DOUBLE NOT NULL,
     transaction_user_id BIGINT,
-
-    FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id) ON DELETE CASCADE
-
+    FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id)
 );
+
+INSERT INTO account (account_name, balance, transaction_user_id)
+VALUES
+    ('Savings Account', 5000.75, 1),
+    ('Checking Account', 1200.50, 2),
+    ('Business Account', 15000.00, 3);
 
 -- @Entity
 -- @Data
@@ -85,13 +89,21 @@ CREATE TABLE account (
 
 CREATE TABLE transaction_record (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    type VARCHAR(50) NOT NULL,
+    type VARCHAR(20) NOT NULL,
     transaction_type VARCHAR(255) NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL,
+--     amount DECIMAL(10, 2) NOT NULL,
+    amount DOUBLE,
     transaction_method VARCHAR(255),
     transaction_time TIMESTAMP NOT NULL,
     transaction_description VARCHAR(255),
-    account_id BIGINT,
-    FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
-
+    account_id BIGINT NOT NULL,
+    FOREIGN KEY (account_id) REFERENCES account(id)
 );
+
+INSERT INTO transaction_record(type, transaction_type, amount, transaction_method, transaction_time, transaction_description, account_id)
+VALUES
+    ('INCOME', 'Groceries', 888.00, 'Bank Transfer', '2023-04-17 16:26:53', 'Clothing purchase', 1);
+
+INSERT INTO transaction_record(type, transaction_type, amount, transaction_method, transaction_time, transaction_description, account_id)
+VALUES
+    ('INCOME', 'Groceries', 268.00, 'Cash', '2023-09-19 16:26:53', 'Movie tickets', 1);
