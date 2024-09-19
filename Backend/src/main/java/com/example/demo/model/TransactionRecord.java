@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import java.time.ZonedDateTime;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,6 +24,7 @@ public class TransactionRecord {
     private ZonedDateTime transactionTime; // 交易时间
     private String transactionDescription; // 交易描述
     @ManyToOne
-    @JoinColumn(name = "account_id")
+    @JoinColumn(name = "account_id", nullable = false)
+    @JsonBackReference
     private Account account; // 一个账户对应多个交易记录
 }

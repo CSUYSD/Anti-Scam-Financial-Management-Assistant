@@ -4,10 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.model.TransactionRecord;
 import com.example.demo.service.TransactionRecordService;
@@ -47,4 +44,38 @@ public class TransactionRecordController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    // 创建新的交易记录
+    @PostMapping("/create")
+    public ResponseEntity<String> createTransactionRecord(@RequestBody TransactionRecord transactionRecord) {
+        try {
+            recordService.saveTransactionRecord(transactionRecord);
+            return ResponseEntity.status(HttpStatus.CREATED).body("Transaction record has been created successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error creating transaction record: " + e.getMessage());
+        }
+    }
+
+    // 更新交易记录
+    @PutMapping("/update/{id}")
+    public ResponseEntity<String> updateTransactionRecord(@PathVariable Long id, @RequestBody TransactionRecord transactionRecord) {
+        try {
+            recordService.updateTransactionRecord(id, transactionRecord);
+            return ResponseEntity.ok("Transaction record updated successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error updating transaction record: " + e.getMessage());
+        }
+    }
+
+    // 删除交易记录
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<String> deleteTransactionRecord(@PathVariable Long id) {
+        try {
+            recordService.deleteTransactionRecord(id);
+            return ResponseEntity.ok("Transaction record deleted successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting transaction record: " + e.getMessage());
+        }
+    }
 }
+
