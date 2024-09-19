@@ -33,4 +33,33 @@ public class TransactionRecordService {
     public List<TransactionRecord> findByType(String type) {
         return transactionRecordDao.findByType(type);
     }
+
+    // 创建新的交易记录
+    public TransactionRecord saveTransactionRecord(TransactionRecord transactionRecord) {
+        return transactionRecordDao.save(transactionRecord);
+    }
+
+    // 更新已有交易记录
+    public TransactionRecord updateTransactionRecord(Long id, TransactionRecord newTransactionRecord) {
+        TransactionRecord existingRecord = transactionRecordDao.findById(id).orElse(null);
+        if (existingRecord == null) {
+            throw new RuntimeException("Record not found");
+        }
+        // 更新必要的字段
+        existingRecord.setAmount(newTransactionRecord.getAmount());
+        existingRecord.setTransactionType(newTransactionRecord.getTransactionType());
+        existingRecord.setType(newTransactionRecord.getType());
+        existingRecord.setTransactionTime(newTransactionRecord.getTransactionTime());
+
+        return transactionRecordDao.save(existingRecord);
+    }
+
+    // 删除交易记录
+    public void deleteTransactionRecord(Long id) {
+        TransactionRecord record = transactionRecordDao.findById(id).orElse(null);
+        if (record == null) {
+            throw new RuntimeException("Record not found");
+        }
+        transactionRecordDao.delete(record);
+    }
 }
