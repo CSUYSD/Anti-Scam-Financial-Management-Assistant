@@ -58,7 +58,7 @@ INSERT INTO transaction_users (username, password, email, phone, dob, role_id, a
 CREATE TABLE account (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     account_name VARCHAR(255) NOT NULL,
-    balance DOUBLE NOT NULL,
+    balance DECIMAL(10, 2) NOT NULL,
     transaction_user_id BIGINT,
     FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id)
 );
@@ -92,7 +92,7 @@ CREATE TABLE transaction_record (
     type VARCHAR(20) NOT NULL,
     transaction_type VARCHAR(255) NOT NULL,
 --     amount DECIMAL(10, 2) NOT NULL,
-    amount DOUBLE,
+    amount DECIMAL(10, 2) NOT NULL,
     transaction_method VARCHAR(255),
     transaction_time TIMESTAMP NOT NULL,
     transaction_description VARCHAR(255),
