@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -20,13 +21,15 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String accountName;
-    private double balance;
+    private Double balance;
 
     @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "transaction_user_id")
     private TransactionUser transactionUser;
-    
+
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
     private List<TransactionRecord> transactionRecords;
+
+
 }

@@ -18,16 +18,16 @@ public class TransactionRecordController {
         this.recordService = recordService;
     }
 
-    @GetMapping("/all")
-    public ResponseEntity<List<TransactionRecord>> getAllRecord() {
-        List<TransactionRecord> transactions = recordService.getAllRecord();
+    @GetMapping("/all/{accountId}")
+    public ResponseEntity<List<TransactionRecord>> getAllRecord(@PathVariable Long accountId) {
+        List<TransactionRecord> transactions = recordService.getAllRecordsByAccount(accountId);
         return ResponseEntity.ok(transactions);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TransactionRecord> getRecordById(@PathVariable Long id) {
+    public ResponseEntity<TransactionRecord> getRecordById(@PathVariable Long id, Long accountId) {
         try {
-            TransactionRecord record = recordService.getRecordById(id);
+            TransactionRecord record = recordService.getRecordById(id,accountId);
             return ResponseEntity.ok(record);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
@@ -75,6 +75,16 @@ public class TransactionRecordController {
             return ResponseEntity.ok("Transaction record deleted successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting transaction record: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/batch")
+    public ResponseEntity<String> deleteRecordsInBatch(@RequestParam Long accountId, @RequestBody List<Long> recordIds) {
+        try {
+            recordService.deleteTransactionRecordsInBatch(accountId, recordIds);
+            return ResponseEntity.ok("Records deleted successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Failed to delete records: " + e.getMessage());
         }
     }
 }
