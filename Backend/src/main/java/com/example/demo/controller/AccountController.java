@@ -80,6 +80,7 @@ public class AccountController {
         }
     }
     
+
 //    @PutMapping("/update/{id}")
 //    public ResponseEntity<Account> updateAccount(@PathVariable Long id, @RequestBody AccountDTO accountDetails) {
 //        try {
@@ -94,10 +95,12 @@ public class AccountController {
 
     @PutMapping("/update/{id}")
     public ResponseEntity<Object> updateAccount(@PathVariable Long id, @RequestBody @Valid AccountDTO accountDetails) {
+
         try {
             Account updatedAccount = accountService.updateAccount(id, accountDetails);
             return ResponseEntity.ok(updatedAccount);
         } catch (AccountNotFoundException e) {
+
             // 记录错误日志
             // logger.error("Account not found: " + id, e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("账户未找到，ID: " + id);
@@ -111,6 +114,7 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAccount(@PathVariable Long id) {
         try {

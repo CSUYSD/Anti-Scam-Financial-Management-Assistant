@@ -2,16 +2,19 @@ package com.example.demo.controller;
 
 import java.util.List;
 
+
 import com.example.demo.utility.JWT.JwtUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+
 import com.example.demo.model.TransactionRecord;
 import com.example.demo.service.TransactionRecordService;
 @RestController
 @RequestMapping("/records")
+
 @Validated
 public class TransactionRecordController {
 
@@ -44,11 +47,13 @@ public class TransactionRecordController {
     public ResponseEntity<TransactionRecord> getRecordById(@PathVariable Long id, @PathVariable Long accountId) {
         try {
             TransactionRecord record = recordService.getRecordById(id,accountId);
+
             return ResponseEntity.ok(record);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
+
     @GetMapping("/by-type/{type}")
     public ResponseEntity<List<TransactionRecord>> getRecordsByType(@PathVariable String type) {
         try {
@@ -59,6 +64,7 @@ public class TransactionRecordController {
             return ResponseEntity.badRequest().build();
         }
     }
+
 
     @PostMapping("/create")
     public ResponseEntity<String> createTransactionRecord( @RequestHeader("Authorization") String token, @RequestBody TransactionRecord transactionRecord) {
@@ -103,4 +109,5 @@ public class TransactionRecordController {
             return ResponseEntity.status(500).body("Failed to delete records: " + e.getMessage());
         }
     }
+
 }
