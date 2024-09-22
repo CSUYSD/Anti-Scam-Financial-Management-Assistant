@@ -19,16 +19,16 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Service
 public class TransactionRecordService {
     private final TransactionRecordDao transactionRecordDao;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplateForRecord;
 
     private HashOperations<String, String, RedisRecord> hashOperations;
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionRecordService.class);
     @Autowired
-    public TransactionRecordService(TransactionRecordDao transactionRecordDao, RedisTemplate<String, Object> redisTemplate) {
+    public TransactionRecordService(TransactionRecordDao transactionRecordDao, RedisTemplate<String, Object> redisTemplateForRecord) {
         this.transactionRecordDao = transactionRecordDao;
-        this.redisTemplate = redisTemplate;
-        this.hashOperations = redisTemplate.opsForHash();
+        this.redisTemplateForRecord = redisTemplateForRecord;
+        this.hashOperations = redisTemplateForRecord.opsForHash();
     }
 
     public TransactionRecord getRecordById(Long id, Long accountId) {
@@ -166,7 +166,7 @@ public class TransactionRecordService {
         // 同步删除 Redis 中的缓存记录
         for (TransactionRecord record : records) {
             String redisKey = "record:" + record.getAccount().getId();
-            redisTemplate.opsForHash().delete(redisKey, String.valueOf(record.getId()));
+            redisTemplateForRecord.opsForHash().delete(redisKey, String.valueOf(record.getId()));
         }
     }
 

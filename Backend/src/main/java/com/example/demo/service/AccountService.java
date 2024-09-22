@@ -83,13 +83,23 @@ public class AccountService {
         return "账户创建成功";
     }
 
-    public Account updateAccount(Long id, Account accountDetails) throws AccountNotFoundException {
-        Account account = getAccountById(id);
-        account.setAccountName(accountDetails.getAccountName());
-        account.setBalance(accountDetails.getBalance());
-        return accountDao.save(account);
+//    public Account updateAccount(Long id, Account accountDetails) throws AccountNotFoundException {
+//        Account account = getAccountById(id);
+//        account.setAccountName(accountDetails.getAccountName());
+//        account.setBalance(accountDetails.getBalance());
+//        return accountDao.save(account);
+//    }
+    // 更新账户信息
+    public Account updateAccount(Long id, AccountDTO accountDTO) throws AccountNotFoundException {
+        Account existingAccount = getAccountById(id);
+
+        // 更新账户名称和余额
+        existingAccount.setAccountName(accountDTO.getName());
+        existingAccount.setBalance(accountDTO.getBalance());
+
+        // 保存并返回更新后的账户信息
+        return accountDao.save(existingAccount);
     }
-    
     public void deleteAccount(Long id) throws AccountNotFoundException {
         Account account = getAccountById(id);
         accountDao.delete(account);

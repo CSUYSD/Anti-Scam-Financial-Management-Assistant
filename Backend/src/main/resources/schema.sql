@@ -60,7 +60,7 @@ CREATE TABLE account (
     account_name VARCHAR(255) NOT NULL,
     balance DECIMAL(10, 2) NOT NULL,
     transaction_user_id BIGINT,
-    FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id)
+    FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id) ON DELETE CASCADE
 );
 
 INSERT INTO account (account_name, balance, transaction_user_id)
@@ -97,7 +97,7 @@ CREATE TABLE transaction_record (
     transaction_time TIMESTAMP NOT NULL,
     transaction_description VARCHAR(255),
     account_id BIGINT NOT NULL,
-    FOREIGN KEY (account_id) REFERENCES account(id)
+    FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
 );
 
 INSERT INTO transaction_record(type, transaction_type, amount, transaction_method, transaction_time, transaction_description, account_id)

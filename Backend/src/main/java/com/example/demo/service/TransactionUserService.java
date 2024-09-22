@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,11 +33,13 @@ public class TransactionUserService {
     private final TransactionUserDao transactionUserDao;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final PasswordEncoder passwordEncoder;
     @Autowired
-    public TransactionUserService(TransactionUserDao transactionUserDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
+    public TransactionUserService(TransactionUserDao transactionUserDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder) {
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<TransactionUser> findAll() {
@@ -51,6 +54,22 @@ public class TransactionUserService {
         return transactionUserDao.findByUsername(username);
     }
 
+//    public void updateUser(Long id, TransactionUser updatedUser) throws UserNotFoundException {
+//        Optional<TransactionUser> existingUserOptional = transactionUserDao.findById(id);
+//
+//        if (!existingUserOptional.isPresent()) {
+//            throw new UserNotFoundException("User not found");
+//        }
+//
+//        TransactionUser existingUser = existingUserOptional.get();
+//        existingUser.setEmail(updatedUser.getEmail());
+//        existingUser.setPhone(updatedUser.getPhone());
+//        existingUser.setPassword(updatedUser.getPassword());
+//
+//        transactionUserDao.save(existingUser);
+//    }
+
+
     public void updateUser(Long id, TransactionUser updatedUser) throws UserNotFoundException {
         Optional<TransactionUser> existingUserOptional = transactionUserDao.findById(id);
 
@@ -61,10 +80,16 @@ public class TransactionUserService {
         TransactionUser existingUser = existingUserOptional.get();
         existingUser.setEmail(updatedUser.getEmail());
         existingUser.setPhone(updatedUser.getPhone());
-        existingUser.setPassword(updatedUser.getPassword());
 
-        transactionUserDao.save(existingUser);
+        // 如果密码不为空，进行加密处理
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            String encodedPassword = passwordEncoder.encode(updatedUser.getPassword());
+            existingUser.setPassword(encodedPassword); // 设置加密后的密码
+        }
+
+        transactionUserDao.save(existingUser); // 保存用户
     }
+
 
     public void deleteUser(Long id) throws UserNotFoundException, DataIntegrityViolationException {
         Optional<TransactionUser> userOptional = transactionUserDao.findById(id);

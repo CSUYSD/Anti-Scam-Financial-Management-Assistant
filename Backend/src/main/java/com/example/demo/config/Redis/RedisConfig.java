@@ -25,7 +25,22 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
 
-        // 配置 ObjectMapper 来支持 ZonedDateTime
+        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer();
+
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(serializer);
+
+
+        template.afterPropertiesSet();
+
+        return template;
+    }
+    @Bean(name = "recordRedisTemplate")
+    public RedisTemplate<String, Record> redisTemplateForRecord(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, Record> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory);
+
+        // 配置特定的 ObjectMapper
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -33,12 +48,11 @@ public class RedisConfig {
         GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(serializer);
+        template.setValueSerializer(serializer);  // 仅对Record类进行序列化
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(serializer);
 
         template.afterPropertiesSet();
-
         return template;
     }
 
