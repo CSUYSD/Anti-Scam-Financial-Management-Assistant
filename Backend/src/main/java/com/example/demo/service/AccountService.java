@@ -14,7 +14,9 @@ import com.example.demo.Dao.AccountDao;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
 import java.util.stream.Collectors;
+
 
 import org.springframework.data.redis.core.RedisTemplate;
 import com.example.demo.exception.UserNotFoundException;
@@ -84,6 +86,7 @@ public class AccountService {
         return "账户创建成功";
     }
 
+
     // 更新账户信息
 //    public Account updateAccount(Long id, AccountDTO accountDTO) throws AccountNotFoundException {
 //        Account existingAccount = getAccountById(id);
@@ -140,6 +143,7 @@ public class AccountService {
         // 删除 Redis 中的缓存
         String redisKey = "login_user:" + account.getTransactionUser().getId() + ":account:" + id;
         redisTemplate.delete(redisKey);
+
     }
 }
 

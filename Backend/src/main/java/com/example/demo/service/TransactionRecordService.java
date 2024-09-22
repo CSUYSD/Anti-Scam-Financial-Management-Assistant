@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import java.util.List;
 
+
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,9 +56,11 @@ public class TransactionRecordService {
         return transactionRecordDao.save(existingRecord);
     }
 
+
     public List<TransactionRecord> findByType(String type) {
         return transactionRecordDao.findByType(type);
     }
+
 
     public void deleteTransactionRecord(Long id) {
         TransactionRecord record = transactionRecordDao.findById(id)
@@ -73,4 +76,5 @@ public class TransactionRecordService {
         }
         transactionRecordDao.deleteAll(records);
     }
+
 }
