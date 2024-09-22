@@ -3,6 +3,7 @@ package com.example.demo.controller.Security;
 import java.util.Map;
 
 import com.example.demo.exception.PasswordNotCorrectException;
+import com.example.demo.model.Security.LoginVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.DTO.TransactionUserDTO;
 import com.example.demo.service.Security.SecurityService;
 import com.example.demo.service.Security.UserDetailService;
-import com.github.alenfive.rocketapi.entity.vo.LoginVo;
+
 
 import jakarta.validation.Valid;
 
@@ -37,14 +38,14 @@ public class SecurityController {
         this.securityService = securityService;
         this.userDetailService = userDetailService;
     }
-    // 登录，接收前端传来的用户名和密码，进行身份验证
+    // 登录
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginVo loginVo) {
         logger.info("收到登录请求: {}", loginVo.getUsername());
         return securityService.login(loginVo);
     }
 
-    // 注册，接收前端传来的用户信息（对密码进行加密），保存到数据库
+    // 注册
     @PostMapping("/signup")
     public ResponseEntity<String> createUser(@Valid @RequestBody TransactionUserDTO userDTO) {
         try {

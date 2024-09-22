@@ -35,7 +35,7 @@ import com.example.demo.model.Security.UserDetail;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.model.UserRole;
 import com.example.demo.utility.JWT.JwtUtil;
-import com.github.alenfive.rocketapi.entity.vo.LoginVo;
+import com.example.demo.model.Security.LoginVo;
 
 @Service
 public class SecurityService {
@@ -75,7 +75,7 @@ public class SecurityService {
         transactionUserDao.save(user);
     }
 
-    //用户登录功能，接收前端传来的用户名和密码，进行身份验证
+    //Login
     public ResponseEntity<Map<String, Object>> login(LoginVo loginVo) {
         logger.info("尝试登录用户: {}", loginVo.getUsername());
         try {
