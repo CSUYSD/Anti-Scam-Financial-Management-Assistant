@@ -12,7 +12,6 @@ public class RedisAccount {
     private Long id;
     private String name;
     private Double balance;
-    @JsonBackReference
     private List<TransactionRecord> records;
 
     public RedisAccount(Long id, String name, Double balance, List<TransactionRecord> records) {
