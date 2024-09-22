@@ -38,7 +38,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         // 对公开端点的请求不进行 JWT 验证
         if (request.getRequestURI().contains("/h2-console")
                 || request.getRequestURI().equals("/signup")
-                || request.getRequestURI().equals("/login")){
+                || request.getRequestURI().equals("/login")
+                || request.getRequestURI().contains("/message")) {
             filterChain.doFilter(request, response);
             return;
         }
