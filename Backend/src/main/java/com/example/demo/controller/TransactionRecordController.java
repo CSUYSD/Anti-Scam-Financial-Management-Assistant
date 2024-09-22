@@ -24,8 +24,8 @@ public class TransactionRecordController {
         return ResponseEntity.ok(transactions);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<TransactionRecord> getRecordById(@PathVariable Long id, Long accountId) {
+    @GetMapping("/{id}/{accountId}")
+    public ResponseEntity<TransactionRecord> getRecordById(@PathVariable Long id, @PathVariable Long accountId) {
         try {
             TransactionRecord record = recordService.getRecordById(id,accountId);
             return ResponseEntity.ok(record);
