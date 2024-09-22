@@ -12,4 +12,6 @@ import org.springframework.data.elasticsearch.annotations.Query;
 public interface TransactionRecordDao extends JpaRepository<TransactionRecord, Long> {
     @Query("SELECT tr FROM TransactionRecord tr WHERE tr.type = ?1")
     List<TransactionRecord> findByType(String type);
+
+    List<TransactionRecord> findByAccountId(Long accountId);
 }
