@@ -60,7 +60,9 @@ CREATE TABLE account (
     account_name VARCHAR(255) NOT NULL,
     balance DECIMAL(10, 2) NOT NULL,
     transaction_user_id BIGINT,
-    FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id)
+
+    FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id) ON DELETE CASCADE
+
 );
 
 -- @Entity
@@ -83,12 +85,13 @@ CREATE TABLE account (
 
 CREATE TABLE transaction_record (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    income_or_expense VARCHAR(20) NOT NULL,
-    transaction_type VARCHAR(20) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    transaction_type VARCHAR(255) NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
-    transaction_method VARCHAR(20),
+    transaction_method VARCHAR(255),
     transaction_time TIMESTAMP NOT NULL,
     transaction_description VARCHAR(255),
     account_id BIGINT,
-    FOREIGN KEY (account_id) REFERENCES account(id)
+    FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
+
 );
