@@ -80,14 +80,37 @@ public class AccountController {
         }
     }
     
+
+//    @PutMapping("/update/{id}")
+//    public ResponseEntity<Account> updateAccount(@PathVariable Long id, @RequestBody AccountDTO accountDetails) {
+//        try {
+//            Account updatedAccount = accountService.updateAccount(id, accountDetails);
+//            return ResponseEntity.ok(updatedAccount);
+//        } catch (AccountNotFoundException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+//        }
+//    }
+
     @PutMapping("/update/{id}")
-    public ResponseEntity<Account> updateAccount(@PathVariable Long id, @RequestBody Account accountDetails) {
+    public ResponseEntity<Object> updateAccount(@PathVariable Long id, @RequestBody @Valid AccountDTO accountDetails) {
+
         try {
             Account updatedAccount = accountService.updateAccount(id, accountDetails);
             return ResponseEntity.ok(updatedAccount);
         } catch (AccountNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+
+            // 记录错误日志
+            // logger.error("Account not found: " + id, e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("账户未找到，ID: " + id);
+        } catch (AccountAlreadyExistException e) {
+            // 记录错误日志
+            // logger.error("Account name already exists for another account", e);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("账户名已存在，请选择不同的账户名");
         } catch (Exception e) {
+            // 捕获其他异常，并记录日志
+            // logger.error("Unexpected error during account update", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
