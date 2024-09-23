@@ -14,7 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.example.demo.service.UserDetailService;
+import com.example.demo.service.Security.UserDetailService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -38,7 +38,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         // 对公开端点的请求不进行 JWT 验证
         if (request.getRequestURI().contains("/h2-console")
                 || request.getRequestURI().equals("/signup")
-                || request.getRequestURI().equals("/login")){
+                || request.getRequestURI().equals("/login")
+                || request.getRequestURI().contains("/message")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -58,10 +59,10 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             UserDetails userDetails = userDetailService.loadUserById(userId);
             // 在过滤时直接从token获取用户的角色信息，直接授权，绕开从userdetail里获取role info
             Collection<? extends GrantedAuthority> authorities =
-                Collections.singletonList(new SimpleGrantedAuthority(role));
+                    Collections.singletonList(new SimpleGrantedAuthority(role));
 
             // 4. 将用户信息存入 SecurityContext，在后续的请求中可以直接获取用户信息
-            UsernamePasswordAuthenticationToken authentication = 
+            UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } else {

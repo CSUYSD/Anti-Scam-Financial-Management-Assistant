@@ -1,6 +1,7 @@
 package com.example.demo.model.DTO;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -18,8 +19,8 @@ public class TransactionUserDTO {
     private String username;
 
     @NotBlank(message = "Password cannot be blank")
-    @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$", 
-             message = "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character")
+    @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+            message = "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character")
     private String password;
 
     @NotBlank(message = "Email cannot be blank")
@@ -31,5 +32,5 @@ public class TransactionUserDTO {
     private LocalDate dob;
     private String avatar;
 
-    private String accountName;
+    private List<String> accountName;
 }

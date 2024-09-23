@@ -2,11 +2,11 @@ package com.example.demo.Dao;
 
 import java.util.Optional;
 
+import com.example.demo.model.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import com.example.demo.model.TransactionUser;
+import org.springframework.data.jpa.repository.Query;
 
 // CREATE TABLE transaction_user (
 //     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -22,7 +22,6 @@ import com.example.demo.model.TransactionUser;
 //         REFERENCES user_roles(role_id)
 // );
 
-public interface UserDao extends JpaRepository<TransactionUser, Long> {
+public interface TransactionUserDao extends JpaRepository<TransactionUser, Long> {
     public Optional<TransactionUser> findByUsername(String username);
 }
-

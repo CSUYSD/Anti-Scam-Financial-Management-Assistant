@@ -1,7 +1,7 @@
 package com.example.demo.exception;
 
-public class AccountNotFoundException extends RuntimeException {
-  public AccountNotFoundException(String s) {
-    super(s);
+public class AccountNotFoundException extends Exception {
+  public AccountNotFoundException(String message) {
+    super(message);
   }
 }
