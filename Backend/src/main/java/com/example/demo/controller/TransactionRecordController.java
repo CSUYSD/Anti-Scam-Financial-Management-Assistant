@@ -2,20 +2,29 @@ package com.example.demo.controller;
 
 import java.util.List;
 
+
+import com.example.demo.utility.JWT.JwtUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
 
 import com.example.demo.model.TransactionRecord;
 import com.example.demo.service.TransactionRecordService;
 @RestController
 @RequestMapping("/records")
+
+@Validated
 public class TransactionRecordController {
 
     private final TransactionRecordService recordService;
+    private final JwtUtil jwtUtil;
 
-    public TransactionRecordController(TransactionRecordService recordService) {
+    public TransactionRecordController(TransactionRecordService recordService, JwtUtil jwtUtil) {
         this.recordService = recordService;
+
+        this.jwtUtil = jwtUtil;
     }
 
     @GetMapping("/all/{accountId}")
@@ -24,10 +33,21 @@ public class TransactionRecordController {
         return ResponseEntity.ok(transactions);
     }
 
+//    @GetMapping("/{id}")
+//    public ResponseEntity<TransactionRecord> getRecordById(@PathVariable Long id) {
+//        try {
+//            TransactionRecord record = recordService.getRecordById(id);
+//            return ResponseEntity.ok(record);
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//        }
+//    }
+
     @GetMapping("/{id}/{accountId}")
     public ResponseEntity<TransactionRecord> getRecordById(@PathVariable Long id, @PathVariable Long accountId) {
         try {
             TransactionRecord record = recordService.getRecordById(id,accountId);
+
             return ResponseEntity.ok(record);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
@@ -45,9 +65,13 @@ public class TransactionRecordController {
         }
     }
 
-    // 创建新的交易记录
+
     @PostMapping("/create")
-    public ResponseEntity<String> createTransactionRecord(@RequestBody TransactionRecord transactionRecord) {
+    public ResponseEntity<String> createTransactionRecord( @RequestHeader("Authorization") String token, @RequestBody TransactionRecord transactionRecord) {
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未提供令牌");
+        }
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         try {
             recordService.saveTransactionRecord(transactionRecord);
             return ResponseEntity.status(HttpStatus.CREATED).body("Transaction record has been created successfully.");
@@ -56,7 +80,6 @@ public class TransactionRecordController {
         }
     }
 
-    // 更新交易记录
     @PutMapping("/update/{id}")
     public ResponseEntity<String> updateTransactionRecord(@PathVariable Long id, @RequestBody TransactionRecord transactionRecord) {
         try {
@@ -67,7 +90,6 @@ public class TransactionRecordController {
         }
     }
 
-    // 删除交易记录
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteTransactionRecord(@PathVariable Long id) {
         try {
@@ -87,5 +109,5 @@ public class TransactionRecordController {
             return ResponseEntity.status(500).body("Failed to delete records: " + e.getMessage());
         }
     }
-}
 
+}
