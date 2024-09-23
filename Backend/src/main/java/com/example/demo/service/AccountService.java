@@ -15,6 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import java.util.stream.Collectors;
+
+
 import org.springframework.data.redis.core.RedisTemplate;
 import com.example.demo.exception.UserNotFoundException;
 
@@ -83,16 +86,64 @@ public class AccountService {
         return "账户创建成功";
     }
 
-    public Account updateAccount(Long id, Account accountDetails) throws AccountNotFoundException {
-        Account account = getAccountById(id);
-        account.setAccountName(accountDetails.getAccountName());
-        account.setBalance(accountDetails.getBalance());
-        return accountDao.save(account);
+
+    // 更新账户信息
+//    public Account updateAccount(Long id, AccountDTO accountDTO) throws AccountNotFoundException {
+//        Account existingAccount = getAccountById(id);
+//
+//        // 更新账户名称和余额
+//        existingAccount.setAccountName(accountDTO.getName());
+//        existingAccount.setBalance(accountDTO.getBalance());
+//
+//        // 保存并返回更新后的账户信息
+//        return accountDao.save(existingAccount);
+//    }
+
+    public Account updateAccount(Long id, AccountDTO accountDTO) throws AccountNotFoundException {
+        Account existingAccount = getAccountById(id);
+        TransactionUser user = existingAccount.getTransactionUser();
+
+        List<Account> existingAccounts = accountDao.findByTransactionUser(user)
+                .stream()
+                .filter(account -> !account.getId().equals(id))  // 排除当前修改的账户
+                .collect(Collectors.toList());
+
+        for (Account account : existingAccounts) {
+            if (account.getAccountName().equals(accountDTO.getName())) {
+                throw new AccountAlreadyExistException("该用户下的账户名已存在");
+            }
+        }
+
+        // 更新账户名称和余额
+        existingAccount.setAccountName(accountDTO.getName());
+        existingAccount.setBalance(accountDTO.getBalance());
+
+        // 保存并返回更新后的账户信息
+        Account updatedAccount = accountDao.save(existingAccount);
+
+        // 更新 Redis 缓存
+        String redisKey = "login_user:" + existingAccount.getTransactionUser().getId() + ":account:" + existingAccount.getId();
+        RedisAccount redisAccount = new RedisAccount(
+                updatedAccount.getId(),
+                updatedAccount.getAccountName(),
+                updatedAccount.getBalance(),
+                new ArrayList<>());
+        redisTemplate.opsForValue().set(redisKey, redisAccount);
+
+        return updatedAccount;
     }
-    
+
+
     public void deleteAccount(Long id) throws AccountNotFoundException {
         Account account = getAccountById(id);
+
+        // 删除数据库中的账户
         accountDao.delete(account);
+
+        // 删除 Redis 中的缓存
+        String redisKey = "login_user:" + account.getTransactionUser().getId() + ":account:" + id;
+        redisTemplate.delete(redisKey);
+
     }
 }
 
