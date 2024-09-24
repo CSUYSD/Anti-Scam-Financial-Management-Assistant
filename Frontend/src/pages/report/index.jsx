@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import {
     Box,
     Typography,
@@ -22,6 +22,8 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Fade,
+    Tooltip,
 } from '@mui/material'
 import {
     BarChart as BarChartIcon,
@@ -33,15 +35,25 @@ import {
     Add as AddIcon,
     Chat as ChatIcon,
     Delete as DeleteIcon,
+    Edit as EditIcon,
 } from '@mui/icons-material'
-import { FluxMessageWithHistoryAPI, UploadFileAPI, ChatWithFileAPI } from '@/api/ai.jsx'
 import { v4 as uuidv4 } from 'uuid'
+import {
+    MessageAPI,
+    FluxMessageAPI,
+    FluxMessageWithHistoryAPI,
+    UploadFileAPI,
+    ChatWithFileAPI
+} from '@/api/ai.jsx'
 
-const drawerWidth = 240
+const drawerWidth = 300
 
 export default function Reports() {
     const theme = useTheme()
-    const [sessions, setSessions] = useState([{ id: uuidv4(), name: 'New Chat', messages: [] }])
+    const [sessions, setSessions] = useState(() => {
+        const savedSessions = localStorage.getItem('chatSessions')
+        return savedSessions ? JSON.parse(savedSessions) : [{ id: uuidv4(), name: 'New Chat', messages: [] }]
+    })
     const [activeSession, setActiveSession] = useState(sessions[0].id)
     const [message, setMessage] = useState('')
     const [isRetrievalMode, setIsRetrievalMode] = useState(false)
@@ -49,8 +61,14 @@ export default function Reports() {
     const [isLoading, setIsLoading] = useState(false)
     const [newSessionDialogOpen, setNewSessionDialogOpen] = useState(false)
     const [newSessionName, setNewSessionName] = useState('')
+    const [editSessionId, setEditSessionId] = useState(null)
     const fileInputRef = useRef(null)
     const chatContainerRef = useRef(null)
+    const [isTyping, setIsTyping] = useState(false)
+
+    useEffect(() => {
+        localStorage.setItem('chatSessions', JSON.stringify(sessions))
+    }, [sessions])
 
     useEffect(() => {
         if (chatContainerRef.current) {
@@ -58,7 +76,7 @@ export default function Reports() {
         }
     }, [sessions])
 
-    const handleSendMessage = async () => {
+    const handleSendMessage = useCallback(async () => {
         if (message.trim()) {
             const updatedSessions = [...sessions]
             const sessionIndex = updatedSessions.findIndex(s => s.id === activeSession)
@@ -66,47 +84,50 @@ export default function Reports() {
             setSessions(updatedSessions)
             setMessage('')
             setIsLoading(true)
+            setIsTyping(true)
 
             try {
                 let response
-                if (isRetrievalMode && files.length > 0) {
+                if (isRetrievalMode) {
                     response = await ChatWithFileAPI({
-                        message: message.trim(),
+                        prompt: message.trim(),
                         files: files.map(f => f.name),
                         sessionId: activeSession
                     })
                 } else {
                     response = await FluxMessageWithHistoryAPI({
-                        message: message.trim(),
+                        prompt: message.trim(),
                         sessionId: activeSession,
-                        history: updatedSessions[sessionIndex].messages
+                        history: updatedSessions[sessionIndex].messages.map(msg => ({
+                            role: msg.sender.toLowerCase(),
+                            content: msg.content
+                        }))
                     })
                 }
 
                 const reader = response.body.getReader()
                 const decoder = new TextDecoder()
 
+                let aiResponse = ''
                 while (true) {
                     const { done, value } = await reader.read()
                     if (done) break
                     const chunk = decoder.decode(value)
-                    const lines = chunk.split('\n').filter(line => line.trim() !== '')
+                    const events = chunk.split('\n\n').filter(Boolean)
 
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const jsonData = JSON.parse(line.slice(6))
-                            if (jsonData.choices && jsonData.choices[0] && jsonData.choices[0].delta && jsonData.choices[0].delta.content) {
-                                const content = jsonData.choices[0].delta.content
+                    for (const event of events) {
+                        if (event.startsWith('data: ')) {
+                            const data = event.slice(5)
+                            try {
+                                const parsedData = JSON.parse(data)
+                                aiResponse += parsedData.choices[0].delta.content || ''
                                 updatedSessions[sessionIndex].messages = [
                                     ...updatedSessions[sessionIndex].messages.slice(0, -1),
-                                    {
-                                        sender: 'AI',
-                                        content: (updatedSessions[sessionIndex].messages[updatedSessions[sessionIndex].messages.length - 1].sender === 'AI'
-                                            ? updatedSessions[sessionIndex].messages[updatedSessions[sessionIndex].messages.length - 1].content
-                                            : '') + content
-                                    }
+                                    { sender: 'AI', content: aiResponse }
                                 ]
                                 setSessions([...updatedSessions])
+                            } catch (error) {
+                                console.error('Error parsing SSE data:', error)
                             }
                         }
                     }
@@ -117,9 +138,10 @@ export default function Reports() {
                 setSessions([...updatedSessions])
             } finally {
                 setIsLoading(false)
+                setIsTyping(false)
             }
         }
-    }
+    }, [message, sessions, activeSession, isRetrievalMode, files])
 
     const handleFileUpload = async (event) => {
         const selectedFile = event.target.files[0]
@@ -143,10 +165,8 @@ export default function Reports() {
     }
 
     const handleGenerateReport = (reportType) => {
-        const updatedSessions = [...sessions]
-        const sessionIndex = updatedSessions.findIndex(s => s.id === activeSession)
-        updatedSessions[sessionIndex].messages.push({ sender: 'AI', content: `Generating ${reportType} report. This may take a moment.` })
-        setSessions(updatedSessions)
+        setMessage(`Generate a ${reportType} report`)
+        handleSendMessage()
     }
 
     const addNewSession = () => {
@@ -168,11 +188,24 @@ export default function Reports() {
         }
     }
 
+    const startEditSession = (id) => {
+        setEditSessionId(id)
+        setNewSessionName(sessions.find(s => s.id === id).name)
+    }
+
+    const handleEditSessionConfirm = () => {
+        setSessions(prev => prev.map(s =>
+            s.id === editSessionId ? { ...s, name: newSessionName } : s
+        ))
+        setEditSessionId(null)
+        setNewSessionName('')
+    }
+
     return (
-        <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             <Box
                 sx={{
-                    width: 300,
+                    width: drawerWidth,
                     flexShrink: 0,
                     borderRight: 1,
                     borderColor: 'divider',
@@ -199,11 +232,30 @@ export default function Reports() {
                             <ListItemIcon>
                                 <ChatIcon color={session.id === activeSession ? 'primary' : 'inherit'} />
                             </ListItemIcon>
-                            <ListItemText primary={session.name} />
+                            {editSessionId === session.id ? (
+                                <TextField
+                                    value={newSessionName}
+                                    onChange={(e) => setNewSessionName(e.target.value)}
+                                    onBlur={handleEditSessionConfirm}
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleEditSessionConfirm()
+                                        }
+                                    }}
+                                    autoFocus
+                                />
+                            ) : (
+                                <ListItemText primary={session.name} />
+                            )}
                             {session.id !== sessions[0].id && (
-                                <IconButton edge="end" onClick={() => deleteSession(session.id)}>
-                                    <DeleteIcon />
-                                </IconButton>
+                                <>
+                                    <IconButton edge="end" onClick={() => startEditSession(session.id)}>
+                                        <EditIcon />
+                                    </IconButton>
+                                    <IconButton edge="end" onClick={() => deleteSession(session.id)}>
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </>
                             )}
                         </ListItem>
                     ))}
@@ -252,7 +304,7 @@ export default function Reports() {
                     </>
                 )}
             </Box>
-            <Box sx={{ flexGrow: 1, p: 3, height: '100%', overflow: 'auto' }}>
+            <Box sx={{ flexGrow: 1, p: 3, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h4" component="h1" gutterBottom>
                         {sessions.find(s => s.id === activeSession)?.name}
@@ -274,26 +326,36 @@ export default function Reports() {
                     />
                 </Box>
                 <Card sx={{
-                    height: 'calc(100% - 180px)',
+                    flexGrow: 1,
                     display: 'flex',
                     flexDirection: 'column',
                     bgcolor: alpha(theme.palette.background.paper, 0.8),
                     boxShadow: theme.shadows[4],
+                    mb: 2,
                 }}>
                     <CardContent sx={{ flexGrow: 1, overflow: 'auto', p: 3 }} ref={chatContainerRef}>
                         {sessions.find(s => s.id === activeSession)?.messages.map((msg, index) => (
-                            <Box key={index} sx={{ mb: 2, display: 'flex', justifyContent: msg.sender === 'User' ? 'flex-end' : 'flex-start' }}>
-                                <Typography variant="body1" sx={{
-                                    maxWidth: '70%',
-                                    p: 2,
-                                    borderRadius: 2,
-                                    bgcolor: msg.sender === 'User' ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.secondary.main, 0.1),
-                                    color: msg.sender === 'User' ? theme.palette.primary.main : theme.palette.secondary.main,
-                                }}>
-                                    {msg.content}
+                            <Fade in={true} key={index}>
+                                <Box sx={{ mb: 2, display: 'flex', justifyContent: msg.sender === 'User' ? 'flex-end' : 'flex-start' }}>
+                                    <Typography variant="body1" sx={{
+                                        maxWidth: '70%',
+                                        p: 2,
+                                        borderRadius: 2,
+                                        bgcolor: msg.sender === 'User' ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.secondary.main, 0.1),
+                                        color: msg.sender === 'User' ? theme.palette.primary.main : theme.palette.secondary.main,
+                                    }}>
+                                        {msg.content}
+                                    </Typography>
+                                </Box>
+                            </Fade>
+                        ))}
+                        {isTyping && (
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
+                                <Typography variant="body2" sx={{ fontStyle: 'italic', color: theme.palette.text.secondary }}>
+                                    AI is typing...
                                 </Typography>
                             </Box>
-                        ))}
+                        )}
                     </CardContent>
                     <Box sx={{ p: 2, bgcolor: alpha(theme.palette.background.paper, 0.9) }}>
                         <Grid container spacing={2} alignItems="center">
@@ -304,25 +366,37 @@ export default function Reports() {
                                     placeholder="Type your message here"
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault()
+                                            handleSendMessage()
+                                        }
+                                    }}
+                                    multiline
+                                    maxRows={4}
                                     disabled={isLoading}
                                     sx={{ bgcolor: 'background.paper' }}
                                 />
                             </Grid>
                             <Grid item>
-                                <Button
-                                    variant="contained"
-                                    endIcon={<SendIcon />}
-                                    onClick={handleSendMessage}
-                                    disabled={isLoading || (isRetrievalMode && files.length === 0)}
-                                >
-                                    Send
-                                </Button>
+                                <Tooltip title={isLoading ? "Processing..." : "Send message"}>
+                                    <span>
+                                        <Button
+                                            variant="contained"
+                                            endIcon={<SendIcon />}
+                                            onClick={handleSendMessage}
+                                            disabled={isLoading || (isRetrievalMode && files.length === 0) || !message.trim()}
+                                        >
+                                            Send
+                                        </Button>
+                                    </span>
+                                </Tooltip>
                             </Grid>
                         </Grid>
                     </Box>
                 </Card>
 
-                <Box sx={{ mt: 3 }}>
+                <Box>
                     <Typography variant="h6" gutterBottom>Generate Reports</Typography>
                     <Grid container spacing={2}>
                         {[
