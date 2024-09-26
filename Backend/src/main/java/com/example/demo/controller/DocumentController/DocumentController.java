@@ -54,7 +54,7 @@ public class DocumentController {
                 ---------------------
                 {question_answer_context}
                 ---------------------
-                Based on the given context and provided historical information, rather than prior knowledge, respond to the user's query. If the answer is not in the context, inform the user that you cannot answer the question.
+                Based on the given context and provided historical information, rather than prior knowledge, respond to the user's query. If the answer is not in the context, inform the user that you cannot answer the question. Response in well-formatted markdown.
                 """;
         return ChatClient.create(openAiChatModel).prompt()
                 .user(prompt)

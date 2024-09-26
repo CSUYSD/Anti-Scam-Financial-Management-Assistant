@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -21,12 +21,11 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Fade,
   Tooltip,
   Paper,
   Chip,
   Avatar,
-} from '@mui/material'
+} from '@mui/material';
 import {
   BarChart as BarChartIcon,
   PieChart as PieChartIcon,
@@ -41,56 +40,92 @@ import {
   Person as PersonIcon,
   SmartToy as AIIcon,
   Menu as MenuIcon,
-} from '@mui/icons-material'
-import { v4 as uuidv4 } from 'uuid'
-import { motion, AnimatePresence } from 'framer-motion'
-import ReactMarkdown from 'react-markdown'
+} from '@mui/icons-material';
+import { v4 as uuidv4 } from 'uuid';
+import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import {
   MessageAPI,
   FluxMessageAPI,
   FluxMessageWithHistoryAPI,
   ChatWithFileAPI,
   UploadFileAPI
-} from '@/api/ai'
+} from '@/api/ai';
 
-export default function Reports() {
-  const theme = useTheme()
+export default function ChatInterface() {
+  const theme = useTheme();
   const [sessions, setSessions] = useState(() => {
-    const savedSessions = localStorage.getItem('chatSessions')
-    return savedSessions ? JSON.parse(savedSessions) : [{ id: uuidv4(), name: 'New Chat', messages: [] }]
-  })
-  const [activeSession, setActiveSession] = useState(sessions[0].id)
-  const [message, setMessage] = useState('')
-  const [isRetrievalMode, setIsRetrievalMode] = useState(false)
+    try {
+      const savedSessions = localStorage.getItem('chatSessions');
+      return savedSessions ? JSON.parse(savedSessions) : [{ id: uuidv4(), name: 'New Chat', messages: [] }];
+    } catch (error) {
+      console.error('Error loading sessions from localStorage:', error);
+      return [{ id: uuidv4(), name: 'New Chat', messages: [] }];
+    }
+  });
+  const [activeSession, setActiveSession] = useState(() => sessions[0]?.id || '');
+  const [message, setMessage] = useState('');
+  const [isRetrievalMode, setIsRetrievalMode] = useState(false);
   const [files, setFiles] = useState(() => {
-    const savedFiles = localStorage.getItem('uploadedFiles')
-    return savedFiles ? JSON.parse(savedFiles) : []
-  })
-  const [username, setUsername] = useState(() => {
-    return localStorage.getItem('username') || 'User'
-  })
-  const [isLoading, setIsLoading] = useState(false)
-  const [newSessionDialogOpen, setNewSessionDialogOpen] = useState(false)
-  const [newSessionName, setNewSessionName] = useState('')
-  const [editSessionId, setEditSessionId] = useState(null)
-  const fileInputRef = useRef(null)
-  const chatContainerRef = useRef(null)
-  const [isTyping, setIsTyping] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+    try {
+      const savedFiles = localStorage.getItem('uploadedFiles');
+      return savedFiles ? JSON.parse(savedFiles) : [];
+    } catch (error) {
+      console.error('Error loading files from localStorage:', error);
+      return [];
+    }
+  });
+  const [username, setUsername] = useState(() => localStorage.getItem('username') || 'User');
+  const [isLoading, setIsLoading] = useState(false);
+  const [newSessionDialogOpen, setNewSessionDialogOpen] = useState(false);
+  const [newSessionName, setNewSessionName] = useState('');
+  const [editSessionId, setEditSessionId] = useState(null);
+  const fileInputRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem('chatSessions', JSON.stringify(sessions))
-  }, [sessions])
+    try {
+      localStorage.setItem('chatSessions', JSON.stringify(sessions));
+    } catch (error) {
+      console.error('Error saving sessions to localStorage:', error);
+    }
+  }, [sessions]);
 
   useEffect(() => {
-    localStorage.setItem('uploadedFiles', JSON.stringify(files))
-  }, [files])
+    try {
+      localStorage.setItem('uploadedFiles', JSON.stringify(files));
+    } catch (error) {
+      console.error('Error saving files to localStorage:', error);
+    }
+  }, [files]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [sessions])
+  }, [sessions]);
+
+  const isChineseChar = (char) => {
+    const charCode = char.charCodeAt(0);
+    return (charCode >= 0x4e00 && charCode <= 0x9fff) ||
+        (charCode >= 0x3400 && charCode <= 0x4dbf) ||
+        (charCode >= 0x20000 && charCode <= 0x2a6df) ||
+        (charCode >= 0x2a700 && charCode <= 0x2b73f) ||
+        (charCode >= 0x2b740 && charCode <= 0x2b81f) ||
+        (charCode >= 0x2b820 && charCode <= 0x2ceaf);
+  };
+
+  const isChinesePunctuation = (char) => {
+    const chinesePunctuationRegex = /[\u3000-\u303f\uff00-\uff0f\uff1a-\uff20\uff3b-\uff40\uff5b-\uff65]/;
+    return chinesePunctuationRegex.test(char);
+  };
 
   const handleSendMessage = useCallback(async () => {
     if (message.trim()) {
@@ -98,6 +133,11 @@ export default function Reports() {
       console.log("User input:", decodedMessage);
       const updatedSessions = [...sessions];
       const sessionIndex = updatedSessions.findIndex(s => s.id === activeSession);
+
+      if (sessionIndex === -1) {
+        console.error('Active session not found');
+        return;
+      }
 
       updatedSessions[sessionIndex].messages.push({ sender: username, content: decodedMessage });
       setSessions(updatedSessions);
@@ -125,6 +165,8 @@ export default function Reports() {
         const sseData = response.data;
         const lines = sseData.split('\n');
         let aiResponse = '';
+        let currentLine = '';
+        let isChineseResponse = false;
 
         updatedSessions[sessionIndex].messages.push({ sender: 'AI', content: '' });
         setSessions([...updatedSessions]);
@@ -132,16 +174,45 @@ export default function Reports() {
         for (const line of lines) {
           if (line.startsWith('data:')) {
             const messagePart = line.replace('data:', '').trim();
-            for (const char of messagePart) {
-              aiResponse += char;
-              updatedSessions[sessionIndex].messages[updatedSessions[sessionIndex].messages.length - 1] = {
-                sender: 'AI',
-                content: aiResponse.replace(/\\n/g, '\n').replace(/\\s/g, ' ')
-              };
-              setSessions([...updatedSessions]);
-              await new Promise(resolve => setTimeout(resolve, 50));
+            if (messagePart === '') {
+              // Empty data, treat as a new line
+              aiResponse += currentLine + '\n';
+              currentLine = '';
+            } else {
+              if (currentLine === '' && isChineseChar(messagePart[0])) {
+                isChineseResponse = true;
+              }
+
+              if (isChineseResponse) {
+                // For Chinese, add characters directly and start a new line after punctuation
+                for (const char of messagePart) {
+                  currentLine += char;
+                  if (isChinesePunctuation(char)) {
+                    aiResponse += currentLine + '\n';
+                    currentLine = '';
+                  }
+                }
+              } else {
+                // For English, add space before the new word, unless it's the first word in the line
+                currentLine += (currentLine ? ' ' : '') + messagePart;
+              }
             }
+            updatedSessions[sessionIndex].messages[updatedSessions[sessionIndex].messages.length - 1] = {
+              sender: 'AI',
+              content: aiResponse + currentLine
+            };
+            setSessions([...updatedSessions]);
+            await new Promise(resolve => setTimeout(resolve, 50));
           }
+        }
+        // Add the last line if it's not empty
+        if (currentLine) {
+          aiResponse += currentLine;
+          updatedSessions[sessionIndex].messages[updatedSessions[sessionIndex].messages.length - 1] = {
+            sender: 'AI',
+            content: aiResponse
+          };
+          setSessions([...updatedSessions]);
         }
       } catch (error) {
         console.error('Error sending message:', error);
@@ -152,79 +223,135 @@ export default function Reports() {
         setIsTyping(false);
       }
     }
-  }, [message, sessions, activeSession, isRetrievalMode, files]);
+  }, [message, sessions, activeSession, isRetrievalMode, files, username]);
 
   const handleFileUpload = async (event) => {
-    const selectedFile = event.target.files[0]
+    const selectedFile = event.target.files[0];
     if (selectedFile) {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
-        const formData = new FormData()
-        formData.append('file', selectedFile)
-        const response = await UploadFileAPI(formData)
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        const response = await UploadFileAPI(formData);
         if (response.status === 200) {
           const fileMetadata = {
             name: selectedFile.name,
             lastModified: selectedFile.lastModified,
             size: selectedFile.size,
             type: selectedFile.type
-          }
-          setFiles(prev => [...prev, fileMetadata])
+          };
+          setFiles(prev => [...prev, fileMetadata]);
         } else {
-          throw new Error('File upload failed')
+          throw new Error('File upload failed');
         }
       } catch (error) {
-        console.error('Error uploading file:', error)
+        console.error('Error uploading file:', error);
         // You might want to show an error message to the user here
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
-  }
+  };
 
   const handleGenerateReport = (reportType) => {
-    setMessage(`Generate a ${reportType} report`)
-    handleSendMessage()
-  }
+    setMessage(`Generate a ${reportType} report`);
+    handleSendMessage();
+  };
 
   const addNewSession = () => {
-    setNewSessionDialogOpen(true)
-  }
+    setNewSessionDialogOpen(true);
+  };
 
   const handleNewSessionConfirm = () => {
-    const newSession = { id: uuidv4(), name: newSessionName || `New Chat ${sessions.length + 1}`, messages: [] }
-    setSessions(prev => [...prev, newSession])
-    setActiveSession(newSession.id)
-    setNewSessionDialogOpen(false)
-    setNewSessionName('')
-  }
+    const newSession = { id: uuidv4(), name: newSessionName || `New Chat ${sessions.length + 1}`, messages: [] };
+    setSessions(prev => [...prev, newSession]);
+    setActiveSession(newSession.id);
+    setNewSessionDialogOpen(false);
+    setNewSessionName('');
+  };
 
   const deleteSession = (id) => {
-    setSessions(prev => prev.filter(s => s.id !== id))
+    setSessions(prev => prev.filter(s => s.id !== id));
     if (activeSession === id) {
-      setActiveSession(sessions[0].id)
+      setActiveSession(sessions[0].id);
     }
-  }
+  };
 
   const startEditSession = (id) => {
-    setEditSessionId(id)
-    setNewSessionName(sessions.find(s => s.id === id).name)
-  }
+    setEditSessionId(id);
+    setNewSessionName(sessions.find(s => s.id === id)?.name || '');
+  };
 
   const handleEditSessionConfirm = () => {
     setSessions(prev => prev.map(s =>
         s.id === editSessionId ? { ...s, name: newSessionName } : s
-    ))
-    setEditSessionId(null)
-    setNewSessionName('')
-  }
+    ));
+    setEditSessionId(null);
+    setNewSessionName('');
+  };
 
   const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen)
-  }
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const renderMessage = (content, sender) => {
+    const MarkdownComponents = {
+      p: ({ node, ...props }) => <Typography variant="body1" paragraph sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }} {...props} />,
+      h1: ({ node, ...props }) => <Typography variant="h4" gutterBottom sx={{ wordBreak: 'break-word', mt: 4, mb: 2 }} {...props} />,
+      h2: ({ node, ...props }) => <Typography variant="h5" gutterBottom sx={{ wordBreak: 'break-word', mt: 3, mb: 2 }} {...props} />,
+      h3: ({ node, ...props }) => <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word', mt: 2, mb: 1 }} {...props} />,
+      h4: ({ node, ...props }) => <Typography variant="subtitle1" gutterBottom sx={{ wordBreak: 'break-word', fontWeight: 'bold' }} {...props} />,
+      h5: ({ node, ...props }) => <Typography variant="subtitle2" gutterBottom sx={{ wordBreak: 'break-word', fontWeight: 'bold' }} {...props} />,
+      h6: ({ node, ...props }) => <Typography variant="subtitle2" gutterBottom sx={{ wordBreak: 'break-word', fontStyle: 'italic' }} {...props} />,
+      ul: ({ node, ...props }) => <ul style={{ paddingLeft: '20px', marginBottom: '16px' }} {...props} />,
+      ol: ({ node, ...props }) => <ol style={{ paddingLeft: '20px', marginBottom: '16px' }} {...props} />,
+      li: ({ node, ...props }) => <li style={{ marginBottom: '8px' }} {...props} />,
+      code: ({ node, inline, ...props }) =>
+          inline ? (
+              <code style={{ backgroundColor: alpha(theme.palette.primary.main, 0.1), padding: '2px 4px', borderRadius: '4px', wordBreak: 'break-word' }} {...props} />
+          ) : (
+              <pre style={{ backgroundColor: alpha(theme.palette.primary.main, 0.1), padding: '16px', borderRadius: '4px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            <code {...props} />
+          </pre>
+          ),
+    };
+
+    if (sender === 'AI') {
+      // Process AI response
+      const processedContent = content
+          .split('\n')
+          .map(line => line.trim())
+          .join('\n')
+          .replace(/\n{3,}/g, '\n\n'); // Replace 3 or more consecutive newlines with 2
+
+      return (
+          <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeRaw, rehypeKatex]}
+              components={MarkdownComponents}
+          >
+            {processedContent}
+          </ReactMarkdown>
+      );
+    } else {
+      // For user messages, maintain existing behavior
+      return (
+          <Typography
+              variant="body1"
+              sx={{
+                color: theme.palette.text.primary,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}
+          >
+            {content}
+          </Typography>
+      );
+    }
+  };
 
   return (
-      <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden', bgcolor: 'background.default' }}>
+      <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', bgcolor: 'background.default' }}>
         <Box sx={{
           width: sidebarOpen ? 240 : 0,
           flexShrink: 0,
@@ -283,7 +410,7 @@ export default function Reports() {
                                 onBlur={handleEditSessionConfirm}
                                 onKeyPress={(e) => {
                                   if (e.key === 'Enter') {
-                                    handleEditSessionConfirm()
+                                    handleEditSessionConfirm();
                                   }
                                 }}
                                 autoFocus
@@ -350,7 +477,7 @@ export default function Reports() {
                         fullWidth
                         variant="outlined"
                         startIcon={<UploadIcon />}
-                        onClick={() => fileInputRef.current.click()}
+                        onClick={() => fileInputRef.current?.click()}
                         disabled={isLoading}
                         sx={{ mt: 1, borderRadius: 2 }}
                     >
@@ -374,7 +501,7 @@ export default function Reports() {
                 <MenuIcon />
               </IconButton>
               <Typography variant="h5" component="h1" sx={{ fontWeight: 'bold' }}>
-                {sessions.find(s => s.id === activeSession)?.name}
+                {sessions.find(s => s.id === activeSession)?.name || 'Chat'}
               </Typography>
             </Box>
             <FormControlLabel
@@ -382,10 +509,10 @@ export default function Reports() {
                   <Switch
                       checked={isRetrievalMode}
                       onChange={(e) => {
-                        setIsRetrievalMode(e.target.checked)
+                        setIsRetrievalMode(e.target.checked);
                         if (!e.target.checked) {
-                          setFiles([])
-                          if (fileInputRef.current) fileInputRef.current.value = ''
+                          setFiles([]);
+                          if (fileInputRef.current) fileInputRef.current.value = '';
                         }
                       }}
                   />
@@ -413,31 +540,22 @@ export default function Reports() {
                           exit={{ opacity: 0, y: -20 }}
                           transition={{ duration: 0.2 }}
                       >
-                        <Box sx={{ mb: 2, display: 'flex', justifyContent: msg.sender === 'User' ? 'flex-end' : 'flex-start' }}>
+                        <Box sx={{ mb: 2, display: 'flex', justifyContent: msg.sender === username ? 'flex-end' : 'flex-start' }}>
                           <Paper elevation={1} sx={{
                             maxWidth: '70%',
                             p: 2,
                             borderRadius: 2,
-                            bgcolor: msg.sender === 'User' ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.secondary.main, 0.1),
+                            bgcolor: msg.sender === username ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.secondary.main, 0.1),
                           }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                               <Avatar sx={{ width: 24, height: 24, mr: 1, bgcolor: msg.sender === username ? 'primary.main' : 'secondary.main' }}>
                                 {msg.sender === username ? <PersonIcon fontSize="small" /> : <AIIcon fontSize="small" />}
                               </Avatar>
                               <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                                {msg.sender === username ? username : 'User'}
+                                {msg.sender === username ? username : 'AI'}
                               </Typography>
                             </Box>
-                            {msg.sender === 'AI' ? (
-                                <ReactMarkdown>{msg.content}</ReactMarkdown>
-                            ) : (
-                                <Typography variant="body1" sx={{
-                                  color: theme.palette.text.primary,
-                                  whiteSpace: 'pre-wrap'
-                                }}>
-                                  {msg.content}
-                                </Typography>
-                            )}
+                            {renderMessage(msg.content, msg.sender)}
                           </Paper>
                         </Box>
                       </motion.div>
@@ -467,8 +585,8 @@ export default function Reports() {
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyPress={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault()
-                            handleSendMessage()
+                            e.preventDefault();
+                            handleSendMessage();
                           }
                         }}
                         multiline
@@ -592,5 +710,5 @@ export default function Reports() {
           </DialogActions>
         </Dialog>
       </Box>
-  )
+  );
 }
