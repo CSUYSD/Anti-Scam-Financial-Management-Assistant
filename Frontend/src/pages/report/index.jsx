@@ -27,9 +27,6 @@ import {
   Avatar,
 } from '@mui/material';
 import {
-  BarChart as BarChartIcon,
-  PieChart as PieChartIcon,
-  AccountBalance as AccountBalanceIcon,
   Send as SendIcon,
   Upload as UploadIcon,
   InsertDriveFile as FileIcon,
@@ -40,6 +37,9 @@ import {
   Person as PersonIcon,
   SmartToy as AIIcon,
   Menu as MenuIcon,
+  Refresh as RefreshIcon,
+  ContentCopy as CopyIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -253,11 +253,6 @@ export default function ChatInterface() {
     }
   };
 
-  const handleGenerateReport = (reportType) => {
-    setMessage(`Generate a ${reportType} report`);
-    handleSendMessage();
-  };
-
   const addNewSession = () => {
     setNewSessionDialogOpen(true);
   };
@@ -271,9 +266,11 @@ export default function ChatInterface() {
   };
 
   const deleteSession = (id) => {
-    setSessions(prev => prev.filter(s => s.id !== id));
-    if (activeSession === id) {
-      setActiveSession(sessions[0].id);
+    if (sessions.length > 1) {
+      setSessions(prev => prev.filter(s => s.id !== id));
+      if (activeSession === id) {
+        setActiveSession(sessions.find(s => s.id !== id)?.id);
+      }
     }
   };
 
@@ -292,6 +289,42 @@ export default function ChatInterface() {
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleRetry = async () => {
+    const sessionIndex = sessions.findIndex(s => s.id === activeSession);
+    if (sessionIndex === -1) return;
+
+    const lastUserMessage = [...sessions[sessionIndex].messages].reverse().find(m => m.sender === username);
+    if (!lastUserMessage) return;
+
+    // Remove the last AI message
+    const updatedSessions = [...sessions];
+    updatedSessions[sessionIndex].messages.pop();
+    setSessions(updatedSessions);
+
+    // Resend the last user message
+    setMessage(lastUserMessage.content);
+    await handleSendMessage();
+  };
+
+  const handleCopy = (content) => {
+    navigator.clipboard.writeText(content).then(() => {
+      // You might want to show a success message here
+      console.log('Content copied to clipboard');
+    }, (err) => {
+      console.error('Could not copy text: ', err);
+    });
+  };
+
+  const handleDownload = (content) => {
+    const element = document.createElement("a");
+    const file = new Blob([content], {type: 'text/markdown'});
+    element.href = URL.createObjectURL(file);
+    element.download = "ai_response.md";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   const renderMessage = (content, sender) => {
@@ -314,6 +347,7 @@ export default function ChatInterface() {
             <code {...props} />
           </pre>
           ),
+      strong: ({ node, ...props }) => <strong style={{ fontWeight: 'bold' }} {...props} />,
     };
 
     if (sender === 'AI') {
@@ -325,13 +359,26 @@ export default function ChatInterface() {
           .replace(/\n{3,}/g, '\n\n'); // Replace 3 or more consecutive newlines with 2
 
       return (
-          <ReactMarkdown
-              remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeRaw, rehypeKatex]}
-              components={MarkdownComponents}
-          >
-            {processedContent}
-          </ReactMarkdown>
+          <>
+            <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeRaw, rehypeKatex]}
+                components={MarkdownComponents}
+            >
+              {processedContent}
+            </ReactMarkdown>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+              <IconButton onClick={() => handleRetry()} size="small">
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+              <IconButton onClick={() => handleCopy(processedContent)} size="small">
+                <CopyIcon fontSize="small" />
+              </IconButton>
+              <IconButton onClick={() => handleDownload(processedContent)} size="small">
+                <DownloadIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </>
       );
     } else {
       // For user messages, maintain existing behavior
@@ -351,7 +398,7 @@ export default function ChatInterface() {
   };
 
   return (
-      <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', bgcolor: 'background.default' }}>
+      <Box sx={{ display: 'flex', height: '95vh', overflow: 'hidden' }}>
         <Box sx={{
           width: sidebarOpen ? 240 : 0,
           flexShrink: 0,
@@ -365,7 +412,6 @@ export default function ChatInterface() {
               sx={{
                 height: '100%',
                 overflow: 'auto',
-                bgcolor: 'background.paper',
                 borderRadius: 0,
                 borderRight: 1,
                 borderColor: 'divider',
@@ -420,15 +466,13 @@ export default function ChatInterface() {
                         ) : (
                             <ListItemText primary={session.name} />
                         )}
-                        {session.id !== sessions[0].id && (
-                            <>
-                              <IconButton edge="end" onClick={() => startEditSession(session.id)} size="small">
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton edge="end" onClick={() => deleteSession(session.id)} size="small">
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </>
+                        <IconButton edge="end" onClick={() => startEditSession(session.id)} size="small">
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        {sessions.length > 1 && (
+                            <IconButton edge="end" onClick={() => deleteSession(session.id)} size="small">
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
                         )}
                       </ListItem>
                     </motion.div>
@@ -495,12 +539,12 @@ export default function ChatInterface() {
           display: 'flex',
           flexDirection: 'column',
         }}>
-          <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 1, borderColor: 'divider' }}>
+          <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 1, borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <IconButton onClick={toggleSidebar} sx={{ mr: 2 }}>
+              <IconButton onClick={toggleSidebar} sx={{ mr: 1 }}>
                 <MenuIcon />
               </IconButton>
-              <Typography variant="h5" component="h1" sx={{ fontWeight: 'bold' }}>
+              <Typography variant="h6" component="h1" sx={{ fontWeight: 'bold' }}>
                 {sessions.find(s => s.id === activeSession)?.name || 'Chat'}
               </Typography>
             </Box>
@@ -520,17 +564,16 @@ export default function ChatInterface() {
                 label="Retrieval Mode"
             />
           </Box>
-          <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', p: 2 }}>
+          <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', p: 1.5 }}>
             <Card sx={{
               flexGrow: 1,
               display: 'flex',
               flexDirection: 'column',
-              bgcolor: alpha(theme.palette.background.paper, 0.8),
               boxShadow: theme.shadows[4],
               borderRadius: 2,
               overflow: 'hidden',
             }}>
-              <CardContent sx={{ flexGrow: 1, overflow: 'auto', p: 3 }} ref={chatContainerRef}>
+              <CardContent sx={{ flexGrow: 1, overflow: 'auto', p: 2 }} ref={chatContainerRef}>
                 <AnimatePresence>
                   {sessions.find(s => s.id === activeSession)?.messages.map((msg, index) => (
                       <motion.div
@@ -540,14 +583,18 @@ export default function ChatInterface() {
                           exit={{ opacity: 0, y: -20 }}
                           transition={{ duration: 0.2 }}
                       >
-                        <Box sx={{ mb: 2, display: 'flex', justifyContent: msg.sender === username ? 'flex-end' : 'flex-start' }}>
+                        <Box sx={{ mb: 1.5, display: 'flex', justifyContent: msg.sender === username ? 'flex-end' : 'flex-start' }}>
                           <Paper elevation={1} sx={{
                             maxWidth: '70%',
-                            p: 2,
+                            p: 1.5,
                             borderRadius: 2,
-                            bgcolor: msg.sender === username ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.secondary.main, 0.1),
+                            bgcolor: msg.sender === username
+                                ? alpha(theme.palette.primary.main, 0.1)
+                                : theme.palette.mode === 'dark'
+                                    ? alpha(theme.palette.background.paper, 0.2)
+                                    : '#f7f7f8',
                           }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                               <Avatar sx={{ width: 24, height: 24, mr: 1, bgcolor: msg.sender === username ? 'primary.main' : 'secondary.main' }}>
                                 {msg.sender === username ? <PersonIcon fontSize="small" /> : <AIIcon fontSize="small" />}
                               </Avatar>
@@ -562,20 +609,21 @@ export default function ChatInterface() {
                   ))}
                 </AnimatePresence>
                 {isTyping && (
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 1.5 }}>
                       <Chip
                           icon={<AIIcon />}
                           label="AI is typing..."
                           variant="outlined"
                           color="secondary"
+                          size="small"
                           sx={{ animation: 'pulse 1.5s infinite' }}
                       />
                     </Box>
                 )}
               </CardContent>
               <Divider />
-              <Box sx={{ p: 2, bgcolor: theme.palette.background.paper }}>
-                <Grid container spacing={2} alignItems="center">
+              <Box sx={{ p: 1.5 }}>
+                <Grid container spacing={1.5} alignItems="center">
                   <Grid item xs>
                     <TextField
                         fullWidth
@@ -590,7 +638,7 @@ export default function ChatInterface() {
                           }
                         }}
                         multiline
-                        maxRows={4}
+                        maxRows={3}
                         disabled={isLoading}
                         sx={{
                           '& .MuiOutlinedInput-root': {
@@ -616,8 +664,8 @@ export default function ChatInterface() {
                           disabled={isLoading || (isRetrievalMode && files.length === 0) || !message.trim()}
                           sx={{
                             borderRadius: 2,
-                            px: 3,
-                            py: 1.5,
+                            px: 2,
+                            py: 1,
                             transition: 'all 0.3s',
                             '&:hover': {
                               transform: 'translateY(-2px)',
@@ -633,39 +681,6 @@ export default function ChatInterface() {
                 </Grid>
               </Box>
             </Card>
-          </Box>
-          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>Generate Reports</Typography>
-            <Grid container spacing={2}>
-              {[
-                { type: 'Income Statement', icon: <BarChartIcon /> },
-                { type: 'Balance Sheet', icon: <PieChartIcon /> },
-                { type: 'Cash Flow', icon: <AccountBalanceIcon /> },
-              ].map((report) => (
-                  <Grid item xs={12} sm={4} key={report.type}>
-                    <Button
-                        fullWidth
-                        variant="contained"
-                        startIcon={report.icon}
-                        onClick={() => handleGenerateReport(report.type)}
-                        disabled={isLoading}
-                        sx={{
-                          bgcolor: alpha(theme.palette.primary.main, 0.9),
-                          '&:hover': {
-                            bgcolor: theme.palette.primary.main,
-                            transform: 'translateY(-2px)',
-                            boxShadow: theme.shadows[4],
-                          },
-                          borderRadius: 2,
-                          py: 1.5,
-                          transition: 'all 0.3s',
-                        }}
-                    >
-                      {report.type}
-                    </Button>
-                  </Grid>
-              ))}
-            </Grid>
           </Box>
         </Box>
 

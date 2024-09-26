@@ -17,7 +17,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip } from '@mui/material';
 import { Link as MuiLink } from '@mui/material';
 import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { mainListItems, secondaryListItems } from './ListItems';
@@ -132,6 +132,13 @@ export default function Layout() {
                             },
                         },
                     },
+                    MuiListItemIcon: {
+                        styleOverrides: {
+                            root: {
+                                color: mode === 'dark' ? '#90caf9' : '#3a7bd5',
+                            },
+                        },
+                    },
                 },
             }),
         [mode],
@@ -243,15 +250,32 @@ export default function Layout() {
                         {secondaryListItems}
                     </List>
                     <Box sx={{ mt: 'auto', p: 2 }}>
-                        <Button
-                            variant="outlined"
-                            color="primary"
-                            startIcon={<LogoutIcon />}
-                            onClick={handleLogout}
-                            fullWidth
-                        >
-                            Logout
-                        </Button>
+                        <Tooltip title="Logout" placement="right">
+                            <IconButton
+                                color="primary"
+                                onClick={handleLogout}
+                                sx={{
+                                    width: '100%',
+                                    justifyContent: open ? 'flex-start' : 'center',
+                                    '& .MuiButton-startIcon': {
+                                        mr: open ? 1 : 'auto',
+                                    },
+                                }}
+                            >
+                                <LogoutIcon />
+                                {open && (
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            ml: 1,
+                                            display: { xs: 'none', sm: 'block' },
+                                        }}
+                                    >
+                                        Logout
+                                    </Typography>
+                                )}
+                            </IconButton>
+                        </Tooltip>
                     </Box>
                 </Drawer>
                 <Box
