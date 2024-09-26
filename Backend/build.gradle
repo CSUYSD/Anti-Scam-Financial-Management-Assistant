@@ -64,12 +64,12 @@ dependencies {
 
 	// Spring AI
 	implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
-	// OllaMa
-	implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter'
+	implementation 'org.springframework.ai:spring-ai-tika-document-reader'
 	// OpenAI
 	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
-//	// Pinecone Vector DB
-//	implementation 'org.springframework.ai:spring-ai-pinecone-store-spring-boot-starter'
+	// Chroma Vector DB
+	implementation 'org.springframework.ai:spring-ai-chroma-store-spring-boot-starter'
+//	implementation 'org.springframework.ai:spring-ai-chroma-store:1.0.0-M2'
 //	// Redis Vector DB
 //	implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
 }
