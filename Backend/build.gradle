@@ -39,8 +39,6 @@ dependencies {
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 	implementation 'com.fasterxml.jackson.core:jackson-annotations'
 	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-//	implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
-
 	// H2 Database
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'org.postgresql:postgresql'
@@ -66,18 +64,14 @@ dependencies {
 
 	// Spring AI
 	implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
-//	// OllaMa
-//	implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter'
+	implementation 'org.springframework.ai:spring-ai-tika-document-reader'
 	// OpenAI
 	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
-	// Pinecone Vector DB
-//	implementation 'org.springframework.ai:spring-ai-pinecone-store-spring-boot-starter'
-	// Redis Vector DB
-	implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
-	implementation 'redis.clients:jedis'
-
-
-	implementation 'org.springframework.ai:spring-ai-tika-document-reader'
+	// Chroma Vector DB
+	implementation 'org.springframework.ai:spring-ai-chroma-store-spring-boot-starter'
+//	implementation 'org.springframework.ai:spring-ai-chroma-store:1.0.0-M2'
+//	// Redis Vector DB
+//	implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
 }
 
 dependencyManagement {
