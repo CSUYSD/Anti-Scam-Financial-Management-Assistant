@@ -14,7 +14,6 @@ import java.util.Collection;
 public class UserDetail extends User {
     private TransactionUser transactionUser;
 
-
     // 修改构造函数，接受单个 GrantedAuthority
     public UserDetail(TransactionUser user, Collection<? extends GrantedAuthority> authorities) {
         super(user.getUsername(), user.getPassword(), authorities);
