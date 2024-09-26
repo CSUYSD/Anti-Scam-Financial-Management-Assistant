@@ -1,22 +1,21 @@
-package com.example.demo.controller.ChatController;
+package com.example.demo.controller.AiFunctionController;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.catalina.User;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 @RestController
@@ -24,13 +23,14 @@ import reactor.core.publisher.Flux;
 public class MessageController {
     private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     private final OpenAiChatModel openAiChatModel;
+    private final ChatMemory chatMemory = new InMemoryChatMemory();
 
     @Autowired
     public MessageController(OpenAiChatModel openAiChatModel) {
         this.openAiChatModel = openAiChatModel;
     }
 
-    @PostMapping("/chat")
+    @GetMapping("/chat")
     public String chat(@RequestParam String prompt) {
         ChatClient chatClient = ChatClient.create(openAiChatModel);
         return chatClient.prompt()
@@ -39,15 +39,30 @@ public class MessageController {
                 .content();
     }
 
-    @PostMapping("/chat/stream")
-    public Flux<ServerSentEvent<String>> chatStream(@RequestParam String prompt) {
+    @GetMapping(value = "/chat/stream/test", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> chatStreamTest(@RequestParam String prompt, @RequestParam String sessionId) {
+        MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
+        return ChatClient.create(openAiChatModel).prompt()
+                .user(prompt)
+                .advisors(messageChatMemoryAdvisor)
+                .stream()
+                .content();
+    }
+
+
+    //streaming chat with memory use SSE pipeline.
+    @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> chatStream(@RequestParam String prompt, @RequestParam String sessionId) {
+        MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
         return ChatClient.create(openAiChatModel).prompt()
                 .messages(new SystemMessage("you are a finance management helper"), new UserMessage(prompt))
+                .advisors(messageChatMemoryAdvisor)
                 .stream() //流式返回
                 .chatResponse().map(chatResponse -> ServerSentEvent.builder(toJsonString(chatResponse))
                         .event("message")
                         .build());
     }
+
 
     @SneakyThrows
     private String toJsonString(ChatResponse chatResponse) {
