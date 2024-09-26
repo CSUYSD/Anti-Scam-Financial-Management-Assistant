@@ -31,7 +31,4 @@ public class TransactionRecord {
     @JoinColumn(name = "account_id", nullable = false)
     @JsonBackReference
     private Account account; // 一个账户对应多个交易记录
-
-
-
 }
