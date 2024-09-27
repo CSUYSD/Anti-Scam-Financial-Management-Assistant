@@ -1,6 +1,6 @@
 package com.example.demo;
 
-import org.springframework.ai.chroma.ChromaApi;
+
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -34,6 +34,8 @@ public class DemoApplication {
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		return objectMapper;
 	}
+	@Value("${spring.ai.openai.api-key}")
+	private String openAiApiKey;
 
 	@Value("${spring.ai.openai.api-key}")
 	private String openAiApiKey;
