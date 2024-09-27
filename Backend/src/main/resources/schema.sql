@@ -5,8 +5,8 @@ DROP TABLE IF EXISTS accounts;
 DROP TABLE IF EXISTS transaction_records;
 -- 创建 user_roles 表
 CREATE TABLE user_roles (
-    role_id INTEGER PRIMARY KEY,
-    role VARCHAR(50) NOT NULL
+            role_id INTEGER PRIMARY KEY,
+            role VARCHAR(50) NOT NULL
 );
 
 INSERT INTO user_roles (role_id, role) VALUES
@@ -16,21 +16,21 @@ INSERT INTO user_roles (role_id, role) VALUES
 -- 然后创建 transaction_users 表
 DROP TABLE IF EXISTS transaction_users;
 CREATE TABLE transaction_users (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(255) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    phone VARCHAR(20),
-    dob DATE,
-    role_id INTEGER,
-    avatar VARCHAR(255),
-    CONSTRAINT fk_role
-        FOREIGN KEY (role_id)
-        REFERENCES user_roles(role_id)
+               id BIGINT PRIMARY KEY AUTO_INCREMENT,
+               username VARCHAR(255) NOT NULL,
+               password VARCHAR(255) NOT NULL,
+               email VARCHAR(255) NOT NULL,
+               phone VARCHAR(20),
+               dob DATE,
+               role_id INTEGER,
+               avatar VARCHAR(255),
+               CONSTRAINT fk_role
+                   FOREIGN KEY (role_id)
+                       REFERENCES user_roles(role_id)
 );
 
 
-    
+
 
 INSERT INTO transaction_users (username, password, email, phone, dob, role_id, avatar) VALUES
 ('johndoe', 'password123', 'johndoe@example.com', '1234567890', '1990-01-15', 1, null),
@@ -51,17 +51,17 @@ INSERT INTO transaction_users (username, password, email, phone, dob, role_id, a
 --     @ManyToOne
 --     @JoinColumn(name = "transaction_user_id")
 --     private TransactionUser transactionUser;
-    
+
 --     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
 --     private List<TransactionRecord> transactionRecords;
 -- }
 CREATE TABLE account (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    account_name VARCHAR(255) NOT NULL,
-    balance DECIMAL(10, 2) NOT NULL,
-    transaction_user_id BIGINT,
+             id BIGINT PRIMARY KEY AUTO_INCREMENT,
+             account_name VARCHAR(255) NOT NULL,
+             balance DECIMAL(10, 2) NOT NULL,
+             transaction_user_id BIGINT,
 
-    FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id) ON DELETE CASCADE
+             FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id) ON DELETE CASCADE
 
 );
 
@@ -84,14 +84,14 @@ CREATE TABLE account (
 -- }
 
 CREATE TABLE transaction_record (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    type VARCHAR(50) NOT NULL,
-    transaction_type VARCHAR(255) NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL,
-    transaction_method VARCHAR(255),
-    transaction_time TIMESTAMP NOT NULL,
-    transaction_description VARCHAR(255),
-    account_id BIGINT,
-    FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
+            id BIGINT PRIMARY KEY AUTO_INCREMENT,
+            type VARCHAR(50) NOT NULL,
+            transaction_type VARCHAR(255) NOT NULL,
+            amount DECIMAL(10, 2) NOT NULL,
+            transaction_method VARCHAR(255),
+            transaction_time TIMESTAMP NOT NULL,
+            transaction_description VARCHAR(255),
+            account_id BIGINT,
+            FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
 
 );
