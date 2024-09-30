@@ -1,13 +1,17 @@
+# Anti-fraud Financial Management Assistant
+
+![MIT License](https://img.shields.io/badge/License-MIT-green.svg)
+[![GitHub issues](https://img.shields.io/github/issues/CSUYSD/Anti-Scam-Financial-Management-Assistant.svg)](https://github.com/CSUYSD/Anti-Scam-Financial-Management-Assistant/issues)
+[![GitHub pull-requests](https://img.shields.io/github/issues-pr/CSUYSD/Anti-Scam-Financial-Management-Assistant.svg)](https://github.com/CSUYSD/Anti-Scam-Financial-Management-Assistant/pulls)
+[![GitHub stars](https://img.shields.io/github/stars/CSUYSD/Anti-Scam-Financial-Management-Assistant.svg)](https://github.com/CSUYSD/Anti-Scam-Financial-Management-Assistant/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/CSUYSD/Anti-Scam-Financial-Management-Assistant.svg)](https://github.com/CSUYSD/Anti-Scam-Financial-Management-Assistant/network)
+
 # Project Description
-
 ## Anti-fraud Financial Management Assistant
-
 ## License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 30.05.2024
-
 ---
-
 ## 1. Introduction
 
 In China, the elderly in second-tier cities and rural areas are increasingly falling victim to financial telecommunications fraud due to their limited financial knowledge and property management capabilities. This vulnerable group faces heightened financial insecurity, compounded by the lack of adequate protective measures. In response to this pressing issue, we have developed a revolutionary financial management tool equipped with advanced AI Agent technology. This tool serves to empower the elderly by offering comprehensive anti-fraud features, helping them safeguard their finances and combat telecommunications fraud effectively, thereby providing them with much-needed financial security and peace of mind.
