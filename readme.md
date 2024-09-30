@@ -1,4 +1,4 @@
-# Anti-fraud Financial Management Assistant
+# Anti-fraud Financial Management Assistant (FinCare) 
 
 ![MIT License](https://img.shields.io/badge/License-MIT-green.svg)
 [![GitHub issues](https://img.shields.io/github/issues/CSUYSD/Anti-Scam-Financial-Management-Assistant.svg)](https://github.com/CSUYSD/Anti-Scam-Financial-Management-Assistant/issues)
