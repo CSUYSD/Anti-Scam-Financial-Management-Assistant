@@ -37,8 +37,6 @@ public class DemoApplication {
 	@Value("${spring.ai.openai.api-key}")
 	private String openAiApiKey;
 
-	@Value("${spring.ai.openai.api-key}")
-	private String openAiApiKey;
 
 	@Bean
 	public EmbeddingModel embeddingModel() {
