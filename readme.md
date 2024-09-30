@@ -6,11 +6,6 @@
 [![GitHub stars](https://img.shields.io/github/stars/CSUYSD/Anti-Scam-Financial-Management-Assistant.svg)](https://github.com/CSUYSD/Anti-Scam-Financial-Management-Assistant/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/CSUYSD/Anti-Scam-Financial-Management-Assistant.svg)](https://github.com/CSUYSD/Anti-Scam-Financial-Management-Assistant/network)
 
-# Project Description
-## Anti-fraud Financial Management Assistant
-## License
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
-30.05.2024
 ---
 ## 1. Introduction
 
