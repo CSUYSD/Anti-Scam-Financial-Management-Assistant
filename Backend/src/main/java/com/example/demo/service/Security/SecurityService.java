@@ -62,7 +62,7 @@ public class SecurityService {
         if (transactionUserDao.findByUsername(userDTO.getUsername()).isPresent()) {
             throw new UserAlreadyExistsException("User already exists");
         }
-
+        
         userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
         UserRole userRole = userRoleDao.findByRole("ROLE_USER")
@@ -94,12 +94,12 @@ public class SecurityService {
             List<Account> accounts = transactionUser.getAccounts();
             // 创建redisUser并存入Redis
             RedisUser redisUser = new RedisUser(
-                    transactionUser.getId(),
-                    transactionUser.getUsername(),
-                    transactionUser.getEmail(),
-                    transactionUser.getPhone(),
-                    transactionUser.getAvatar(),
-                    token
+                transactionUser.getId(),
+                transactionUser.getUsername(),
+                transactionUser.getEmail(),
+                transactionUser.getPhone(),
+                transactionUser.getAvatar(),
+                token
             );
 
             String redisUserKey = "login_user:" + transactionUser.getId() + ":info";
@@ -148,7 +148,7 @@ public class SecurityService {
         token = token.replace("Bearer ", "");
         Long userId = jwtUtil.getUserIdFromToken(token);
         TransactionUser user = transactionUserDao.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("用户未找到"));
+            .orElseThrow(() -> new UserNotFoundException("用户未找到"));
 
         String oldPassword = oldAndNewPwd.get("oldpassword");
         String newPassword = oldAndNewPwd.get("newpassword");

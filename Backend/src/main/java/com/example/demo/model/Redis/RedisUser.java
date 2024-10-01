@@ -16,7 +16,7 @@ public class RedisUser implements Serializable {
     private String email;
     private String phone;
     private String avatar;
-    //    private Map<String, String> accountInfo;
+//    private Map<String, String> accountInfo;
     private String token;
     private Long loginTime;
     private Long expireTime;

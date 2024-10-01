@@ -2,7 +2,7 @@ package com.example.demo.Dao;
 
 import com.example.demo.model.TransactionRecord;
 
-//import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

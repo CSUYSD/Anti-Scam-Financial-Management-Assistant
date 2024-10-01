@@ -13,8 +13,19 @@ java {
 	}
 }
 
+//snapshot version support
 repositories {
 	mavenCentral()
+	maven { url 'https://repo.spring.io/milestone' }
+	maven { url 'https://repo.spring.io/snapshot' }
+}
+
+compileJava {
+	options.compilerArgs += ['-parameters']
+}
+
+ext {
+	set('springAiVersion', "1.0.0-M2")
 }
 
 dependencies {
@@ -41,16 +52,32 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	// Spring Boot DevTools
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	//	JWT (JSON Web Token)
-	implementation 'com.github.alenfive:rocket-api-boot-starter:2.4.7.RELEASE'
+	// login vo
+//	implementation 'com.github.alenfive:rocket-api-boot-starter:2.4.7.RELEASE'
 
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
-	//	redis
+	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.apache.commons:commons-pool2:2.11.1' // 添加 commons-pool2 依赖
-
 	// elastic search
 	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+
+	// Spring AI
+	implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
+	// OllaMa
+	implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter'
+	// OpenAI
+	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+//	// Pinecone Vector DB
+//	implementation 'org.springframework.ai:spring-ai-pinecone-store-spring-boot-starter'
+//	// Redis Vector DB
+//	implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+	}
 }
 
 tasks.named('test') {

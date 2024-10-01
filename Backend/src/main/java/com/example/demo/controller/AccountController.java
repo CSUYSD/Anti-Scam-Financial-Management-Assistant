@@ -26,7 +26,7 @@ import com.example.demo.utility.JWT.JwtUtil;
 
 import jakarta.validation.Valid;
 
-@RestController
+@RestController 
 @RequestMapping("/account")
 @Validated
 public class AccountController {
@@ -69,7 +69,7 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("服务器错误");
         }
     }
-
+    
     @GetMapping("/{id}")
     public ResponseEntity<Account> getAccountById(@PathVariable Long id) {
         try {
@@ -79,7 +79,7 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
-
+    
 
 //    @PutMapping("/update/{id}")
 //    public ResponseEntity<Account> updateAccount(@PathVariable Long id, @RequestBody AccountDTO accountDetails) {

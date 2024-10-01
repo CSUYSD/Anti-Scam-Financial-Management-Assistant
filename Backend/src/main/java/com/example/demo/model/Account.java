@@ -1,4 +1,3 @@
-
 package com.example.demo.model;
 
 import java.util.List;
@@ -27,7 +26,7 @@ public class Account {
     @ManyToOne
     @JoinColumn(name = "transaction_user_id")
     private TransactionUser transactionUser;
-
+    
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
     private List<TransactionRecord> transactionRecords;
 }
