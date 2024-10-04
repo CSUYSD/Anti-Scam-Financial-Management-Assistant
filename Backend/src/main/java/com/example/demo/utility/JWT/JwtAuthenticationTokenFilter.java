@@ -39,7 +39,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         if (request.getRequestURI().contains("/h2-console")
                 || request.getRequestURI().equals("/signup")
                 || request.getRequestURI().equals("/login")
-                || request.getRequestURI().contains("/message")) {
+                || request.getRequestURI().contains("/message")
+                || request.getRequestURI().contains("/document")) {
             filterChain.doFilter(request, response);
             return;
         }
