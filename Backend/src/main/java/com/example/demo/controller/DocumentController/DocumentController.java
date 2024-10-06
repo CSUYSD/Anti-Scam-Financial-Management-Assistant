@@ -33,7 +33,7 @@ public class DocumentController {
 
 
     @SneakyThrows
-    @PostMapping("/embedding")
+    @PostMapping("/etl/embedding/multipart")
     public ResponseEntity<?> embedding(@RequestParam MultipartFile file) {
         try {
             TikaDocumentReader tikaDocumentReader = new TikaDocumentReader(new InputStreamResource(file.getInputStream()));
