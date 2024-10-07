@@ -28,7 +28,7 @@ yarn.lock
 *.iws
 *.bak
 *.swp
-
+chromadb_env
 AgentApi\venv
 ### Eclipse ###
 .metadata

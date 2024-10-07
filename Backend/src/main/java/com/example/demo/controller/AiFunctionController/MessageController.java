@@ -30,7 +30,7 @@ public class MessageController {
         this.openAiChatModel = openAiChatModel;
     }
 
-    @GetMapping("/chat")
+    @PostMapping("/chat")
     public String chat(@RequestParam String prompt) {
         ChatClient chatClient = ChatClient.create(openAiChatModel);
         return chatClient.prompt()
@@ -39,7 +39,7 @@ public class MessageController {
                 .content();
     }
 
-    @GetMapping(value = "/chat/stream/test", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PostMapping(value = "/chat/stream/test", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> chatStreamTest(@RequestParam String prompt, @RequestParam String sessionId) {
         MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
         return ChatClient.create(openAiChatModel).prompt()
@@ -51,14 +51,14 @@ public class MessageController {
 
 
     //streaming chat with memory use SSE pipeline.
-    @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PostMapping(value = "/chat/stream/history", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatStream(@RequestParam String prompt, @RequestParam String sessionId) {
         MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
         return ChatClient.create(openAiChatModel).prompt()
                 .messages(new SystemMessage("you are a finance management helper"), new UserMessage(prompt))
                 .advisors(messageChatMemoryAdvisor)
                 .stream() //流式返回
-                .chatResponse().map(chatResponse -> ServerSentEvent.builder(toJsonString(chatResponse))
+                .content().map(chatResponse -> ServerSentEvent.builder(chatResponse)
                         .event("message")
                         .build());
     }
