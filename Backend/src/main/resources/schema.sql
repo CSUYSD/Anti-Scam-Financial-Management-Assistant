@@ -30,8 +30,6 @@ CREATE TABLE transaction_users (
 );
 
 
-
-
 INSERT INTO transaction_users (username, password, email, phone, dob, role_id, avatar) VALUES
 ('johndoe', 'password123', 'johndoe@example.com', '1234567890', '1990-01-15', 1, null),
 ('janedoe', 'securepassword', 'janedoe@example.com', '0987654321', '1992-02-25', 2, null),
@@ -40,21 +38,6 @@ INSERT INTO transaction_users (username, password, email, phone, dob, role_id, a
 ('charlie', 'charliepass', 'charlie@example.com', '7778889999', '1995-05-20', 2, null);
 
 
--- @Entity
--- @Data
--- public class Account {
---     @Id
---     @GeneratedValue(strategy = GenerationType.IDENTITY)
---     private Long id;
---     private String accountName;
---     private double balance;
---     @ManyToOne
---     @JoinColumn(name = "transaction_user_id")
---     private TransactionUser transactionUser;
-
---     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
---     private List<TransactionRecord> transactionRecords;
--- }
 CREATE TABLE account (
             id BIGINT PRIMARY KEY AUTO_INCREMENT,
             account_name VARCHAR(255) NOT NULL,
@@ -64,23 +47,6 @@ CREATE TABLE account (
             FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id) ON DELETE CASCADE
 );
 
--- @Entity
--- @Data
--- public class TransactionRecord {
---     @Id
---     @GeneratedValue(strategy = GenerationType.IDENTITY)
---     private long id;
---     @Enumerated(EnumType.STRING)
---     private IncomeExpense incomeOrExpense;  // 收/支
---     private String transactionType;    //交易类型
---     private double amount;           // 金额（元）
---     private String TransactionMethod;    // 支付方式
---     private ZonedDateTime transactionTime; // 交易时间
---     private String transactionDescription; // 交易描述
---     @ManyToOne
---     @JoinColumn(name = "account_id")
---     private Account account; // 一个账户对应多个交易记录
--- }
 
 CREATE TABLE transaction_record (
             id BIGINT PRIMARY KEY AUTO_INCREMENT,
