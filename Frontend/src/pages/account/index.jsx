@@ -18,8 +18,9 @@ const shakeAnimation = {
 function AccountCard({ account, onSelect, onDelete }) {
     const [isHovered, setIsHovered] = useState(false)
 
-    const formatBalance = (balance) => {
-        return typeof balance === 'number' ? balance.toFixed(2) : '0.00'
+    const formatBalance = (income, expense) => {
+        const balance = income - expense
+        return balance.toFixed(2)
     }
 
     return (
@@ -51,8 +52,12 @@ function AccountCard({ account, onSelect, onDelete }) {
             </AnimatePresence>
             <h2 className="text-xl font-semibold text-blue-700 mb-4">{account.accountName}</h2>
             <p className="text-2xl font-bold text-blue-900 mb-4">
-                ${formatBalance(account.balance)}
+                ${formatBalance(account.totalIncome, account.totalExpense)}
             </p>
+            <div className="text-sm text-gray-600 mb-4">
+                <p>Total Income: ${account.totalIncome.toFixed(2)}</p>
+                <p>Total Expense: ${account.totalExpense.toFixed(2)}</p>
+            </div>
             <button
                 className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-sm hover:shadow"
                 onClick={() => onSelect(account)}
@@ -67,7 +72,8 @@ AccountCard.propTypes = {
     account: PropTypes.shape({
         id: PropTypes.number.isRequired,
         accountName: PropTypes.string.isRequired,
-        balance: PropTypes.number,
+        totalIncome: PropTypes.number.isRequired,
+        totalExpense: PropTypes.number.isRequired,
         transactionRecords: PropTypes.array,
     }).isRequired,
     onSelect: PropTypes.func.isRequired,
@@ -158,7 +164,7 @@ export default function Account() {
         if (newAccountName.trim()) {
             try {
                 const response = await createAccountAPI({ name: newAccountName })
-                const newAccount = { ...response.data, balance: response.data.balance || 0 }
+                const newAccount = { ...response.data, totalIncome: 0, totalExpense: 0 }
                 setAccounts([...accounts, newAccount])
                 setNewAccountName('')
                 setIsModalOpen(false)

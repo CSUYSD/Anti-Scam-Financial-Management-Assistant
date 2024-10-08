@@ -43,10 +43,10 @@ export function createAccountAPI(accountData) {
     });
 }
 
-// Get a specific account by ID
-export function getAccountByIdAPI(id) {
+// Get current account
+export function getAccountByIdAPI() {
     return request({
-        url: `/account/${id}`,
+        url: `/account/current`,
         method: 'GET',
     }).catch(error => {
         console.error('API Error:', error);

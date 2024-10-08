@@ -22,6 +22,17 @@ export function getRecordByIdAPI(id) {
     });
 }
 
+// get recent five-days records
+export function getRecentRecordsAPI() {
+    return request({
+        url: `/records/five-days`,
+        method: 'GET',
+    }).catch(error => {
+        console.error('API Error:', error);
+        throw error;
+    });
+}
+
 // Get records by type (income or expense)
 export function getRecordsByTypeAPI(type) {
     return request({
