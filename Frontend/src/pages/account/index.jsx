@@ -158,7 +158,7 @@ export default function Account() {
         if (newAccountName.trim()) {
             try {
                 const token = getToken()
-                const response = await createAccountAPI({ accountName: newAccountName }, token)
+                const response = await createAccountAPI({ name: newAccountName, balance: 0.0 }, token)
                 const newAccount = { ...response.data, balance: response.data.balance || 0 }
                 setAccounts([...accounts, newAccount])
                 setNewAccountName('')
