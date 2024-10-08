@@ -1,9 +1,9 @@
 import { request } from "@/utils";
 
 // Get all records for an account
-export function getAllRecordsAPI(accountId) {
+export function getAllRecordsAPI() {
     return request({
-        url: `/records/all/${accountId}`,
+        url: `/records/all`,
         method: 'GET',
     }).catch(error => {
         console.error('API Error:', error);
@@ -12,9 +12,9 @@ export function getAllRecordsAPI(accountId) {
 }
 
 // Get a specific record by ID for an account
-export function getRecordByIdAPI(id, accountId) {
+export function getRecordByIdAPI(id) {
     return request({
-        url: `/records/${id}/${accountId}`,
+        url: `/records/${id}`,
         method: 'GET',
     }).catch(error => {
         console.error('API Error:', error);
@@ -76,9 +76,9 @@ export function deleteRecordAPI(id) {
 }
 
 // Delete multiple records in batch
-export function deleteRecordsInBatchAPI(accountId, recordIds) {
+export function deleteRecordsInBatchAPI( recordIds) {
     return request({
-        url: `/records/batch?accountId=${accountId}`,
+        url: `/records/batch`,
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
