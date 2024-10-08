@@ -41,7 +41,7 @@ public class TransactionRecordService {
         this.accountDao = accountDao;
     }
 
-    public List<TransactionRecord> getAllRecordsByAccount(Long accountId) {
+    public List<TransactionRecord> getAllRecordsByAccountId(Long accountId) {
         return transactionRecordDao.findAllByAccountId(accountId);
     }
 

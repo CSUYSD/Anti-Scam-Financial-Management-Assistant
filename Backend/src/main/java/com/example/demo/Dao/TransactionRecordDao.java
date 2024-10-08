@@ -5,19 +5,17 @@ import com.example.demo.model.TransactionRecord;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 import java.util.Optional;
 
-
-import org.springframework.data.elasticsearch.annotations.Query;
-
 @Repository
 public interface TransactionRecordDao extends JpaRepository<TransactionRecord, Long> {
-    @Query("SELECT tr FROM TransactionRecord tr WHERE tr.type = ?1")
     // 根据账户ID获取所有交易记录
+    @Query(value = "SELECT * FROM transaction_record WHERE account_id = ?1", nativeQuery = true)
     List<TransactionRecord> findAllByAccountId(Long accountId);
 
     // 根据ID和账户ID获取记录
