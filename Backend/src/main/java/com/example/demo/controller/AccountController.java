@@ -64,12 +64,14 @@ public class AccountController {
     }
     
     @GetMapping("/current")
-    public ResponseEntity<Account> getAccountByAccountId(@RequestHeader String token) {
+    public ResponseEntity<Account> getAccountByAccountId(@RequestHeader("Authorization") String token) {
         try {
             Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
             Account account = accountService.getAccountByAccountId(userId);
             return ResponseEntity.ok(account);
         } catch (AccountNotFoundException e) {
+            logger.severe(e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
