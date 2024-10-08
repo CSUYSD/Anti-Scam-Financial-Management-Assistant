@@ -56,13 +56,12 @@ INSERT INTO transaction_users (username, password, email, phone, dob, role_id, a
 --     private List<TransactionRecord> transactionRecords;
 -- }
 CREATE TABLE account (
-             id BIGINT PRIMARY KEY AUTO_INCREMENT,
-             account_name VARCHAR(255) NOT NULL,
-             balance DECIMAL(10, 2) NOT NULL,
-             transaction_user_id BIGINT,
-
-             FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id) ON DELETE CASCADE
-
+            id BIGINT PRIMARY KEY AUTO_INCREMENT,
+            account_name VARCHAR(255) NOT NULL,
+            total_income DECIMAL(10, 2) NOT NULL,
+            total_expense DECIMAL(10, 2) NOT NULL,
+            transaction_user_id BIGINT,
+            FOREIGN KEY (transaction_user_id) REFERENCES transaction_users(id) ON DELETE CASCADE
 );
 
 -- @Entity

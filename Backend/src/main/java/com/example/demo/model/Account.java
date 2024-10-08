@@ -21,7 +21,8 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String accountName;
-    private double balance;
+    private double totalIncome;
+    private double totalExpense;
 
     @JsonManagedReference
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
