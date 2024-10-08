@@ -5,12 +5,7 @@ import java.time.ZonedDateTime;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -20,15 +15,17 @@ public class TransactionRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
     private String type;  // Income, Expense
+    private String category;
+    private Double amount;
+    private String TransactionMethod;
+    private ZonedDateTime transactionTime;
+    private String transactionDescription;
 
-    private String transactionType;    //
-
-    private Double amount;           //
-    private String TransactionMethod;    //
-    private ZonedDateTime transactionTime; //
-    private String transactionDescription; //
+    @Column(name = "user_id")
+    private long userId;
     @ManyToOne
     @JoinColumn(name = "account_id", nullable = false)
     @JsonBackReference
     private Account account; // 一个账户对应多个交易记录
+
 }

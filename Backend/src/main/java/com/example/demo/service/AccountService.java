@@ -7,6 +7,8 @@ import com.example.demo.model.Account;
 import com.example.demo.model.DTO.AccountDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
+import lombok.SneakyThrows;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.Dao.AccountDao;
@@ -145,5 +147,12 @@ public class AccountService {
         redisTemplate.delete(redisKey);
 
     }
+
+    public void setCurrentAccountToRedis(Long accountId, Long userId) {
+        String pattern = "login_user:" + userId + ":current_account";
+        redisTemplate.opsForValue().set(pattern, accountId);
+    }
+
+
 }
 
