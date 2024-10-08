@@ -39,6 +39,7 @@ dependencies {
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 	implementation 'com.fasterxml.jackson.core:jackson-annotations'
 	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+	implementation 'com.mysql:mysql-connector-j'
 	// H2 Database
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'org.postgresql:postgresql'
@@ -52,16 +53,12 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	// Spring Boot DevTools
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	// login vo
-//	implementation 'com.github.alenfive:rocket-api-boot-starter:2.4.7.RELEASE'
-
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
 	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.apache.commons:commons-pool2:2.11.1' // 添加 commons-pool2 依赖
 	// elastic search
 	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
-
 	// Spring AI
 	implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
 	implementation 'org.springframework.ai:spring-ai-tika-document-reader'
@@ -69,9 +66,7 @@ dependencies {
 	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 	// Chroma Vector DB
 	implementation 'org.springframework.ai:spring-ai-chroma-store-spring-boot-starter'
-//	implementation 'org.springframework.ai:spring-ai-chroma-store:1.0.0-M2'
-//	// Redis Vector DB
-//	implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
+
 }
 
 dependencyManagement {
