@@ -3,18 +3,11 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
@@ -35,7 +28,7 @@ public class AccountController {
     private static final Logger logger = Logger.getLogger(String.valueOf(AccountController.class));
 
     @Autowired
-    public AccountController(AccountService accountService, JwtUtil jwtUtil) {
+    public AccountController(AccountService accountService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
         this.accountService = accountService;
         this.jwtUtil = jwtUtil;
     }
@@ -124,4 +117,19 @@ public class AccountController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/switch")
+    public ResponseEntity<String> switchAccount(@RequestParam Long accountId, @RequestHeader("Authorization") String token) {
+        try {
+            Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+            accountService.setCurrentAccountToRedis(accountId, userId);
+            return ResponseEntity.ok("设置成功");
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body("设置失败");
+        }
+    }
+
+
+
+
 }

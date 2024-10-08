@@ -86,12 +86,14 @@ CREATE TABLE account (
 CREATE TABLE transaction_record (
             id BIGINT PRIMARY KEY AUTO_INCREMENT,
             type VARCHAR(50) NOT NULL,
-            transaction_type VARCHAR(255) NOT NULL,
+            category VARCHAR(255) NOT NULL,
             amount DECIMAL(10, 2) NOT NULL,
             transaction_method VARCHAR(255),
             transaction_time TIMESTAMP NOT NULL,
             transaction_description VARCHAR(255),
             account_id BIGINT,
+            user_id BIGINT,
+            FOREIGN KEY (user_id) REFERENCES transaction_users(id) ON DELETE CASCADE,
             FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
 
 );

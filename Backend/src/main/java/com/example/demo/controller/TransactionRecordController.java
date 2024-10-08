@@ -3,7 +3,11 @@ package com.example.demo.controller;
 import java.util.List;
 
 
+import com.example.demo.model.DTO.TransactionRecordDTO;
 import com.example.demo.utility.JWT.JwtUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -20,45 +24,30 @@ public class TransactionRecordController {
 
     private final TransactionRecordService recordService;
     private final JwtUtil jwtUtil;
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
-    public TransactionRecordController(TransactionRecordService recordService, JwtUtil jwtUtil) {
+    public TransactionRecordController(TransactionRecordService recordService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
         this.recordService = recordService;
-
         this.jwtUtil = jwtUtil;
     }
 
     @GetMapping("/all/{accountId}")
     public ResponseEntity<List<TransactionRecord>> getAllRecord(@PathVariable Long accountId) {
         List<TransactionRecord> transactions = recordService.getAllRecordsByAccount(accountId);
+
         return ResponseEntity.ok(transactions);
     }
 
-//    @GetMapping("/{id}")
-//    public ResponseEntity<TransactionRecord> getRecordById(@PathVariable Long id) {
-//        try {
-//            TransactionRecord record = recordService.getRecordById(id);
-//            return ResponseEntity.ok(record);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-//        }
-//    }
-
-    @GetMapping("/{id}/{accountId}")
-    public ResponseEntity<TransactionRecord> getRecordById(@PathVariable Long id, @PathVariable Long accountId) {
-        try {
-            TransactionRecord record = recordService.getRecordById(id,accountId);
-
-            return ResponseEntity.ok(record);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-    }
 
     @GetMapping("/by-type/{type}")
-    public ResponseEntity<List<TransactionRecord>> getRecordsByType(@PathVariable String type) {
+    public ResponseEntity<List<TransactionRecord>> getRecordsByAccountIdAndType(@RequestHeader("Authorization") String token, @PathVariable String type) {
         try {
             String incomeOrExpense = type.toUpperCase();
-            List<TransactionRecord> records = recordService.findByType(incomeOrExpense);
+            Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+            String pattern = "login_user:" + userId + ":current_account";
+            String accountId = stringRedisTemplate.opsForValue().get(pattern);
+            List<TransactionRecord> records = recordService.findRecordByAccountIdAndType(incomeOrExpense, Long.valueOf(accountId));
             return ResponseEntity.ok(records);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -67,13 +56,12 @@ public class TransactionRecordController {
 
 
     @PostMapping("/create")
-    public ResponseEntity<String> createTransactionRecord( @RequestHeader("Authorization") String token, @RequestBody TransactionRecord transactionRecord) {
+    public ResponseEntity<String> createTransactionRecord( @RequestHeader("Authorization") String token, @RequestBody TransactionRecordDTO transactionRecordDTO) {
         if (token == null || token.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未提供令牌");
         }
-        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         try {
-            recordService.saveTransactionRecord(transactionRecord);
+            recordService.saveTransactionRecord(token, transactionRecordDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body("Transaction record has been created successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error creating transaction record: " + e.getMessage());
@@ -109,5 +97,8 @@ public class TransactionRecordController {
             return ResponseEntity.status(500).body("Failed to delete records: " + e.getMessage());
         }
     }
+
+
+
 
 }
