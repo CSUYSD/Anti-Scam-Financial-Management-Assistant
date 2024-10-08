@@ -30,7 +30,6 @@ import AccessTimeFilledRoundedIcon from '@mui/icons-material/AccessTimeFilledRou
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 
 import DropZone from '@/components/DropZone';
-import CountrySelector from '@/components/CountrySelector';
 import EditorToolbar from '@/components/EditorToolbar';
 
 export default function UserProfile() {
@@ -179,9 +178,6 @@ export default function UserProfile() {
                                 </FormControl>
                             </Stack>
                             <div>
-                                <CountrySelector />
-                            </div>
-                            <div>
                                 <FormControl sx={{ display: { sm: 'contents' } }}>
                                     <FormLabel>Timezone</FormLabel>
                                     <Select
@@ -274,9 +270,6 @@ export default function UserProfile() {
                                 sx={{ flexGrow: 1 }}
                             />
                         </FormControl>
-                        <div>
-                            <CountrySelector />
-                        </div>
                         <div>
                             <FormControl sx={{ display: { sm: 'contents' } }}>
                                 <FormLabel>Timezone</FormLabel>
