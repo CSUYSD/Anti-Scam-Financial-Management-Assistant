@@ -32,10 +32,12 @@ public class TransactionRecordController {
         this.jwtUtil = jwtUtil;
     }
 
-    @GetMapping("/all/{accountId}")
-    public ResponseEntity<List<TransactionRecord>> getAllRecord(@PathVariable Long accountId) {
-        List<TransactionRecord> transactions = recordService.getAllRecordsByAccount(accountId);
-
+    @GetMapping("/all")
+    public ResponseEntity<List<TransactionRecord>> getAllRecordByAccountId(@RequestHeader("Authorization") String token) {
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        String pattern = "login_user:" + userId + ":current_account";
+        String accountId = stringRedisTemplate.opsForValue().get(pattern);
+        List<TransactionRecord> transactions = recordService.getAllRecordsByAccountId(Long.valueOf(accountId));
         return ResponseEntity.ok(transactions);
     }
 
