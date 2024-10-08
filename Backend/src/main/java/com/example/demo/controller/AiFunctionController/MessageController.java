@@ -1,16 +1,21 @@
 package com.example.demo.controller.AiFunctionController;
 
 
+import com.example.demo.Dao.AIDao.AiMessageRepository;
+import com.example.demo.service.AI.AiMessageChatMemory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.SneakyThrows;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -25,6 +30,9 @@ public class MessageController {
     private final OpenAiChatModel openAiChatModel;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
 
+    private AiMessageRepository messageRepository;
+    private AiMessageChatMemory aiMessageChatMemory;
+
     @Autowired
     public MessageController(OpenAiChatModel openAiChatModel) {
         this.openAiChatModel = openAiChatModel;
@@ -34,9 +42,26 @@ public class MessageController {
     public String chat(@RequestParam String prompt) {
         ChatClient chatClient = ChatClient.create(openAiChatModel);
         return chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+                .user(promptUserSpec -> {
+                    // AiMessageInput转成Message
+                    Message message = AiMessageChatMemory.toSpringAiMessage(input.toEntity());
+                    if (message instanceof UserMessage userMessage &&
+                            !CollectionUtils.isEmpty(userMessage.getMedia())) {
+                        // 用户发送的图片/语言
+                        Media[] medias = new Media[userMessage.getMedia().size()];
+                        promptUserSpec.media(userMessage.getMedia().toArray(medias));
+                    }
+                    // 用户发送的文本
+                    promptUserSpec.text(message.getContent());
+                })
+                // MessageChatMemoryAdvisor会在消息发送给大模型之前，从ChatMemory中获取会话的历史消息，然后一起发送给大模型。
+                .advisors(messageChatMemoryAdvisor)
+                .stream()
+                .content()
+                .map(chatResponse -> ServerSentEvent.builder(toJsonString(chatResponse))
+                        // 和前端监听的事件相对应
+                        .event("message")
+                        .build());
     }
 
     @PostMapping(value = "/chat/stream/test", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
