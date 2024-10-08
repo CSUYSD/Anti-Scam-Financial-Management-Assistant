@@ -70,7 +70,7 @@ public class AccountController {
     public ResponseEntity<Account> getAccountByAccountId(@RequestHeader("Authorization") String token) {
         try {
             Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
-            String pattern = "login_user:" + userId + ":account*";
+            String pattern = "login_user:" + userId +":current_account";
             String accountId = stringRedisTemplate.opsForValue().get(pattern);
             Account account = accountService.getAccountByAccountId(Long.valueOf(accountId));
 
