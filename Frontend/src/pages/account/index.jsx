@@ -4,6 +4,7 @@ import PropTypes from 'prop-types'
 import { logoutAPI } from "@/api/user.jsx"
 import { getToken, removeToken } from "@/utils/index.jsx"
 import { XMarkIcon } from '@heroicons/react/24/solid'
+import { getAllAccountsAPI, createAccountAPI, deleteAccountAPI, handleApiError } from '@/api/account'
 
 const shakeAnimation = {
     hover: {
@@ -16,6 +17,10 @@ const shakeAnimation = {
 
 function AccountCard({ account, onSelect, onDelete }) {
     const [isHovered, setIsHovered] = useState(false)
+
+    const formatBalance = (balance) => {
+        return typeof balance === 'number' ? balance.toFixed(2) : '0.00'
+    }
 
     return (
         <motion.div
@@ -44,9 +49,9 @@ function AccountCard({ account, onSelect, onDelete }) {
                     </motion.button>
                 )}
             </AnimatePresence>
-            <h2 className="text-xl font-semibold text-blue-700 mb-4">{account.name}</h2>
+            <h2 className="text-xl font-semibold text-blue-700 mb-4">{account.accountName}</h2>
             <p className="text-2xl font-bold text-blue-900 mb-4">
-                ${account.balance.toFixed(2)}
+                ${formatBalance(account.balance)}
             </p>
             <button
                 className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-sm hover:shadow"
@@ -60,9 +65,10 @@ function AccountCard({ account, onSelect, onDelete }) {
 
 AccountCard.propTypes = {
     account: PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
-        balance: PropTypes.number.isRequired,
+        id: PropTypes.number.isRequired,
+        accountName: PropTypes.string.isRequired,
+        balance: PropTypes.number,
+        transactionRecords: PropTypes.array,
     }).isRequired,
     onSelect: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
@@ -117,45 +123,56 @@ Modal.propTypes = {
 }
 
 export default function Account() {
-    const [accounts, setAccounts] = useState([
-        { id: '1', name: 'Personal Checking', balance: 5234.56 },
-        { id: '2', name: 'Vacation Fund', balance: 10567.89 },
-        { id: '3', name: 'Emergency Fund', balance: 2345.67 },
-    ])
+    const [accounts, setAccounts] = useState([])
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
     const [newAccountName, setNewAccountName] = useState('')
     const [username, setUsername] = useState('')
     const [accountToDelete, setAccountToDelete] = useState(null)
+    const [error, setError] = useState(null)
 
     useEffect(() => {
-        // Fetch the username from localStorage or your authentication state
         const storedUsername = localStorage.getItem('username')
         if (storedUsername) {
             setUsername(storedUsername)
         }
+        fetchAccounts()
     }, [])
+
+    const fetchAccounts = async () => {
+        try {
+            const response = await getAllAccountsAPI()
+            setAccounts(response.data)
+        } catch (error) {
+            const errorMessage = handleApiError(error)
+            setError(errorMessage)
+        }
+    }
 
     const addNewAccount = () => {
         setIsModalOpen(true)
     }
 
-    const handleCreateAccount = () => {
+    const handleCreateAccount = async () => {
         if (newAccountName.trim()) {
-            const newAccount = {
-                id: (accounts.length + 1).toString(),
-                name: newAccountName,
-                balance: 0,
+            try {
+                const token = getToken()
+                const response = await createAccountAPI({ accountName: newAccountName }, token)
+                const newAccount = { ...response.data, balance: response.data.balance || 0 }
+                setAccounts([...accounts, newAccount])
+                setNewAccountName('')
+                setIsModalOpen(false)
+            } catch (error) {
+                const errorMessage = handleApiError(error)
+                setError(errorMessage)
             }
-            setAccounts([...accounts, newAccount])
-            setNewAccountName('')
-            setIsModalOpen(false)
         }
     }
 
     const handleSelectAccount = (account) => {
         console.log('Selected account:', account)
+        localStorage.setItem('selectedAccountId', account.id)
         window.location.href = '/'
     }
 
@@ -164,25 +181,31 @@ export default function Account() {
         setIsDeleteModalOpen(true)
     }
 
-    const confirmDeleteAccount = () => {
+    const confirmDeleteAccount = async () => {
         if (accountToDelete) {
-            setAccounts(accounts.filter(account => account.id !== accountToDelete.id))
-            setIsDeleteModalOpen(false)
-            setAccountToDelete(null)
+            try {
+                await deleteAccountAPI(accountToDelete.id)
+                setAccounts(accounts.filter(account => account.id !== accountToDelete.id))
+                setIsDeleteModalOpen(false)
+                setAccountToDelete(null)
+            } catch (error) {
+                const errorMessage = handleApiError(error)
+                setError(errorMessage)
+            }
         }
     }
 
     const handleLogout = async () => {
         try {
             await logoutAPI()
-            // Clear any stored authentication data
             localStorage.removeItem('username')
             const token = getToken()
             removeToken(token)
-            // Redirect to login page
             window.location.href = '/login'
         } catch (error) {
             console.error('Logout failed:', error)
+            const errorMessage = handleApiError(error)
+            setError(errorMessage)
         }
     }
 
@@ -199,6 +222,12 @@ export default function Account() {
                     </button>
                 </div>
                 <p className="text-xl text-blue-800 mb-8">Welcome back, {username}</p>
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                        <strong className="font-bold">Error: </strong>
+                        <span className="block sm:inline">{error}</span>
+                    </div>
+                )}
                 <motion.div
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                     initial={{ opacity: 0, y: 20 }}
@@ -258,7 +287,7 @@ export default function Account() {
                 submitText="Delete"
             >
                 <p className="text-lg text-gray-700">
-                    Are you sure you want to delete the account "{accountToDelete?.name}"?
+                    Are you sure you want to delete the account "{accountToDelete?.accountName}"?
                     This action cannot be undone.
                 </p>
             </Modal>

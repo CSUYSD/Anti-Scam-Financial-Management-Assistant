@@ -1,36 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
-    Box,
-    Button,
-    Card,
-    CardContent,
-    CardHeader,
-    Checkbox,
-    Collapse,
-    FormControlLabel,
-    Grid,
-    IconButton,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    Typography,
-    useTheme,
-    Fade,
+    Box, Button, Card, CardContent, CardHeader, Checkbox, Collapse, FormControlLabel,
+    Grid, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    TextField, Typography, useTheme, Fade, Pagination, CircularProgress, Select, MenuItem
 } from '@mui/material'
 import {
-    Search as SearchIcon,
-    Add as AddIcon,
-    Edit as EditIcon,
-    Delete as DeleteIcon,
-    Upload as UploadIcon,
-    CheckCircle as CheckCircleIcon,
-    Close as CloseIcon
+    Search as SearchIcon, Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon,
+    Upload as UploadIcon, CheckCircle as CheckCircleIcon, Close as CloseIcon
 } from '@mui/icons-material'
 import { motion, AnimatePresence } from 'framer-motion'
+import {
+    getAllRecordsAPI, createRecordAPI, updateRecordAPI, deleteRecordAPI, deleteRecordsInBatchAPI
+} from '@/api/record.jsx'
 
 const MotionCard = motion(Card)
 
@@ -42,29 +23,63 @@ export default function Transaction() {
     const [editingTransaction, setEditingTransaction] = useState(null)
     const [showAddForm, setShowAddForm] = useState(false)
     const [transactionForm, setTransactionForm] = useState({
-        income_or_expense: 'Expense',
-        transaction_type: '',
+        type: 'Expense',
+        transactionType: '',
         amount: '',
-        transaction_method: '',
-        transaction_time: '',
-        transaction_description: '',
-        account_id: 1
+        transactionMethod: '',
+        transactionTime: '',
+        transactionDescription: ''
     })
-    const [transactions, setTransactions] = useState([
-        { id: 1, income_or_expense: 'Expense', transaction_type: 'Purchase', amount: 50.00, transaction_method: 'Credit Card', transaction_time: '2024-08-25 10:30:00', transaction_description: 'Grocery Shopping', account_id: 1 },
-        { id: 2, income_or_expense: 'Income', transaction_type: 'Salary', amount: 3000.00, transaction_method: 'Bank Transfer', transaction_time: '2024-08-24 09:00:00', transaction_description: 'Monthly Salary', account_id: 1 },
-        { id: 3, income_or_expense: 'Expense', transaction_type: 'Transfer', amount: 200.00, transaction_method: 'Online Banking', transaction_time: '2024-08-23 14:15:00', transaction_description: 'Savings Transfer', account_id: 2 },
-        { id: 4, income_or_expense: 'Expense', transaction_type: 'Withdrawal', amount: 100.00, transaction_method: 'ATM', transaction_time: '2024-08-22 16:45:00', transaction_description: 'Cash Withdrawal', account_id: 1 },
-    ])
+    const [transactions, setTransactions] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [page, setPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [accountId, setAccountId] = useState(null)
+
+    useEffect(() => {
+        const storedAccountId = localStorage.getItem('accountId')
+        if (storedAccountId) {
+            setAccountId(storedAccountId)
+        } else {
+            setError('No account ID found. Please log in again.')
+        }
+    }, [])
+
+    useEffect(() => {
+        if (accountId) {
+            fetchTransactions()
+        }
+    }, [accountId, page])
+
+    const fetchTransactions = async () => {
+        try {
+            setLoading(true)
+            const response = await getAllRecordsAPI(accountId)
+            const allTransactions = response.data
+            setTotalPages(Math.ceil(allTransactions.length / 10))
+            setTransactions(allTransactions)
+            setLoading(false)
+        } catch (error) {
+            setError('Failed to fetch transactions')
+            setLoading(false)
+        }
+    }
 
     const handleSearch = () => {
-        console.log('Searching for:', searchTerm)
+        const filteredTransactions = transactions.filter(transaction =>
+            transaction.transactionDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            transaction.transactionType.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        setTransactions(filteredTransactions)
     }
 
     const handleAction = (action) => {
-        console.log(action)
         setShowSuccess(true)
-        setTimeout(() => setShowSuccess(false), 3000)
+        setTimeout(() => {
+            setShowSuccess(false)
+            window.location.reload() // Refresh the page after showing success message
+        }, 1000)
     }
 
     const handleSelectTransaction = (id) => {
@@ -77,47 +92,82 @@ export default function Transaction() {
         setSelectedTransactions(checked ? transactions.map(t => t.id) : [])
     }
 
-    const handleBatchDelete = () => {
-        setTransactions(prev => prev.filter(t => !selectedTransactions.includes(t.id)))
-        setSelectedTransactions([])
-        handleAction('Batch Delete')
+    const handleBatchDelete = async () => {
+        try {
+            await deleteRecordsInBatchAPI(accountId, selectedTransactions)
+            handleAction('Batch Delete')
+        } catch (error) {
+            setError('Failed to delete selected transactions')
+        }
     }
 
-    const handleAddTransaction = () => {
-        setTransactions([...transactions, { id: Date.now(), ...transactionForm }])
-        setTransactionForm({
-            income_or_expense: 'Expense',
-            transaction_type: '',
-            amount: '',
-            transaction_method: '',
-            transaction_time: '',
-            transaction_description: '',
-            account_id: 1
-        })
-        setShowAddForm(false)
-        handleAction('Add')
+    const formatDateTimeForBackend = (dateTimeString) => {
+        const date = new Date(dateTimeString)
+        return date.toISOString()
+    }
+
+    const handleAddTransaction = async () => {
+        try {
+            const formattedTransaction = {
+                ...transactionForm,
+                transactionTime: formatDateTimeForBackend(transactionForm.transactionTime),
+                account: { id: accountId }
+            }
+            await createRecordAPI(formattedTransaction)
+            handleAction('Add')
+        } catch (error) {
+            setError('Failed to add transaction')
+        }
     }
 
     const handleEditTransaction = (transaction) => {
         setEditingTransaction(transaction.id)
-        setTransactionForm(transaction)
+        setTransactionForm({
+            ...transaction,
+            transactionTime: transaction.transactionTime.slice(0, 16) // Format for datetime-local input
+        })
         setShowAddForm(true)
     }
 
-    const handleUpdateTransaction = () => {
-        setTransactions(prev => prev.map(t => t.id === editingTransaction ? transactionForm : t))
-        setEditingTransaction(null)
-        setTransactionForm({
-            income_or_expense: 'Expense',
-            transaction_type: '',
-            amount: '',
-            transaction_method: '',
-            transaction_time: '',
-            transaction_description: '',
-            account_id: 1
-        })
-        setShowAddForm(false)
-        handleAction('Edit')
+    const handleUpdateTransaction = async () => {
+        try {
+            const formattedTransaction = {
+                ...transactionForm,
+                transactionTime: formatDateTimeForBackend(transactionForm.transactionTime),
+                account: { id: accountId }
+            }
+            await updateRecordAPI(editingTransaction, formattedTransaction)
+            handleAction('Edit')
+        } catch (error) {
+            setError('Failed to update transaction')
+        }
+    }
+
+    const handleDeleteTransaction = async (id) => {
+        try {
+            await deleteRecordAPI(id)
+            handleAction('Delete')
+        } catch (error) {
+            setError('Failed to delete transaction')
+        }
+    }
+
+    const paginatedTransactions = transactions.slice((page - 1) * 10, page * 10)
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        )
+    }
+
+    if (error) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <Typography color="error">{error}</Typography>
+            </Box>
+        )
     }
 
     return (
@@ -184,11 +234,22 @@ export default function Transaction() {
                             </Typography>
                             <Grid container spacing={3}>
                                 <Grid item xs={12} md={6}>
+                                    <Select
+                                        label="Type"
+                                        value={transactionForm.type}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value })}
+                                        fullWidth
+                                    >
+                                        <MenuItem value="Income">Income</MenuItem>
+                                        <MenuItem value="Expense">Expense</MenuItem>
+                                    </Select>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
                                     <TextField
                                         label="Transaction Type"
                                         variant="outlined"
-                                        value={transactionForm.transaction_type}
-                                        onChange={(e) => setTransactionForm({ ...transactionForm, transaction_type: e.target.value })}
+                                        value={transactionForm.transactionType}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, transactionType: e.target.value })}
                                         fullWidth
                                     />
                                 </Grid>
@@ -206,8 +267,8 @@ export default function Transaction() {
                                     <TextField
                                         label="Transaction Method"
                                         variant="outlined"
-                                        value={transactionForm.transaction_method}
-                                        onChange={(e) => setTransactionForm({ ...transactionForm, transaction_method: e.target.value })}
+                                        value={transactionForm.transactionMethod}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, transactionMethod: e.target.value })}
                                         fullWidth
                                     />
                                 </Grid>
@@ -216,8 +277,8 @@ export default function Transaction() {
                                         label="Transaction Time"
                                         variant="outlined"
                                         type="datetime-local"
-                                        value={transactionForm.transaction_time}
-                                        onChange={(e) => setTransactionForm({ ...transactionForm, transaction_time: e.target.value })}
+                                        value={transactionForm.transactionTime}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, transactionTime: e.target.value })}
                                         fullWidth
                                         InputLabelProps={{ shrink: true }}
                                     />
@@ -226,20 +287,9 @@ export default function Transaction() {
                                     <TextField
                                         label="Transaction Description"
                                         variant="outlined"
-                                        value={transactionForm.transaction_description}
-                                        onChange={(e) => setTransactionForm({ ...transactionForm, transaction_description: e.target.value })}
+                                        value={transactionForm.transactionDescription}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, transactionDescription: e.target.value })}
                                         fullWidth
-                                    />
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={transactionForm.income_or_expense === 'Income'}
-                                                onChange={(e) => setTransactionForm({ ...transactionForm, income_or_expense: e.target.checked ? 'Income' : 'Expense' })}
-                                            />
-                                        }
-                                        label="Is Income"
                                     />
                                 </Grid>
                             </Grid>
@@ -262,7 +312,7 @@ export default function Transaction() {
                                         <FormControlLabel
                                             control={
                                                 <Checkbox
-                                                    checked={selectedTransactions.length === transactions.length}
+                                                    checked={selectedTransactions.length === paginatedTransactions.length}
                                                     onChange={(e) => handleSelectAll(e.target.checked)}
                                                 />
                                             }
@@ -270,6 +320,7 @@ export default function Transaction() {
                                         />
                                     </TableCell>
                                     <TableCell>Type</TableCell>
+                                    <TableCell>Transaction Type</TableCell>
                                     <TableCell>Amount</TableCell>
                                     <TableCell>Method</TableCell>
                                     <TableCell>Time</TableCell>
@@ -279,7 +330,7 @@ export default function Transaction() {
                             </TableHead>
                             <TableBody>
                                 <AnimatePresence>
-                                    {transactions.map((transaction) => (
+                                    {paginatedTransactions.map((transaction) => (
                                         <motion.tr
                                             key={transaction.id}
                                             initial={{ opacity: 0 }}
@@ -293,20 +344,19 @@ export default function Transaction() {
                                                     onChange={() => handleSelectTransaction(transaction.id)}
                                                 />
                                             </TableCell>
-                                            <TableCell>
-                                                {transaction.income_or_expense} - {transaction.transaction_type}
-                                            </TableCell>
-                                            <TableCell sx={{ color: transaction.income_or_expense === 'Expense' ? 'error.main' : 'success.main' }}>
+                                            <TableCell>{transaction.type}</TableCell>
+                                            <TableCell>{transaction.transactionType}</TableCell>
+                                            <TableCell sx={{ color: transaction.type === 'Expense' ? 'error.main' : 'success.main' }}>
                                                 ${Number(transaction.amount).toFixed(2)}
                                             </TableCell>
-                                            <TableCell>{transaction.transaction_method}</TableCell>
-                                            <TableCell>{transaction.transaction_time}</TableCell>
-                                            <TableCell>{transaction.transaction_description}</TableCell>
+                                            <TableCell>{transaction.transactionMethod}</TableCell>
+                                            <TableCell>{new Date(transaction.transactionTime).toLocaleString()}</TableCell>
+                                            <TableCell>{transaction.transactionDescription}</TableCell>
                                             <TableCell>
                                                 <IconButton onClick={() => handleEditTransaction(transaction)} color="primary">
                                                     <EditIcon />
                                                 </IconButton>
-                                                <IconButton onClick={() => setTransactions(prev => prev.filter(t => t.id !== transaction.id))} color="error">
+                                                <IconButton onClick={() => handleDeleteTransaction(transaction.id)} color="error">
                                                     <DeleteIcon />
                                                 </IconButton>
                                             </TableCell>
@@ -317,7 +367,7 @@ export default function Transaction() {
                         </Table>
                     </TableContainer>
 
-                    <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between' }}>
+                    <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Button
                             onClick={handleBatchDelete}
                             variant="contained"
@@ -328,6 +378,12 @@ export default function Transaction() {
                         >
                             Batch Delete ({selectedTransactions.length})
                         </Button>
+                        <Pagination
+                            count={totalPages}
+                            page={page}
+                            onChange={(event, value) => setPage(value)}
+                            color="primary"
+                        />
                         <Button
                             onClick={() => handleAction('Upload CSV')}
                             variant="contained"
