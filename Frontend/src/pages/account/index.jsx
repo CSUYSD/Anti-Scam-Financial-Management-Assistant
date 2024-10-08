@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PropTypes from 'prop-types'
 import { logoutAPI } from "@/api/user.jsx"
-import { getToken, removeToken } from "@/utils/index.jsx"
+import { removeToken } from "@/utils/index.jsx"
 import { XMarkIcon } from '@heroicons/react/24/solid'
-import { getAllAccountsAPI, createAccountAPI, deleteAccountAPI, handleApiError } from '@/api/account'
+import { getAllAccountsAPI, createAccountAPI, deleteAccountAPI, handleApiError, switchAccountAPI } from '@/api/account'
 
 const shakeAnimation = {
     hover: {
@@ -157,12 +157,13 @@ export default function Account() {
     const handleCreateAccount = async () => {
         if (newAccountName.trim()) {
             try {
-                const token = getToken()
-                const response = await createAccountAPI({ name: newAccountName}, token)
+                const response = await createAccountAPI({ name: newAccountName })
                 const newAccount = { ...response.data, balance: response.data.balance || 0 }
                 setAccounts([...accounts, newAccount])
                 setNewAccountName('')
                 setIsModalOpen(false)
+                // Refresh the page immediately after successful account creation
+                window.location.reload()
             } catch (error) {
                 const errorMessage = handleApiError(error)
                 setError(errorMessage)
@@ -170,10 +171,15 @@ export default function Account() {
         }
     }
 
-    const handleSelectAccount = (account) => {
-        console.log('Selected account:', account)
-        localStorage.setItem('selectedAccountId', account.id)
-        window.location.href = '/'
+    const handleSelectAccount = async (account) => {
+        try {
+            console.log('Switching account:', account.id)
+            await switchAccountAPI(account.id)
+            window.location.href = '/'
+        } catch (error) {
+            const errorMessage = handleApiError(error)
+            setError(errorMessage)
+        }
     }
 
     const handleDeleteAccount = (account) => {
@@ -199,8 +205,7 @@ export default function Account() {
         try {
             await logoutAPI()
             localStorage.removeItem('username')
-            const token = getToken()
-            removeToken(token)
+            removeToken()
             window.location.href = '/login'
         } catch (error) {
             console.error('Logout failed:', error)

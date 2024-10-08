@@ -10,7 +10,7 @@ import {
 } from '@mui/icons-material'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-    getAllRecordsAPI, createRecordAPI, updateRecordAPI, deleteRecordAPI, deleteRecordsInBatchAPI
+    getAllRecordsAPI, getRecordsByTypeAPI, createRecordAPI, updateRecordAPI, deleteRecordAPI, deleteRecordsInBatchAPI
 } from '@/api/record.jsx'
 
 const MotionCard = motion(Card)
@@ -24,7 +24,7 @@ export default function Transaction() {
     const [showAddForm, setShowAddForm] = useState(false)
     const [transactionForm, setTransactionForm] = useState({
         type: 'Expense',
-        transactionType: '',
+        category: '',
         amount: '',
         transactionMethod: '',
         transactionTime: '',
@@ -35,27 +35,15 @@ export default function Transaction() {
     const [error, setError] = useState(null)
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
-    const [accountId, setAccountId] = useState(null)
 
     useEffect(() => {
-        const storedAccountId = localStorage.getItem('accountId')
-        if (storedAccountId) {
-            setAccountId(storedAccountId)
-        } else {
-            setError('No account ID found. Please log in again.')
-        }
-    }, [])
-
-    useEffect(() => {
-        if (accountId) {
-            fetchTransactions()
-        }
-    }, [accountId, page])
+        fetchTransactions()
+    }, [page])
 
     const fetchTransactions = async () => {
         try {
             setLoading(true)
-            const response = await getAllRecordsAPI(accountId)
+            const response = await getAllRecordsAPI()
             const allTransactions = response.data
             setTotalPages(Math.ceil(allTransactions.length / 10))
             setTransactions(allTransactions)
@@ -69,7 +57,7 @@ export default function Transaction() {
     const handleSearch = () => {
         const filteredTransactions = transactions.filter(transaction =>
             transaction.transactionDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            transaction.transactionType.toLowerCase().includes(searchTerm.toLowerCase())
+            transaction.category.toLowerCase().includes(searchTerm.toLowerCase())
         )
         setTransactions(filteredTransactions)
     }
@@ -78,7 +66,7 @@ export default function Transaction() {
         setShowSuccess(true)
         setTimeout(() => {
             setShowSuccess(false)
-            window.location.reload() // Refresh the page after showing success message
+            fetchTransactions() // Refresh the transactions after showing success message
         }, 1000)
     }
 
@@ -94,7 +82,7 @@ export default function Transaction() {
 
     const handleBatchDelete = async () => {
         try {
-            await deleteRecordsInBatchAPI(accountId, selectedTransactions)
+            await deleteRecordsInBatchAPI(selectedTransactions)
             handleAction('Batch Delete')
         } catch (error) {
             setError('Failed to delete selected transactions')
@@ -110,8 +98,8 @@ export default function Transaction() {
         try {
             const formattedTransaction = {
                 ...transactionForm,
-                transactionTime: formatDateTimeForBackend(transactionForm.transactionTime),
-                account: { id: accountId }
+                amount: parseFloat(transactionForm.amount),
+                transactionTime: formatDateTimeForBackend(transactionForm.transactionTime)
             }
             await createRecordAPI(formattedTransaction)
             handleAction('Add')
@@ -133,8 +121,8 @@ export default function Transaction() {
         try {
             const formattedTransaction = {
                 ...transactionForm,
-                transactionTime: formatDateTimeForBackend(transactionForm.transactionTime),
-                account: { id: accountId }
+                amount: parseFloat(transactionForm.amount),
+                transactionTime: formatDateTimeForBackend(transactionForm.transactionTime)
             }
             await updateRecordAPI(editingTransaction, formattedTransaction)
             handleAction('Edit')
@@ -246,10 +234,10 @@ export default function Transaction() {
                                 </Grid>
                                 <Grid item xs={12} md={6}>
                                     <TextField
-                                        label="Transaction Type"
+                                        label="Category"
                                         variant="outlined"
-                                        value={transactionForm.transactionType}
-                                        onChange={(e) => setTransactionForm({ ...transactionForm, transactionType: e.target.value })}
+                                        value={transactionForm.category}
+                                        onChange={(e) => setTransactionForm({ ...transactionForm, category: e.target.value })}
                                         fullWidth
                                     />
                                 </Grid>
@@ -320,7 +308,7 @@ export default function Transaction() {
                                         />
                                     </TableCell>
                                     <TableCell>Type</TableCell>
-                                    <TableCell>Transaction Type</TableCell>
+                                    <TableCell>Category</TableCell>
                                     <TableCell>Amount</TableCell>
                                     <TableCell>Method</TableCell>
                                     <TableCell>Time</TableCell>
@@ -345,7 +333,7 @@ export default function Transaction() {
                                                 />
                                             </TableCell>
                                             <TableCell>{transaction.type}</TableCell>
-                                            <TableCell>{transaction.transactionType}</TableCell>
+                                            <TableCell>{transaction.category}</TableCell>
                                             <TableCell sx={{ color: transaction.type === 'Expense' ? 'error.main' : 'success.main' }}>
                                                 ${Number(transaction.amount).toFixed(2)}
                                             </TableCell>

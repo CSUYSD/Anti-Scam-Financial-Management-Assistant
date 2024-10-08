@@ -11,13 +11,29 @@ export function getAllAccountsAPI() {
     });
 }
 
+// switch account
+export function switchAccountAPI(id) {
+    return request({
+        url: `/account/switch`,
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        params: {
+            accountId: id,
+        },
+    }).catch(error => {
+        console.error('API Error:', error);
+        throw error;
+    });
+}
+
 // Create a new account
-export function createAccountAPI(accountData, token) {
+export function createAccountAPI(accountData) {
     return request({
         url: '/account/create',
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
         data: JSON.stringify(accountData),
