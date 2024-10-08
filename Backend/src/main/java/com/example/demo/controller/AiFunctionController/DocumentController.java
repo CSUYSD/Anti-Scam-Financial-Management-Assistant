@@ -18,6 +18,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -86,6 +87,16 @@ public class DocumentController {
                 .map(chatResponse -> ServerSentEvent.builder(chatResponse)
                         .event("message")
                         .build());
+    }
+
+    @GetMapping("etl/clear")
+    public ResponseEntity<String> clearVectorDB(@RequestBody List<String> vectorIds) {
+        try {
+             vectorStore.delete(vectorIds);
+            return ResponseEntity.ok("Vector database cleared successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to clear vector database.");
+        }
     }
 
     @PostMapping("embedding")
