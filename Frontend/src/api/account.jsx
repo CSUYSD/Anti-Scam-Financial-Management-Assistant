@@ -44,7 +44,7 @@ export function createAccountAPI(accountData) {
 }
 
 // Get current account
-export function getAccountByIdAPI() {
+export function getCurrentAccountAPI() {
     return request({
         url: `/account/current`,
         method: 'GET',

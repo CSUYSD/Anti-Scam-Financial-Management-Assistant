@@ -23,6 +23,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { motion } from 'framer-motion'
 import { getRecentRecordsAPI } from '@/api/record'
+import { getCurrentAccountAPI } from '@/api/account'
 
 const weeklyData = [
     { day: 'Mon', income: 1000, expense: 800 },
@@ -296,10 +297,9 @@ export default function Dashboard() {
         const fetchData = async () => {
             try {
                 setLoading(true)
-                // Fetch account data (you need to implement this API call)
-                const accountResponse = await fetch('/api/account')
-                const accountData = await accountResponse.json()
-                setAccountData(accountData)
+                // Fetch account data using the provided API
+                const accountResponse = await getCurrentAccountAPI()
+                setAccountData(accountResponse.data)
 
                 // Fetch recent records
                 const recordsResponse = await getRecentRecordsAPI()
