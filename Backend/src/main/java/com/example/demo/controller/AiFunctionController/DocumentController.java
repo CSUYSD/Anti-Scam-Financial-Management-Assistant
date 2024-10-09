@@ -59,6 +59,9 @@ public class DocumentController {
     @SneakyThrows
     @PostMapping("etl/read/multipart")
     public void saveVectorDB(@RequestParam MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Uploaded file is empty");
+        }
         Resource resource = new InputStreamResource(file.getInputStream());
         TikaDocumentReader reader = new TikaDocumentReader(resource);
         List<Document> splitDocuments = new TokenTextSplitter().apply(reader.read());
