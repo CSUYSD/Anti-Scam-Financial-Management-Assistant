@@ -235,10 +235,15 @@ export default function Layout() {
                         sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'flex-end',
+                            justifyContent: 'space-between',
                             px: [1],
                         }}
                     >
+                        {open && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+                                <img src="/public/logo.png" alt="Logo" style={{ height: '40px' }} />
+                            </Box>
+                        )}
                         <IconButton onClick={toggleDrawer}>
                             <ChevronLeftIcon />
                         </IconButton>

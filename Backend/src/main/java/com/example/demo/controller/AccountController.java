@@ -70,12 +70,14 @@ public class AccountController {
     public ResponseEntity<Account> getAccountByAccountId(@RequestHeader("Authorization") String token) {
         try {
             Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
-            String pattern = "login_user:" + userId + ":account*";
+            String pattern = "login_user:" + userId +":current_account";
             String accountId = stringRedisTemplate.opsForValue().get(pattern);
             Account account = accountService.getAccountByAccountId(Long.valueOf(accountId));
 
             return ResponseEntity.ok(account);
         } catch (AccountNotFoundException e) {
+            logger.severe(e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }

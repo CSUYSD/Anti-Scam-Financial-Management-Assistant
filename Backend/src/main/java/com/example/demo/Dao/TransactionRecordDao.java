@@ -25,6 +25,6 @@ public interface TransactionRecordDao extends JpaRepository<TransactionRecord, L
     // 根据多个ID和账户ID批量获取记录
     List<TransactionRecord> findAllByIdInAndAccountId(List<Long> ids, Long accountId);
 
-    @Query(value = "SELECT * FROM transaction_record WHERE account_id = ?1 ORDER BY date DESC LIMIT 5", nativeQuery = true)
+    @Query(value = "SELECT * FROM transaction_record WHERE account_id = :accountId ORDER BY transaction_time DESC, id DESC LIMIT 5", nativeQuery = true)
     List<TransactionRecord> findLatestFiveDaysRecords(Long accountId);
 }

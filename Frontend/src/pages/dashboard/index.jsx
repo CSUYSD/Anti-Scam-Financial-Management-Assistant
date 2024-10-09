@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
     Typography,
     Container,
@@ -12,6 +12,7 @@ import {
     useTheme,
     Alert,
     AlertTitle,
+    CircularProgress,
 } from '@mui/material'
 import {
     AccountBalance as AccountBalanceIcon,
@@ -21,6 +22,8 @@ import {
 } from '@mui/icons-material'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { motion } from 'framer-motion'
+import { getRecentRecordsAPI } from '@/api/record'
+import { getCurrentAccountAPI } from '@/api/account'
 
 const weeklyData = [
     { day: 'Mon', income: 1000, expense: 800 },
@@ -30,14 +33,6 @@ const weeklyData = [
     { day: 'Fri', income: 2000, expense: 1500 },
     { day: 'Sat', income: 2200, expense: 1800 },
     { day: 'Sun', income: 1800, expense: 2000 },
-]
-
-const recentRecords = [
-    { id: 1, description: 'Salary', amount: 5000, type: 'income' },
-    { id: 2, description: 'Rent', amount: -1500, type: 'expense' },
-    { id: 3, description: 'Groceries', amount: -200, type: 'expense' },
-    { id: 4, description: 'Freelance work', amount: 1000, type: 'income' },
-    { id: 5, description: 'Utilities', amount: -150, type: 'expense' },
 ]
 
 const suspiciousTransactions = [
@@ -139,15 +134,15 @@ const RecentRecordsList = ({ records }) => {
                     >
                         <ListItem>
                             <ListItemText
-                                primary={record.description}
-                                secondary={record.type === 'income' ? 'Income' : 'Expense'}
+                                primary={record.transactionDescription}
+                                secondary={record.type}
                             />
                             <Typography
                                 variant="body2"
-                                color={record.type === 'income' ? 'success.main' : 'error.main'}
+                                color={record.type === 'Income' ? 'success.main' : 'error.main'}
                                 sx={{ fontWeight: 'bold' }}
                             >
-                                {record.type === 'income' ? '+' : '-'}${Math.abs(record.amount).toLocaleString()}
+                                {record.type === 'Income' ? '+' : '-'}${Math.abs(record.amount).toLocaleString()}
                             </Typography>
                         </ListItem>
                         {index < records.length - 1 && <Divider />}
@@ -292,17 +287,66 @@ const TransactionTypesPieChart = ({ data }) => {
 }
 
 export default function Dashboard() {
-    const currentBalance = 10000
-    const totalIncome = 11500
-    const totalExpense = 1500
+    const [accountData, setAccountData] = useState(null)
+    const [recentRecords, setRecentRecords] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
     const theme = useTheme()
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true)
+                // Fetch account data using the provided API
+                const accountResponse = await getCurrentAccountAPI()
+                setAccountData(accountResponse.data)
+
+                // Fetch recent records
+                const recordsResponse = await getRecentRecordsAPI()
+                setRecentRecords(recordsResponse.data)
+
+                setLoading(false)
+            } catch (error) {
+                console.error('Error fetching data:', error)
+                setError('Failed to fetch data. Please try again later.')
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        )
+    }
+
+    if (error) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <Alert severity="error">
+                    <AlertTitle>Error</AlertTitle>
+                    {error}
+                </Alert>
+            </Box>
+        )
+    }
+
+    const balance = accountData ? accountData.totalIncome - accountData.totalExpense : 0
 
     return (
         <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
             <Container maxWidth="xl">
                 <Grid container spacing={3}>
                     <Grid item xs={12} md={4}>
-                        <BalanceCard balance={currentBalance} income={totalIncome} expense={totalExpense} />
+                        <BalanceCard
+                            balance={balance}
+                            income={accountData ? accountData.totalIncome : 0}
+                            expense={accountData ? accountData.totalExpense : 0}
+                        />
                     </Grid>
                     <Grid item xs={12} md={8}>
                         <WeeklyChart data={weeklyData} />
