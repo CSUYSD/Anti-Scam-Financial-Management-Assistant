@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, {useState, useRef, useCallback,useEffect} from 'react';
 import {
   Box,
   Typography,
@@ -28,6 +28,7 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import { Sidebar } from '@/components/Sidebar';
 import { ChatMessages } from '@/components/ChatMessages';
 import { FluxMessageWithHistoryAPI, ChatWithFileAPI } from '@/api/ai';
+import { formatMessageContent } from '@/utils/messageFormatter';
 
 const drawerWidth = 240;
 
@@ -41,6 +42,7 @@ export default function ChatInterface() {
     deleteSession,
     updateSessionName,
     addMessageToActiveSession,
+    updateMessageInActiveSession,
   } = useChatSessions();
   const { files, uploadFile, clearFiles } = useFileUpload();
 
@@ -55,12 +57,68 @@ export default function ChatInterface() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [username, setUsername] = useState(() => localStorage.getItem('username') || 'User');
 
+
+
+  // const handleSendMessage = useCallback(async () => {
+  //   if (message.trim()) {
+  //     const decodedMessage = decodeURIComponent(message.trim());
+  //     console.log("User input:", decodedMessage);
+  //
+  //     addMessageToActiveSession({ sender: username, content: decodedMessage });
+  //     setMessage('');
+  //     setIsLoading(true);
+  //     setIsTyping(true);
+  //
+  //     try {
+  //       let response;
+  //       if (isRetrievalMode) {
+  //         const params = new URLSearchParams({
+  //           prompt: decodedMessage,
+  //           files: files.map(f => f.name).join(','),
+  //           sessionId: activeSession
+  //         });
+  //         response = await ChatWithFileAPI(params);
+  //       } else {
+  //         const params = {
+  //           prompt: decodedMessage,
+  //           sessionId: activeSession
+  //         };
+  //         response = await FluxMessageWithHistoryAPI(params);
+  //       }
+  //
+  //       const sseData = response.data;
+  //       const lines = sseData.split('\n');
+  //       let aiResponse = '';
+  //
+  //       for (const line of lines) {
+  //         if (line.startsWith('data:')) {
+  //           const messagePart = line.replace('data:', '').trim();
+  //           aiResponse += messagePart;
+  //           addMessageToActiveSession({ sender: 'AI', content: aiResponse });
+  //           await new Promise(resolve => setTimeout(resolve, 50));
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.error('Error sending message:', error);
+  //       addMessageToActiveSession({ sender: 'AI', content: 'Sorry, there was an error processing your request.' });
+  //     } finally {
+  //       setIsLoading(false);
+  //       setIsTyping(false);
+  //     }
+  //   }
+  // }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession]);
+  // //
+
+
+  //2
   const handleSendMessage = useCallback(async () => {
     if (message.trim()) {
       const decodedMessage = decodeURIComponent(message.trim());
       console.log("User input:", decodedMessage);
 
+      // 添加用户消息并获取唯一 ID
       addMessageToActiveSession({ sender: username, content: decodedMessage });
+
       setMessage('');
       setIsLoading(true);
       setIsTyping(true);
@@ -71,13 +129,13 @@ export default function ChatInterface() {
           const params = new URLSearchParams({
             prompt: decodedMessage,
             files: files.map(f => f.name).join(','),
-            sessionId: activeSession
+            sessionId: activeSession,
           });
           response = await ChatWithFileAPI(params);
         } else {
           const params = {
             prompt: decodedMessage,
-            sessionId: activeSession
+            sessionId: activeSession,
           };
           response = await FluxMessageWithHistoryAPI(params);
         }
@@ -86,23 +144,35 @@ export default function ChatInterface() {
         const lines = sseData.split('\n');
         let aiResponse = '';
 
+        // 创建一条空的 AI 消息，并获取消息的唯一 ID
+        const messageId = addMessageToActiveSession({ sender: 'AI', content: '' });
+
         for (const line of lines) {
           if (line.startsWith('data:')) {
             const messagePart = line.replace('data:', '').trim();
-            aiResponse += messagePart;
-            addMessageToActiveSession({ sender: 'AI', content: aiResponse });
-            await new Promise(resolve => setTimeout(resolve, 50));
+            if (messagePart) {
+              // 使用工具函数来格式化响应内容
+              aiResponse = formatMessageContent(aiResponse, messagePart);
+
+              // 使用唯一 ID 更新同一条消息的内容
+              updateMessageInActiveSession(messageId, { content: aiResponse });
+
+              await new Promise(resolve => setTimeout(resolve, 20)); // 模拟打字机效果
+            }
           }
         }
       } catch (error) {
         console.error('Error sending message:', error);
-        addMessageToActiveSession({ sender: 'AI', content: 'Sorry, there was an error processing your request.' });
+        updateMessageInActiveSession(messageId, { content: 'Sorry, there was an error processing your request.' });
       } finally {
         setIsLoading(false);
         setIsTyping(false);
       }
     }
-  }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession]);
+  }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession, updateMessageInActiveSession]);
+
+
+
 
   const handleFileUpload = async (event) => {
     const selectedFile = event.target.files?.[0];

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import {
     Box, Button, Card, CardContent, CardHeader, Checkbox, Collapse, FormControlLabel,
     Grid, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    TextField, Typography, useTheme, Fade, Pagination, CircularProgress, Select, MenuItem
+    TextField, Typography, useTheme, Fade, Pagination, CircularProgress, Select, MenuItem,
+    FormHelperText
 } from '@mui/material'
 import {
     Search as SearchIcon, Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon,
@@ -30,6 +31,7 @@ export default function Transaction() {
         transactionTime: '',
         transactionDescription: ''
     })
+    const [formErrors, setFormErrors] = useState({})
     const [transactions, setTransactions] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -94,17 +96,47 @@ export default function Transaction() {
         return date.toISOString()
     }
 
+    const validateForm = () => {
+        const errors = {}
+        if (!transactionForm.type) errors.type = 'Type is required'
+        if (!transactionForm.category) errors.category = 'Category is required'
+        if (!transactionForm.amount) errors.amount = 'Amount is required'
+        if (!transactionForm.transactionMethod) errors.transactionMethod = 'Transaction method is required'
+        if (!transactionForm.transactionTime) errors.transactionTime = 'Transaction time is required'
+        if (!transactionForm.transactionDescription) errors.transactionDescription = 'Description is required'
+
+        const currentDate = new Date()
+        const selectedDate = new Date(transactionForm.transactionTime)
+        if (selectedDate > currentDate) {
+            errors.transactionTime = 'Cannot select a future date'
+        }
+
+        setFormErrors(errors)
+        return Object.keys(errors).length === 0
+    }
+
     const handleAddTransaction = async () => {
-        try {
-            const formattedTransaction = {
-                ...transactionForm,
-                amount: parseFloat(transactionForm.amount),
-                transactionTime: formatDateTimeForBackend(transactionForm.transactionTime)
+        if (validateForm()) {
+            try {
+                const formattedTransaction = {
+                    ...transactionForm,
+                    amount: parseFloat(transactionForm.amount),
+                    transactionTime: formatDateTimeForBackend(transactionForm.transactionTime)
+                }
+                await createRecordAPI(formattedTransaction)
+                handleAction('Add')
+                setShowAddForm(false)
+                setTransactionForm({
+                    type: 'Expense',
+                    category: '',
+                    amount: '',
+                    transactionMethod: '',
+                    transactionTime: '',
+                    transactionDescription: ''
+                })
+            } catch (error) {
+                setError('Failed to add transaction')
             }
-            await createRecordAPI(formattedTransaction)
-            handleAction('Add')
-        } catch (error) {
-            setError('Failed to add transaction')
         }
     }
 
@@ -118,16 +150,28 @@ export default function Transaction() {
     }
 
     const handleUpdateTransaction = async () => {
-        try {
-            const formattedTransaction = {
-                ...transactionForm,
-                amount: parseFloat(transactionForm.amount),
-                transactionTime: formatDateTimeForBackend(transactionForm.transactionTime)
+        if (validateForm()) {
+            try {
+                const formattedTransaction = {
+                    ...transactionForm,
+                    amount: parseFloat(transactionForm.amount),
+                    transactionTime: formatDateTimeForBackend(transactionForm.transactionTime)
+                }
+                await updateRecordAPI(editingTransaction, formattedTransaction)
+                handleAction('Edit')
+                setShowAddForm(false)
+                setEditingTransaction(null)
+                setTransactionForm({
+                    type: 'Expense',
+                    category: '',
+                    amount: '',
+                    transactionMethod: '',
+                    transactionTime: '',
+                    transactionDescription: ''
+                })
+            } catch (error) {
+                setError('Failed to update transaction')
             }
-            await updateRecordAPI(editingTransaction, formattedTransaction)
-            handleAction('Edit')
-        } catch (error) {
-            setError('Failed to update transaction')
         }
     }
 
@@ -227,10 +271,12 @@ export default function Transaction() {
                                         value={transactionForm.type}
                                         onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value })}
                                         fullWidth
+                                        error={!!formErrors.type}
                                     >
                                         <MenuItem value="Income">Income</MenuItem>
                                         <MenuItem value="Expense">Expense</MenuItem>
                                     </Select>
+                                    {formErrors.type && <FormHelperText error>{formErrors.type}</FormHelperText>}
                                 </Grid>
                                 <Grid item xs={12} md={6}>
                                     <TextField
@@ -239,6 +285,9 @@ export default function Transaction() {
                                         value={transactionForm.category}
                                         onChange={(e) => setTransactionForm({ ...transactionForm, category: e.target.value })}
                                         fullWidth
+                                        required
+                                        error={!!formErrors.category}
+                                        helperText={formErrors.category}
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={6}>
@@ -249,6 +298,9 @@ export default function Transaction() {
                                         value={transactionForm.amount}
                                         onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
                                         fullWidth
+                                        required
+                                        error={!!formErrors.amount}
+                                        helperText={formErrors.amount}
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={6}>
@@ -258,6 +310,9 @@ export default function Transaction() {
                                         value={transactionForm.transactionMethod}
                                         onChange={(e) => setTransactionForm({ ...transactionForm, transactionMethod: e.target.value })}
                                         fullWidth
+                                        required
+                                        error={!!formErrors.transactionMethod}
+                                        helperText={formErrors.transactionMethod}
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={6}>
@@ -268,7 +323,11 @@ export default function Transaction() {
                                         value={transactionForm.transactionTime}
                                         onChange={(e) => setTransactionForm({ ...transactionForm, transactionTime: e.target.value })}
                                         fullWidth
+                                        required
                                         InputLabelProps={{ shrink: true }}
+                                        inputProps={{ max: new Date().toISOString().slice(0, 16) }}
+                                        error={!!formErrors.transactionTime}
+                                        helperText={formErrors.transactionTime}
                                     />
                                 </Grid>
                                 <Grid item xs={12}>
@@ -278,6 +337,9 @@ export default function Transaction() {
                                         value={transactionForm.transactionDescription}
                                         onChange={(e) => setTransactionForm({ ...transactionForm, transactionDescription: e.target.value })}
                                         fullWidth
+                                        required
+                                        error={!!formErrors.transactionDescription}
+                                        helperText={formErrors.transactionDescription}
                                     />
                                 </Grid>
                             </Grid>
@@ -328,6 +390,7 @@ export default function Transaction() {
                                         >
                                             <TableCell>
                                                 <Checkbox
+
                                                     checked={selectedTransactions.includes(transaction.id)}
                                                     onChange={() => handleSelectTransaction(transaction.id)}
                                                 />

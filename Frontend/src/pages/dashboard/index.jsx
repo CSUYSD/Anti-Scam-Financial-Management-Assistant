@@ -22,32 +22,8 @@ import {
 } from '@mui/icons-material'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { motion } from 'framer-motion'
-import { getRecentRecordsAPI } from '@/api/record'
+import { getRecentRecordsAPI, getAllRecordsAPI } from '@/api/record'
 import { getCurrentAccountAPI } from '@/api/account'
-
-const weeklyData = [
-    { day: 'Mon', income: 1000, expense: 800 },
-    { day: 'Tue', income: 1500, expense: 1000 },
-    { day: 'Wed', income: 1200, expense: 1100 },
-    { day: 'Thu', income: 1800, expense: 1300 },
-    { day: 'Fri', income: 2000, expense: 1500 },
-    { day: 'Sat', income: 2200, expense: 1800 },
-    { day: 'Sun', income: 1800, expense: 2000 },
-]
-
-const suspiciousTransactions = [
-    { id: 1, description: 'Large withdrawal', amount: 5000, date: '2023-05-15' },
-    { id: 2, description: 'Unusual overseas transfer', amount: 2000, date: '2023-05-14' },
-]
-
-const transactionTypes = [
-    { name: 'Food & Dining', value: 30 },
-    { name: 'Transportation', value: 20 },
-    { name: 'Shopping', value: 15 },
-    { name: 'Utilities', value: 10 },
-    { name: 'Entertainment', value: 15 },
-    { name: 'Others', value: 10 },
-]
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d']
 
@@ -163,11 +139,15 @@ const WeeklyChart = ({ data }) => {
             transition={{ duration: 0.5, delay: 0.1 }}
             sx={{ p: 3, borderRadius: 4, height: '100%' }}
         >
-            <Typography variant="h6" gutterBottom>Weekly Income/Expense</Typography>
+            <Typography variant="h6" gutterBottom>Last 5 Days Income/Expense</Typography>
             <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                    <XAxis dataKey="day" stroke={theme.palette.text.secondary} />
+                    <XAxis
+                        dataKey="date"
+                        stroke={theme.palette.text.secondary}
+                        tickFormatter={(value) => new Date(value).toLocaleDateString()}
+                    />
                     <YAxis stroke={theme.palette.text.secondary} />
                     <Tooltip
                         contentStyle={{
@@ -175,6 +155,7 @@ const WeeklyChart = ({ data }) => {
                             border: `1px solid ${theme.palette.divider}`,
                             borderRadius: theme.shape.borderRadius,
                         }}
+                        labelFormatter={(value) => new Date(value).toLocaleDateString()}
                     />
                     <Legend />
                     <Line
@@ -289,6 +270,8 @@ const TransactionTypesPieChart = ({ data }) => {
 export default function Dashboard() {
     const [accountData, setAccountData] = useState(null)
     const [recentRecords, setRecentRecords] = useState([])
+    const [weeklyData, setWeeklyData] = useState([])
+    const [transactionTypes, setTransactionTypes] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const theme = useTheme()
@@ -302,8 +285,17 @@ export default function Dashboard() {
                 setAccountData(accountResponse.data)
 
                 // Fetch recent records
-                const recordsResponse = await getRecentRecordsAPI()
-                setRecentRecords(recordsResponse.data)
+                const recentRecordsResponse = await getRecentRecordsAPI()
+                setRecentRecords(recentRecordsResponse.data)
+
+                // Process the data for the WeeklyChart
+                const processedWeeklyData = processWeeklyData(recentRecordsResponse.data)
+                setWeeklyData(processedWeeklyData)
+
+                // Fetch all records for transaction types
+                const allRecordsResponse = await getAllRecordsAPI()
+                const processedTransactionTypes = processTransactionTypes(allRecordsResponse.data)
+                setTransactionTypes(processedTransactionTypes)
 
                 setLoading(false)
             } catch (error) {
@@ -315,6 +307,42 @@ export default function Dashboard() {
 
         fetchData()
     }, [])
+
+    const processWeeklyData = (records) => {
+        const dailyData = {}
+
+        records.forEach(record => {
+            const date = record.transactionTime.split('T')[0] // Extract date part
+            if (!dailyData[date]) {
+                dailyData[date] = { date, income: 0, expense: 0 }
+            }
+            if (record.type === 'Income') {
+                dailyData[date].income += record.amount
+            } else {
+                dailyData[date].expense += record.amount
+            }
+        })
+
+        return Object.values(dailyData).sort((a, b) => new Date(a.date) - new Date(b.date))
+    }
+
+    const processTransactionTypes = (records) => {
+        const categories = {}
+
+        records.forEach(record => {
+            if (!categories[record.category]) {
+                categories[record.category] = 0
+            }
+            categories[record.category] += record.amount
+        })
+
+        return Object.entries(categories).map(([name, value]) => ({ name, value }))
+    }
+
+    const suspiciousTransactions = [
+        { id: 1, description: 'Large withdrawal', amount: 5000, date: '2023-05-15' },
+        { id: 2, description: 'Unusual overseas transfer', amount: 2000, date: '2023-05-14' },
+    ]
 
     if (loading) {
         return (
@@ -358,6 +386,7 @@ export default function Dashboard() {
                         <SuspiciousTransactions transactions={suspiciousTransactions} />
                     </Grid>
                     <Grid item xs={12}>
+
                         <TransactionTypesPieChart data={transactionTypes} />
                     </Grid>
                 </Grid>
