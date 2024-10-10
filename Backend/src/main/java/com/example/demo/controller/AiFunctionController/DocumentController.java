@@ -112,8 +112,6 @@ public class DocumentController {
         }
     }
 
-
-
     @PostMapping("embedding")
     public float[] embedding(@RequestParam String text) {
         return openAiEmbeddingModel.embed(text);
