@@ -13,6 +13,8 @@ import {
     Alert,
     AlertTitle,
     CircularProgress,
+    ToggleButtonGroup,
+    ToggleButton,
 } from '@mui/material'
 import {
     AccountBalance as AccountBalanceIcon,
@@ -129,7 +131,7 @@ const RecentRecordsList = ({ records }) => {
     )
 }
 
-const WeeklyChart = ({ data }) => {
+const WeeklyChart = ({ data, duration, onDurationChange }) => {
     const theme = useTheme()
     return (
         <MotionPaper
@@ -139,7 +141,22 @@ const WeeklyChart = ({ data }) => {
             transition={{ duration: 0.5, delay: 0.1 }}
             sx={{ p: 3, borderRadius: 4, height: '100%' }}
         >
-            <Typography variant="h6" gutterBottom>Last 5 Days Income/Expense</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">Income/Expense Chart</Typography>
+                <ToggleButtonGroup
+                    value={duration}
+                    exclusive
+                    onChange={onDurationChange}
+                    aria-label="chart duration"
+                >
+                    <ToggleButton value={7} aria-label="7 days">
+                        7 Days
+                    </ToggleButton>
+                    <ToggleButton value={30} aria-label="30 days">
+                        30 Days
+                    </ToggleButton>
+                </ToggleButtonGroup>
+            </Box>
             <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
@@ -270,10 +287,11 @@ const TransactionTypesPieChart = ({ data }) => {
 export default function Dashboard() {
     const [accountData, setAccountData] = useState(null)
     const [recentRecords, setRecentRecords] = useState([])
-    const [weeklyData, setWeeklyData] = useState([])
+    const [chartData, setChartData] = useState([])
     const [transactionTypes, setTransactionTypes] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [chartDuration, setChartDuration] = useState(7)
     const theme = useTheme()
 
     useEffect(() => {
@@ -285,12 +303,12 @@ export default function Dashboard() {
                 setAccountData(accountResponse.data)
 
                 // Fetch recent records
-                const recentRecordsResponse = await getRecentRecordsAPI()
+                const recentRecordsResponse = await getRecentRecordsAPI(chartDuration)
                 setRecentRecords(recentRecordsResponse.data)
 
                 // Process the data for the WeeklyChart
-                const processedWeeklyData = processWeeklyData(recentRecordsResponse.data)
-                setWeeklyData(processedWeeklyData)
+                const processedChartData = processChartData(recentRecordsResponse.data)
+                setChartData(processedChartData)
 
                 // Fetch all records for transaction types
                 const allRecordsResponse = await getAllRecordsAPI()
@@ -306,9 +324,9 @@ export default function Dashboard() {
         }
 
         fetchData()
-    }, [])
+    }, [chartDuration])
 
-    const processWeeklyData = (records) => {
+    const processChartData = (records) => {
         const dailyData = {}
 
         records.forEach(record => {
@@ -339,6 +357,12 @@ export default function Dashboard() {
         return Object.entries(categories).map(([name, value]) => ({ name, value }))
     }
 
+    const handleDurationChange = (event, newDuration) => {
+        if (newDuration !== null) {
+            setChartDuration(newDuration)
+        }
+    }
+
     const suspiciousTransactions = [
         { id: 1, description: 'Large withdrawal', amount: 5000, date: '2023-05-15' },
         { id: 2, description: 'Unusual overseas transfer', amount: 2000, date: '2023-05-14' },
@@ -353,7 +377,7 @@ export default function Dashboard() {
     }
 
     if (error) {
-        return (
+        return  (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                 <Alert severity="error">
                     <AlertTitle>Error</AlertTitle>
@@ -377,7 +401,11 @@ export default function Dashboard() {
                         />
                     </Grid>
                     <Grid item xs={12} md={8}>
-                        <WeeklyChart data={weeklyData} />
+                        <WeeklyChart
+                            data={chartData}
+                            duration={chartDuration}
+                            onDurationChange={handleDurationChange}
+                        />
                     </Grid>
                     <Grid item xs={12} md={6}>
                         <RecentRecordsList records={recentRecords} />
@@ -386,7 +414,6 @@ export default function Dashboard() {
                         <SuspiciousTransactions transactions={suspiciousTransactions} />
                     </Grid>
                     <Grid item xs={12}>
-
                         <TransactionTypesPieChart data={transactionTypes} />
                     </Grid>
                 </Grid>

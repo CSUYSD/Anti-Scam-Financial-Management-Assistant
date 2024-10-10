@@ -73,6 +73,14 @@ export function UploadFileAPI(formData) {
     })
 }
 
+
+export function ClearFileAPI() {
+    return request({
+        url: 'vectordb/clear',
+        method: 'GET'
+    })
+}
+
 /**
  * Chat with File API
  * @param {Object} params - The chat form data

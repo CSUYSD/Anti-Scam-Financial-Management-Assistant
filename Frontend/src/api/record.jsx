@@ -22,11 +22,14 @@ export function getRecordByIdAPI(id) {
     });
 }
 
-// get recent five-days records
-export function getRecentRecordsAPI() {
+// get recent records
+export function getRecentRecordsAPI(duration) {
     return request({
-        url: `/records/five-days`,
+        url: `/records/recent`,
         method: 'GET',
+        params: {
+            duration: duration,
+        },
     }).catch(error => {
         console.error('API Error:', error);
         throw error;

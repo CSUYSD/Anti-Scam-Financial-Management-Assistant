@@ -100,7 +100,7 @@ public class TransactionRecordController {
         }
     }
 
-    @GetMapping("/five-days")
+    @GetMapping("/recent")
     public ResponseEntity<List<TransactionRecord>> getLatestFiveDaysRecord(@RequestHeader("Authorization") String token) {
         try {
             Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
