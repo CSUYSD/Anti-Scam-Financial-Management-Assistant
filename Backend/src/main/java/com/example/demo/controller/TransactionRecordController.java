@@ -5,6 +5,7 @@ import java.util.List;
 
 
 import com.example.demo.model.DTO.TransactionRecordDTO;
+import com.example.demo.service.AccountService;
 import com.example.demo.utility.JWT.JwtUtil;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,8 @@ public class TransactionRecordController {
     private final JwtUtil jwtUtil;
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private AccountService accountService;
 
     public TransactionRecordController(TransactionRecordService recordService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
         this.recordService = recordService;

@@ -77,6 +77,8 @@ public class TransactionRecordService {
         transactionRecord.setAccount(account);
         transactionRecord.setUserId(userId);
 
+
+
         transactionRecordDao.save(transactionRecord);
     }
 
@@ -147,5 +149,4 @@ public class TransactionRecordService {
     public List<TransactionRecord> getCertainDaysRecords(Long accountId, Integer duration) {
         return transactionRecordDao.findCertainDaysRecords(accountId, duration);
     }
-
 }
