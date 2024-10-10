@@ -1,4 +1,4 @@
-import React, {useState, useRef, useCallback,useEffect} from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -22,12 +22,13 @@ import {
 import {
   Send as SendIcon,
   Menu as MenuIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { Sidebar } from '@/components/Sidebar';
 import { ChatMessages } from '@/components/ChatMessages';
-import { FluxMessageWithHistoryAPI, ChatWithFileAPI } from '@/api/ai';
+import { FluxMessageWithHistoryAPI, ChatWithFileAPI, ClearFileAPI } from '@/api/ai';
 import { formatMessageContent } from '@/utils/messageFormatter';
 
 const drawerWidth = 240;
@@ -57,66 +58,11 @@ export default function ChatInterface() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [username, setUsername] = useState(() => localStorage.getItem('username') || 'User');
 
-
-
-  // const handleSendMessage = useCallback(async () => {
-  //   if (message.trim()) {
-  //     const decodedMessage = decodeURIComponent(message.trim());
-  //     console.log("User input:", decodedMessage);
-  //
-  //     addMessageToActiveSession({ sender: username, content: decodedMessage });
-  //     setMessage('');
-  //     setIsLoading(true);
-  //     setIsTyping(true);
-  //
-  //     try {
-  //       let response;
-  //       if (isRetrievalMode) {
-  //         const params = new URLSearchParams({
-  //           prompt: decodedMessage,
-  //           files: files.map(f => f.name).join(','),
-  //           sessionId: activeSession
-  //         });
-  //         response = await ChatWithFileAPI(params);
-  //       } else {
-  //         const params = {
-  //           prompt: decodedMessage,
-  //           sessionId: activeSession
-  //         };
-  //         response = await FluxMessageWithHistoryAPI(params);
-  //       }
-  //
-  //       const sseData = response.data;
-  //       const lines = sseData.split('\n');
-  //       let aiResponse = '';
-  //
-  //       for (const line of lines) {
-  //         if (line.startsWith('data:')) {
-  //           const messagePart = line.replace('data:', '').trim();
-  //           aiResponse += messagePart;
-  //           addMessageToActiveSession({ sender: 'AI', content: aiResponse });
-  //           await new Promise(resolve => setTimeout(resolve, 50));
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error('Error sending message:', error);
-  //       addMessageToActiveSession({ sender: 'AI', content: 'Sorry, there was an error processing your request.' });
-  //     } finally {
-  //       setIsLoading(false);
-  //       setIsTyping(false);
-  //     }
-  //   }
-  // }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession]);
-  // //
-
-
-  //2
   const handleSendMessage = useCallback(async () => {
     if (message.trim()) {
       const decodedMessage = decodeURIComponent(message.trim());
       console.log("User input:", decodedMessage);
 
-      // 添加用户消息并获取唯一 ID
       addMessageToActiveSession({ sender: username, content: decodedMessage });
 
       setMessage('');
@@ -144,20 +90,15 @@ export default function ChatInterface() {
         const lines = sseData.split('\n');
         let aiResponse = '';
 
-        // 创建一条空的 AI 消息，并获取消息的唯一 ID
         const messageId = addMessageToActiveSession({ sender: 'AI', content: '' });
 
         for (const line of lines) {
           if (line.startsWith('data:')) {
             const messagePart = line.replace('data:', '').trim();
             if (messagePart) {
-              // 使用工具函数来格式化响应内容
               aiResponse = formatMessageContent(aiResponse, messagePart);
-
-              // 使用唯一 ID 更新同一条消息的内容
               updateMessageInActiveSession(messageId, { content: aiResponse });
-
-              await new Promise(resolve => setTimeout(resolve, 20)); // 模拟打字机效果
+              await new Promise(resolve => setTimeout(resolve, 20));
             }
           }
         }
@@ -171,9 +112,6 @@ export default function ChatInterface() {
     }
   }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession, updateMessageInActiveSession]);
 
-
-
-
   const handleFileUpload = async (event) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
@@ -183,6 +121,19 @@ export default function ChatInterface() {
       } finally {
         setIsLoading(false);
       }
+    }
+  };
+
+  const handleClearFiles = async () => {
+    setIsLoading(true);
+    try {
+      await ClearFileAPI();
+      clearFiles();
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (error) {
+      console.error('Error clearing files:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -216,11 +167,9 @@ export default function ChatInterface() {
     const lastUserMessage = [...currentSession.messages].reverse().find(m => m.sender === username);
     if (!lastUserMessage) return;
 
-    // Remove the last AI message
     const updatedMessages = currentSession.messages.slice(0, -1);
     updateSessionName(activeSession, currentSession.name);
 
-    // Resend the last user message
     setMessage(lastUserMessage.content);
     await handleSendMessage();
   };
@@ -269,6 +218,7 @@ export default function ChatInterface() {
               handleFileUpload={handleFileUpload}
               fileInputRef={fileInputRef}
               isLoading={isLoading}
+              handleClearFiles={handleClearFiles}
           />
         </Box>
         <Box sx={{
@@ -287,21 +237,30 @@ export default function ChatInterface() {
                 {sessions.find(s => s.id === activeSession)?.name || 'Chat'}
               </Typography>
             </Box>
-            <FormControlLabel
-                control={
-                  <Switch
-                      checked={isRetrievalMode}
-                      onChange={(e) => {
-                        setIsRetrievalMode(e.target.checked);
-                        if (!e.target.checked) {
-                          clearFiles();
-                          if (fileInputRef.current) fileInputRef.current.value = '';
-                        }
-                      }}
-                  />
-                }
-                label="Retrieval Mode"
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <FormControlLabel
+                  control={
+                    <Switch
+                        checked={isRetrievalMode}
+                        onChange={(e) => {
+                          setIsRetrievalMode(e.target.checked);
+                          if (!e.target.checked) {
+                            clearFiles();
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }
+                        }}
+                    />
+                  }
+                  label="Retrieval Mode"
+              />
+              {isRetrievalMode && (
+                  <Tooltip title="Clear all files">
+                    <IconButton onClick={handleClearFiles} disabled={isLoading || files.length === 0}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+              )}
+            </Box>
           </Box>
           <Card sx={{
             flexGrow: 1,

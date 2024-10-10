@@ -64,7 +64,7 @@ export function FluxMessageWithHistoryAPI(params) {
 export function UploadFileAPI(formData) {
     console.log("Uploading file data:", formData)
     return request({
-        url: 'vectordb/save',
+        url: '/document/vectordb/save',
         method: 'POST',
         headers: {
             'Content-Type': 'multipart/form-data'
@@ -76,7 +76,7 @@ export function UploadFileAPI(formData) {
 
 export function ClearFileAPI() {
     return request({
-        url: 'vectordb/clear',
+        url: '/document/vectordb/clear',
         method: 'GET'
     })
 }
