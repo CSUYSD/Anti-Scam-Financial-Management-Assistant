@@ -64,7 +64,7 @@ export function FluxMessageWithHistoryAPI(params) {
 export function UploadFileAPI(formData) {
     console.log("Uploading file data:", formData)
     return request({
-        url: '/etl/embedding/multipart',
+        url: 'vectordb/save',
         method: 'POST',
         headers: {
             'Content-Type': 'multipart/form-data'
