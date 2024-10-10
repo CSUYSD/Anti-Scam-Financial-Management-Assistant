@@ -144,6 +144,5 @@ public class AccountService {
         redisTemplate.opsForValue().set(pattern, accountId);
     }
 
-
 }
 

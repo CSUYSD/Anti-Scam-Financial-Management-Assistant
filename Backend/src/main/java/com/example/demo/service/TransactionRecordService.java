@@ -1,11 +1,17 @@
 package com.example.demo.service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 import com.example.demo.Dao.TransactionUserDao;
+import com.example.demo.exception.AccountAlreadyExistException;
+import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
+import com.example.demo.model.DTO.AccountDTO;
 import com.example.demo.model.DTO.TransactionRecordDTO;
+import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.utility.JWT.JwtUtil;
 import jakarta.transaction.Transactional;
@@ -27,9 +33,9 @@ public class TransactionRecordService {
     private final TransactionRecordDao transactionRecordDao;
     private final TransactionUserDao transactionUserDao;
     private final AccountDao accountDao;
-
     private final JwtUtil jwtUtil;
     private final RedisTemplate redisTemplate;
+
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
@@ -42,12 +48,14 @@ public class TransactionRecordService {
         this.accountDao = accountDao;
     }
 
+
+
     public List<TransactionRecord> getAllRecordsByAccountId(Long accountId) {
         return transactionRecordDao.findAllByAccountId(accountId);
     }
 
 
-    public void addTransactionRecord(@RequestHeader String token, TransactionRecordDTO transactionRecordDTO) {
+    public void addTransactionRecord(@RequestHeader String token, TransactionRecordDTO transactionRecordDTO) throws AccountNotFoundException {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         String pattern = "login_user:" + userId +":current_account";
         String accountId = stringRedisTemplate.opsForValue().get(pattern);
@@ -68,11 +76,12 @@ public class TransactionRecordService {
         TransactionRecord transactionRecord = DtoParser.toTransactionRecord(transactionRecordDTO);
         transactionRecord.setAccount(account);
         transactionRecord.setUserId(userId);
+
         transactionRecordDao.save(transactionRecord);
     }
 
     @Transactional
-    public void updateTransactionRecord(Long id, TransactionRecord newTransactionRecord) {
+    public void updateTransactionRecord(Long id, TransactionRecord newTransactionRecord) throws AccountNotFoundException {
         TransactionRecord existingRecord = transactionRecordDao.findById(id)
                 .orElseThrow(() -> new RuntimeException("Record not found for id: " + id));
 
@@ -100,6 +109,7 @@ public class TransactionRecordService {
         existingRecord.setTransactionDescription(newTransactionRecord.getTransactionDescription());
         existingRecord.setTransactionMethod(newTransactionRecord.getTransactionMethod());
 
+
         transactionRecordDao.save(existingRecord);
     }
 
@@ -109,7 +119,7 @@ public class TransactionRecordService {
     }
 
 
-    public void deleteTransactionRecord(Long id) {
+    public void deleteTransactionRecord(Long id) throws AccountNotFoundException {
         TransactionRecord record = transactionRecordDao.findById(id)
                 .orElseThrow(() -> new RuntimeException("Record not found for id: " + id));
 
@@ -121,6 +131,7 @@ public class TransactionRecordService {
         } else if (record.getType().equalsIgnoreCase("income")) {
             account.setTotalIncome(account.getTotalIncome() - record.getAmount());
         }
+
 
         transactionRecordDao.delete(record);
     }
@@ -142,6 +153,7 @@ public class TransactionRecordService {
         }
 
         transactionRecordDao.deleteAll(records);
+
     }
 
     public List<TransactionRecord> getLatestFiveDaysRecords(Long accountId) {
@@ -149,5 +161,13 @@ public class TransactionRecordService {
     }
 
 
+    public Account getAccountByAccountId(Long id) throws AccountNotFoundException {
+        return accountDao.findById(id)
+                .orElseThrow(() -> new AccountNotFoundException("账户未找到，ID: " + id));
+    }
 
+
+    public void updateRedisAccount(Long id, AccountDTO accountDTO) throws AccountNotFoundException {
+
+    }
 }
