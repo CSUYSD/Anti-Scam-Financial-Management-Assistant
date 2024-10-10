@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import {
     Typography,
     Container,
@@ -15,24 +15,25 @@ import {
     CircularProgress,
     ToggleButtonGroup,
     ToggleButton,
-} from '@mui/material'
+} from '@mui/material';
 import {
     AccountBalance as AccountBalanceIcon,
     TrendingUp as TrendingUpIcon,
     TrendingDown as TrendingDownIcon,
     Warning as WarningIcon,
-} from '@mui/icons-material'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { motion } from 'framer-motion'
-import { getRecentRecordsAPI, getAllRecordsAPI } from '@/api/record'
-import { getCurrentAccountAPI } from '@/api/account'
+    Savings as SavingsIcon,
+} from '@mui/icons-material';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { motion } from 'framer-motion';
+import { getRecentRecordsAPI, getAllRecordsAPI } from '@/api/record';
+import { getCurrentAccountAPI } from '@/api/account';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d']
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d'];
 
-const MotionPaper = motion(Paper)
+const MotionPaper = motion(Paper);
 
 const BalanceCard = ({ balance, income, expense }) => {
-    const theme = useTheme()
+    const theme = useTheme();
     return (
         <MotionPaper
             elevation={3}
@@ -88,11 +89,11 @@ const BalanceCard = ({ balance, income, expense }) => {
                 </Box>
             </Box>
         </MotionPaper>
-    )
-}
+    );
+};
 
 const RecentRecordsList = ({ records }) => {
-    const theme = useTheme()
+    const theme = useTheme();
     return (
         <MotionPaper
             elevation={3}
@@ -128,11 +129,15 @@ const RecentRecordsList = ({ records }) => {
                 ))}
             </List>
         </MotionPaper>
-    )
-}
+    );
+};
 
 const WeeklyChart = ({ data, duration, onDurationChange }) => {
-    const theme = useTheme()
+    const theme = useTheme();
+
+    const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const displayData = duration === 30 ? sortedData.slice(-30) : sortedData.slice(-7);
+
     return (
         <MotionPaper
             elevation={3}
@@ -158,12 +163,16 @@ const WeeklyChart = ({ data, duration, onDurationChange }) => {
                 </ToggleButtonGroup>
             </Box>
             <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data}>
+                <LineChart data={displayData}>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
                     <XAxis
                         dataKey="date"
                         stroke={theme.palette.text.secondary}
-                        tickFormatter={(value) => new Date(value).toLocaleDateString()}
+                        tickFormatter={(value) => {
+                            const date = new Date(value);
+                            return `${date.getMonth() + 1}/${date.getDate()}`;
+                        }}
+                        interval={duration === 30 ? 6 : 0}
                     />
                     <YAxis stroke={theme.palette.text.secondary} />
                     <Tooltip
@@ -196,11 +205,11 @@ const WeeklyChart = ({ data, duration, onDurationChange }) => {
                 </LineChart>
             </ResponsiveContainer>
         </MotionPaper>
-    )
-}
+    );
+};
 
 const SuspiciousTransactions = ({ transactions }) => {
-    const theme = useTheme()
+    const theme = useTheme();
     return (
         <MotionPaper
             elevation={3}
@@ -246,11 +255,11 @@ const SuspiciousTransactions = ({ transactions }) => {
                 </Alert>
             )}
         </MotionPaper>
-    )
-}
+    );
+};
 
 const TransactionTypesPieChart = ({ data }) => {
-    const theme = useTheme()
+    const theme = useTheme();
     return (
         <MotionPaper
             elevation={3}
@@ -281,113 +290,181 @@ const TransactionTypesPieChart = ({ data }) => {
                 </PieChart>
             </ResponsiveContainer>
         </MotionPaper>
-    )
-}
+    );
+};
 
-export default function Dashboard() {
-    const [accountData, setAccountData] = useState(null)
-    const [recentRecords, setRecentRecords] = useState([])
-    const [chartData, setChartData] = useState([])
-    const [transactionTypes, setTransactionTypes] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
-    const [chartDuration, setChartDuration] = useState(7)
-    const theme = useTheme()
+const SavingsGoalWidget = ({ records }) => {
+    const theme = useTheme();
+    const savingsGoal = 10000; // Static savings goal in dollars
+    const totalSavings = records.reduce((sum, record) => {
+        return record.type === 'Income' ? sum + record.amount : sum - record.amount;
+    }, 0);
+    const progress = Math.min((totalSavings / savingsGoal) * 100, 100);
+
+    return (
+        <MotionPaper
+            elevation={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            sx={{
+                p: 3,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #4CAF50, #8BC34A)',
+                color: 'white',
+                height: '100%',
+                borderRadius: 4,
+                overflow: 'hidden',
+                position: 'relative',
+            }}
+        >
+            <SavingsIcon sx={{ fontSize: 48, mb: 2 }} />
+            <Typography variant="h6" gutterBottom>Savings Goal Progress</Typography>
+            <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                <CircularProgress
+                    variant="determinate"
+                    value={progress}
+                    size={120}
+                    thickness={4}
+                    sx={{
+                        color: theme.palette.common.white,
+                        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    }}
+                />
+                <Box
+                    sx={{
+                        top: 0,
+                        left: 0,
+                        bottom: 0,
+                        right: 0,
+                        position: 'absolute',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <Typography variant="h4" component="div" color="inherit">
+                        {`${Math.round(progress)}%`}
+                    </Typography>
+                </Box>
+            </Box>
+            <Typography variant="body1" sx={{ mt: 2 }}>
+                ${totalSavings.toLocaleString()} / ${savingsGoal.toLocaleString()}
+            </Typography>
+        </MotionPaper>
+    );
+};
+
+const Dashboard = () => {
+    const [accountData, setAccountData] = useState(null);
+    const [recentRecords, setRecentRecords] = useState([]);
+    const [chartData, setChartData] = useState([]);
+    const [transactionTypes, setTransactionTypes] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [chartDuration, setChartDuration] = useState(7);
+    const theme = useTheme();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                setLoading(true)
-                // Fetch account data using the provided API
-                const accountResponse = await getCurrentAccountAPI()
-                setAccountData(accountResponse.data)
+                setLoading(true);
+                const accountResponse = await getCurrentAccountAPI();
+                setAccountData(accountResponse.data);
 
-                // Fetch recent records
-                const recentRecordsResponse = await getRecentRecordsAPI(chartDuration)
-                setRecentRecords(recentRecordsResponse.data)
+                const recentRecordsResponse = await getRecentRecordsAPI(30); // Fetch 30 days of data
+                setRecentRecords(recentRecordsResponse.data);
 
-                // Process the data for the WeeklyChart
-                const processedChartData = processChartData(recentRecordsResponse.data)
-                setChartData(processedChartData)
+                const processedChartData = processChartData(recentRecordsResponse.data);
+                setChartData(processedChartData);
 
-                // Fetch all records for transaction types
-                const allRecordsResponse = await getAllRecordsAPI()
-                const processedTransactionTypes = processTransactionTypes(allRecordsResponse.data)
-                setTransactionTypes(processedTransactionTypes)
+                const allRecordsResponse =   await getAllRecordsAPI();
+                const processedTransactionTypes = processTransactionTypes(allRecordsResponse.data);
+                setTransactionTypes(processedTransactionTypes);
 
-                setLoading(false)
+                setLoading(false);
             } catch (error) {
-                console.error('Error fetching data:', error)
-                setError('Failed to fetch data. Please try again later.')
-                setLoading(false)
+                console.error('Error fetching data:', error);
+                setError('Failed to fetch data. Please try again later.');
+                setLoading(false);
             }
-        }
+        };
 
-        fetchData()
-    }, [chartDuration])
+        fetchData();
+    }, []);
 
     const processChartData = (records) => {
-        const dailyData = {}
+        const dailyData = {};
+        const endDate = new Date();
+        const startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 30);
+
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            dailyData[dateStr] = { date: dateStr, income: 0, expense: 0 };
+        }
 
         records.forEach(record => {
-            const date = record.transactionTime.split('T')[0] // Extract date part
-            if (!dailyData[date]) {
-                dailyData[date] = { date, income: 0, expense: 0 }
+            const date = record.transactionTime.split('T')[0];
+            if (dailyData[date]) {
+                if (record.type === 'Income') {
+                    dailyData[date].income += record.amount;
+                } else {
+                    dailyData[date].expense += record.amount;
+                }
             }
-            if (record.type === 'Income') {
-                dailyData[date].income += record.amount
-            } else {
-                dailyData[date].expense += record.amount
-            }
-        })
+        });
 
-        return Object.values(dailyData).sort((a, b) => new Date(a.date) - new Date(b.date))
-    }
+        return Object.values(dailyData).sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
 
     const processTransactionTypes = (records) => {
-        const categories = {}
+        const categories = {};
 
         records.forEach(record => {
             if (!categories[record.category]) {
-                categories[record.category] = 0
+                categories[record.category] = 0;
             }
-            categories[record.category] += record.amount
-        })
+            categories[record.category] += record.amount;
+        });
 
-        return Object.entries(categories).map(([name, value]) => ({ name, value }))
-    }
+        return Object.entries(categories).map(([name, value]) => ({ name, value }));
+    };
 
     const handleDurationChange = (event, newDuration) => {
         if (newDuration !== null) {
-            setChartDuration(newDuration)
+            setChartDuration(newDuration);
         }
-    }
+    };
 
     const suspiciousTransactions = [
         { id: 1, description: 'Large withdrawal', amount: 5000, date: '2023-05-15' },
         { id: 2, description: 'Unusual overseas transfer', amount: 2000, date: '2023-05-14' },
-    ]
+    ];
 
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                 <CircularProgress />
             </Box>
-        )
+        );
     }
 
     if (error) {
-        return  (
+        return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                 <Alert severity="error">
                     <AlertTitle>Error</AlertTitle>
                     {error}
                 </Alert>
             </Box>
-        )
+        );
     }
 
-    const balance = accountData ? accountData.totalIncome - accountData.totalExpense : 0
+    const balance = accountData ? accountData.totalIncome - accountData.totalExpense : 0;
 
     return (
         <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
@@ -400,7 +477,10 @@ export default function Dashboard() {
                             expense={accountData ? accountData.totalExpense : 0}
                         />
                     </Grid>
-                    <Grid item xs={12} md={8}>
+                    <Grid item xs={12} md={4}>
+                        <SavingsGoalWidget records={recentRecords} />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
                         <WeeklyChart
                             data={chartData}
                             duration={chartDuration}
@@ -408,7 +488,7 @@ export default function Dashboard() {
                         />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                        <RecentRecordsList records={recentRecords} />
+                        <RecentRecordsList records={recentRecords.slice(0, 5)} />
                     </Grid>
                     <Grid item xs={12} md={6}>
                         <SuspiciousTransactions transactions={suspiciousTransactions} />
@@ -419,5 +499,8 @@ export default function Dashboard() {
                 </Grid>
             </Container>
         </Box>
-    )
-}
+    );
+};
+
+export default Dashboard;
+
