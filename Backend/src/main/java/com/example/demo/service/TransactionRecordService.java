@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import com.example.demo.utility.DtoParser;
 
 import com.example.demo.Dao.TransactionRecordDao;
 import com.example.demo.Dao.AccountDao;
@@ -41,16 +42,12 @@ public class TransactionRecordService {
         this.accountDao = accountDao;
     }
 
-    public List<TransactionRecord> getAllRecordsByAccount(Long accountId) {
+    public List<TransactionRecord> getAllRecordsByAccountId(Long accountId) {
         return transactionRecordDao.findAllByAccountId(accountId);
     }
 
-//    public TransactionRecord getRecordByTypeAndUserId(Long id, String type) {
-//        return transactionRecordDao.findByTypeAndUserId(id, type)
-//                .orElseThrow(() -> new RuntimeException("Record not found"));
-//    }
 
-    public void saveTransactionRecord(@RequestHeader String token, TransactionRecordDTO transactionRecordDTO) {
+    public void addTransactionRecord(@RequestHeader String token, TransactionRecordDTO transactionRecordDTO) {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         String pattern = "login_user:" + userId +":current_account";
         String accountId = stringRedisTemplate.opsForValue().get(pattern);
@@ -61,8 +58,14 @@ public class TransactionRecordService {
 
         TransactionUser user = transactionUserDao.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found for id: " + userId));
-
-        TransactionRecord transactionRecord = toTransactionRecord(transactionRecordDTO);
+        // update account income and expense
+        if (transactionRecordDTO.getType().equalsIgnoreCase("expense")) {
+            account.setTotalExpense(account.getTotalExpense() + transactionRecordDTO.getAmount());
+        }
+        if (transactionRecordDTO.getType().equalsIgnoreCase("income")) {
+            account.setTotalIncome(account.getTotalIncome() + transactionRecordDTO.getAmount());
+        }
+        TransactionRecord transactionRecord = DtoParser.toTransactionRecord(transactionRecordDTO);
         transactionRecord.setAccount(account);
         transactionRecord.setUserId(userId);
         transactionRecordDao.save(transactionRecord);
@@ -72,6 +75,23 @@ public class TransactionRecordService {
     public void updateTransactionRecord(Long id, TransactionRecord newTransactionRecord) {
         TransactionRecord existingRecord = transactionRecordDao.findById(id)
                 .orElseThrow(() -> new RuntimeException("Record not found for id: " + id));
+
+        Account account = accountDao.findById(existingRecord.getAccount().getId())
+                .orElseThrow(() -> new RuntimeException("Account not found for id: " + existingRecord.getAccount().getId()));
+
+        // Subtract the amount of the original record before updating
+        if (existingRecord.getType().equalsIgnoreCase("expense")) {
+            account.setTotalExpense(account.getTotalExpense() - existingRecord.getAmount());
+        } else if (existingRecord.getType().equalsIgnoreCase("income")) {
+            account.setTotalIncome(account.getTotalIncome() - existingRecord.getAmount());
+        }
+
+        // Update the amount of the account according to income and expense
+        if (newTransactionRecord.getType().equalsIgnoreCase("expense")) {
+            account.setTotalExpense(account.getTotalExpense() + newTransactionRecord.getAmount());
+        } else if (newTransactionRecord.getType().equalsIgnoreCase("income")) {
+            account.setTotalIncome(account.getTotalIncome() + newTransactionRecord.getAmount());
+        }
 
         existingRecord.setAmount(newTransactionRecord.getAmount());
         existingRecord.setCategory(newTransactionRecord.getCategory());
@@ -92,6 +112,16 @@ public class TransactionRecordService {
     public void deleteTransactionRecord(Long id) {
         TransactionRecord record = transactionRecordDao.findById(id)
                 .orElseThrow(() -> new RuntimeException("Record not found for id: " + id));
+
+        Account account = accountDao.findById(record.getAccount().getId())
+                .orElseThrow(() -> new RuntimeException("Account not found for id: " + record.getAccount().getId()));
+
+        if (record.getType().equalsIgnoreCase("expense")) {
+            account.setTotalExpense(account.getTotalExpense() - record.getAmount());
+        } else if (record.getType().equalsIgnoreCase("income")) {
+            account.setTotalIncome(account.getTotalIncome() - record.getAmount());
+        }
+
         transactionRecordDao.delete(record);
     }
 
@@ -101,18 +131,23 @@ public class TransactionRecordService {
         if (records.isEmpty()) {
             throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
         }
+        Account account = accountDao.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found for id: " + accountId));
+        for (TransactionRecord record : records) {
+            if (record.getType().equalsIgnoreCase("expense")) {
+                account.setTotalExpense(account.getTotalExpense() - record.getAmount());
+            } else if (record.getType().equalsIgnoreCase("income")) {
+                account.setTotalIncome(account.getTotalIncome() - record.getAmount());
+            }
+        }
+
         transactionRecordDao.deleteAll(records);
     }
 
-    public TransactionRecord toTransactionRecord(TransactionRecordDTO transactionRecordDTO) {
-        TransactionRecord transactionRecord = new TransactionRecord();
-        transactionRecord.setAmount(transactionRecordDTO.getAmount());
-        transactionRecord.setCategory(transactionRecordDTO.getCategory());
-        transactionRecord.setType(transactionRecordDTO.getType());
-        transactionRecord.setTransactionTime(transactionRecordDTO.getTransactionTime());
-        transactionRecord.setTransactionDescription(transactionRecordDTO.getTransactionDescription());
-        transactionRecord.setTransactionMethod(transactionRecordDTO.getTransactionMethod());
-        return transactionRecord;
+    public List<TransactionRecord> getLatestFiveDaysRecords(Long accountId) {
+        return transactionRecordDao.findLatestFiveDaysRecords(accountId);
     }
+
+
 
 }

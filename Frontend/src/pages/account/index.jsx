@@ -22,7 +22,7 @@ function AccountCard({ account, onSelect, onDelete }) {
         const balance = income - expense
         return balance.toFixed(2)
     }
-p
+
     return (
         <motion.div
             className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-md p-6 hover:shadow-lg transition-all relative"

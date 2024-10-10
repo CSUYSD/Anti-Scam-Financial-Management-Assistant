@@ -7,8 +7,6 @@ import com.example.demo.model.Account;
 import com.example.demo.model.DTO.AccountDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
-import lombok.SneakyThrows;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.Dao.AccountDao;
@@ -41,7 +39,7 @@ public class AccountService {
         return accountDao.findAll();
     }
 
-    public Account getAccountById(Long id) throws AccountNotFoundException {
+    public Account getAccountByAccountId(Long id) throws AccountNotFoundException {
         return accountDao.findById(id)
                 .orElseThrow(() -> new AccountNotFoundException("账户未找到，ID: " + id));
     }
@@ -72,7 +70,8 @@ public class AccountService {
         Account newAccount = new Account();
         newAccount.setAccountName(accountDTO.getName());
         newAccount.setTransactionUser(user);
-        newAccount.setBalance(0.0);
+        newAccount.setTotalIncome(0.0);
+        newAccount.setTotalExpense(0.0);
         accountDao.save(newAccount);
 
         // 把这个新account加进用户关联的redis里
@@ -81,7 +80,8 @@ public class AccountService {
                 new RedisAccount(
                         newAccount.getId(),
                         newAccount.getAccountName(),
-                        newAccount.getBalance(),
+                        newAccount.getTotalIncome(),
+                        newAccount.getTotalExpense(),
                         new ArrayList<>());
 
         redisTemplate.opsForValue().set(newAccountKey, newRedisAccount);
@@ -89,20 +89,9 @@ public class AccountService {
     }
 
 
-    // 更新账户信息
-//    public Account updateAccount(Long id, AccountDTO accountDTO) throws AccountNotFoundException {
-//        Account existingAccount = getAccountById(id);
-//
-//        // 更新账户名称和余额
-//        existingAccount.setAccountName(accountDTO.getName());
-//        existingAccount.setBalance(accountDTO.getBalance());
-//
-//        // 保存并返回更新后的账户信息
-//        return accountDao.save(existingAccount);
-//    }
 
     public Account updateAccount(Long id, AccountDTO accountDTO) throws AccountNotFoundException {
-        Account existingAccount = getAccountById(id);
+        Account existingAccount = getAccountByAccountId(id);
         TransactionUser user = existingAccount.getTransactionUser();
 
         List<Account> existingAccounts = accountDao.findByTransactionUser(user)
@@ -118,7 +107,8 @@ public class AccountService {
 
         // 更新账户名称和余额
         existingAccount.setAccountName(accountDTO.getName());
-        existingAccount.setBalance(accountDTO.getBalance());
+        existingAccount.setTotalIncome(accountDTO.getTotal_income());
+        existingAccount.setTotalExpense(accountDTO.getTotal_expense());
 
         // 保存并返回更新后的账户信息
         Account updatedAccount = accountDao.save(existingAccount);
@@ -128,7 +118,8 @@ public class AccountService {
         RedisAccount redisAccount = new RedisAccount(
                 updatedAccount.getId(),
                 updatedAccount.getAccountName(),
-                updatedAccount.getBalance(),
+                updatedAccount.getTotalIncome(),
+                updatedAccount.getTotalExpense(),
                 new ArrayList<>());
         redisTemplate.opsForValue().set(redisKey, redisAccount);
 
@@ -137,7 +128,7 @@ public class AccountService {
 
 
     public void deleteAccount(Long id) throws AccountNotFoundException {
-        Account account = getAccountById(id);
+        Account account = getAccountByAccountId(id);
 
         // 删除数据库中的账户
         accountDao.delete(account);

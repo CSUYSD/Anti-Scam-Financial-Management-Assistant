@@ -4,6 +4,7 @@ import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -26,11 +27,13 @@ public class AccountController {
     private final JwtUtil jwtUtil;
     private final AccountService accountService;
     private static final Logger logger = Logger.getLogger(String.valueOf(AccountController.class));
+    private final StringRedisTemplate stringRedisTemplate;
 
     @Autowired
-    public AccountController(AccountService accountService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
+    public AccountController(AccountService accountService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, StringRedisTemplate stringRedisTemplate) {
         this.accountService = accountService;
         this.jwtUtil = jwtUtil;
+        this.stringRedisTemplate = stringRedisTemplate;
     }
 
     @GetMapping("/all")
@@ -63,12 +66,18 @@ public class AccountController {
         }
     }
     
-    @GetMapping("/{id}")
-    public ResponseEntity<Account> getAccountById(@PathVariable Long id) {
+    @GetMapping("/current")
+    public ResponseEntity<Account> getAccountByAccountId(@RequestHeader("Authorization") String token) {
         try {
-            Account account = accountService.getAccountById(id);
+            Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+            String pattern = "login_user:" + userId +":current_account";
+            String accountId = stringRedisTemplate.opsForValue().get(pattern);
+            Account account = accountService.getAccountByAccountId(Long.valueOf(accountId));
+
             return ResponseEntity.ok(account);
         } catch (AccountNotFoundException e) {
+            logger.severe(e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }

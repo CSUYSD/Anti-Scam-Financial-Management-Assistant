@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.example.demo.model.DTO.TransactionRecordDTO;
 import com.example.demo.utility.JWT.JwtUtil;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -32,36 +33,23 @@ public class TransactionRecordController {
         this.jwtUtil = jwtUtil;
     }
 
-    @GetMapping("/all/{accountId}")
-    public ResponseEntity<List<TransactionRecord>> getAllRecord(@PathVariable Long accountId) {
-        List<TransactionRecord> transactions = recordService.getAllRecordsByAccount(accountId);
-
+    @GetMapping("/all")
+    public ResponseEntity<List<TransactionRecord>> getAllRecordByAccountId(@RequestHeader("Authorization") String token) {
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        String pattern = "login_user:" + userId + ":current_account";
+        String accountId = stringRedisTemplate.opsForValue().get(pattern);
+        List<TransactionRecord> transactions = recordService.getAllRecordsByAccountId(Long.valueOf(accountId));
         return ResponseEntity.ok(transactions);
     }
 
-
-    @GetMapping("/by-type/{type}")
-    public ResponseEntity<List<TransactionRecord>> getRecordsByAccountIdAndType(@RequestHeader("Authorization") String token, @PathVariable String type) {
-        try {
-            String incomeOrExpense = type.toUpperCase();
-            Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
-            String pattern = "login_user:" + userId + ":current_account";
-            String accountId = stringRedisTemplate.opsForValue().get(pattern);
-            List<TransactionRecord> records = recordService.findRecordByAccountIdAndType(incomeOrExpense, Long.valueOf(accountId));
-            return ResponseEntity.ok(records);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-
+    @Transactional
     @PostMapping("/create")
-    public ResponseEntity<String> createTransactionRecord( @RequestHeader("Authorization") String token, @RequestBody TransactionRecordDTO transactionRecordDTO) {
+    public ResponseEntity<String> addTransactionRecord(@RequestHeader("Authorization") String token, @RequestBody TransactionRecordDTO transactionRecordDTO) {
         if (token == null || token.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未提供令牌");
         }
         try {
-            recordService.saveTransactionRecord(token, transactionRecordDTO);
+            recordService.addTransactionRecord(token, transactionRecordDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body("Transaction record has been created successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error creating transaction record: " + e.getMessage());
@@ -98,7 +86,31 @@ public class TransactionRecordController {
         }
     }
 
+    @GetMapping("/by-type/{type}")
+    public ResponseEntity<List<TransactionRecord>> getRecordsByAccountIdAndType(@RequestHeader("Authorization") String token, @PathVariable String type) {
+        try {
+            String incomeOrExpense = type.toUpperCase();
+            Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+            String pattern = "login_user:" + userId + ":current_account";
+            String accountId = stringRedisTemplate.opsForValue().get(pattern);
+            List<TransactionRecord> records = recordService.findRecordByAccountIdAndType(incomeOrExpense, Long.valueOf(accountId));
+            return ResponseEntity.ok(records);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
-
+    @GetMapping("/five-days")
+    public ResponseEntity<List<TransactionRecord>> getLatestFiveDaysRecord(@RequestHeader("Authorization") String token) {
+        try {
+            Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+            String pattern = "login_user:" + userId + ":current_account";
+            String accountId = stringRedisTemplate.opsForValue().get(pattern);
+            List<TransactionRecord> records = recordService.getLatestFiveDaysRecords(Long.valueOf(accountId));
+            return ResponseEntity.ok(records);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
 }

@@ -124,7 +124,8 @@ public class SecurityService {
                     RedisAccount redisAccount = new RedisAccount(
                             account.getId(),
                             account.getAccountName(),
-                            account.getBalance(),
+                            account.getTotalIncome(),
+                            account.getTotalExpense(),
                             account.getTransactionRecords()
                     );
                     redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
