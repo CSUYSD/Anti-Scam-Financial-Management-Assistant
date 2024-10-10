@@ -79,19 +79,7 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
-    
 
-//    @PutMapping("/update/{id}")
-//    public ResponseEntity<Account> updateAccount(@PathVariable Long id, @RequestBody AccountDTO accountDetails) {
-//        try {
-//            Account updatedAccount = accountService.updateAccount(id, accountDetails);
-//            return ResponseEntity.ok(updatedAccount);
-//        } catch (AccountNotFoundException e) {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-//        }
-//    }
 
     @PutMapping("/update/{id}")
     public ResponseEntity<Object> updateAccount(@PathVariable Long id, @RequestBody @Valid AccountDTO accountDetails) {
