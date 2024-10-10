@@ -62,3 +62,6 @@ CREATE TABLE transaction_record (
             FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
 
 );
+
+
+
