@@ -10,6 +10,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -46,35 +47,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(authorize -> authorize
+            .authorizeHttpRequests(authorize -> authorize
 //                .requestMatchers("/signup", "/login", "/h2-console/**").permitAll()
-//                .requestMatchers("/account/**", "/records/**", "/info").hasRole("USER")
+//                .requestMatchers("/account/**", "/records/**", "/users").hasRole("USER")
 //                .requestMatchers("/users/**").hasRole("ADMIN")
 //                .anyRequest().authenticated()
-                                .anyRequest().permitAll()
-                )
-                .csrf(csrf -> csrf
-                        .disable())
-                .headers(headers -> headers
-                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
-                )
-                .cors(cors -> cors.configurationSource(request -> {
-                    var corsConfiguration = new CorsConfiguration();
-                    corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000"));
-                    corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    corsConfiguration.setAllowedHeaders(List.of("*"));
-                    corsConfiguration.setAllowCredentials(true);
-                    return corsConfiguration;
-                }))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .addLogoutHandler(jwtLogoutHandler)
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            response.setStatus(HttpServletResponse.SC_OK);
-                        })
-                );
+                  .anyRequest().permitAll()
+            )
+            .csrf(AbstractHttpConfigurer::disable)
+            .headers(headers -> headers
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+            )
+            .cors(cors -> cors.configurationSource(request -> {
+                var corsConfiguration = new CorsConfiguration();
+                corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000"));
+                corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                corsConfiguration.setAllowedHeaders(List.of("*"));
+                corsConfiguration.setAllowCredentials(true);
+                return corsConfiguration;
+            }))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .addLogoutHandler(jwtLogoutHandler)
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    response.setStatus(HttpServletResponse.SC_OK);
+                })
+            );
 
         return http.build();
     }

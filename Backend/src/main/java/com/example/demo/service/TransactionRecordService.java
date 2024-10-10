@@ -132,7 +132,6 @@ public class TransactionRecordService {
             account.setTotalIncome(account.getTotalIncome() - record.getAmount());
         }
 
-
         transactionRecordDao.delete(record);
     }
 
@@ -142,32 +141,11 @@ public class TransactionRecordService {
         if (records.isEmpty()) {
             throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
         }
-        Account account = accountDao.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found for id: " + accountId));
-        for (TransactionRecord record : records) {
-            if (record.getType().equalsIgnoreCase("expense")) {
-                account.setTotalExpense(account.getTotalExpense() - record.getAmount());
-            } else if (record.getType().equalsIgnoreCase("income")) {
-                account.setTotalIncome(account.getTotalIncome() - record.getAmount());
-            }
-        }
-
         transactionRecordDao.deleteAll(records);
-
     }
 
     public List<TransactionRecord> getCertainDaysRecords(Long accountId, Integer duration) {
         return transactionRecordDao.findCertainDaysRecords(accountId, duration);
     }
 
-
-    public Account getAccountByAccountId(Long id) throws AccountNotFoundException {
-        return accountDao.findById(id)
-                .orElseThrow(() -> new AccountNotFoundException("账户未找到，ID: " + id));
-    }
-
-
-    public void updateRedisAccount(Long id, AccountDTO accountDTO) throws AccountNotFoundException {
-
-    }
 }

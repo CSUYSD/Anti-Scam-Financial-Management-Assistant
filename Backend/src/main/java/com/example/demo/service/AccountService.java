@@ -61,11 +61,11 @@ public class AccountService {
                 throw new AccountAlreadyExistException("账户名已存在");
             }
         }
-        
+
         // 获取用户,从token里找到的id
         TransactionUser user = transactionUserDao.findById(userId)
-            .orElseThrow(() -> new UserNotFoundException("用户不存在"));
-        
+                .orElseThrow(() -> new UserNotFoundException("用户不存在"));
+
         // 存到PSQL里
         Account newAccount = new Account();
         newAccount.setAccountName(accountDTO.getName());
@@ -144,5 +144,5 @@ public class AccountService {
         redisTemplate.opsForValue().set(pattern, accountId);
     }
 
-}
 
+}

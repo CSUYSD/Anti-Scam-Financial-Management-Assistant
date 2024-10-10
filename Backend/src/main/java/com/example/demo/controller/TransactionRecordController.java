@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -100,9 +101,9 @@ public class TransactionRecordController {
         }
     }
 
-    @GetMapping("/five-days")
+    @GetMapping("/recent")
     public ResponseEntity<List<TransactionRecord>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
-        if (duration < 1 || duration >= 30) {
+        if (duration < 1 || duration > 30) {
             return ResponseEntity.badRequest().build();
         }
         try {
@@ -112,6 +113,8 @@ public class TransactionRecordController {
             List<TransactionRecord> records = recordService.getCertainDaysRecords(Long.valueOf(accountId), duration);
             return ResponseEntity.ok(records);
         } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+            System.out.println(Arrays.toString(e.getStackTrace()));
             return ResponseEntity.badRequest().build();
         }
     }

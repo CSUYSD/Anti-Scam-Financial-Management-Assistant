@@ -40,18 +40,17 @@ export function FluxMessageAPI(params) {
  * @returns {Promise} - The API response
  */
 export function FluxMessageWithHistoryAPI(params) {
-    const requestData = new URLSearchParams({
-        prompt: params.prompt,
-        sessionId: params.sessionId
-    });
-    console.log("Sending flux message data:", requestData.toString());
+    console.log("Sending flux message data:", params);
     return request({
         url: '/message/chat/stream/history',
-        method: 'POST',
+        method: 'GET',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        data: requestData.toString(),
+        params: {
+            prompt: params.prompt,
+            sessionId: params.sessionId
+        },
         responseType: 'text'
     });
 }
@@ -64,12 +63,20 @@ export function FluxMessageWithHistoryAPI(params) {
 export function UploadFileAPI(formData) {
     console.log("Uploading file data:", formData)
     return request({
-        url: '/etl/embedding/multipart',
+        url: '/document/vectordb/save',
         method: 'POST',
         headers: {
             'Content-Type': 'multipart/form-data'
         },
         data: formData
+    })
+}
+
+
+export function ClearFileAPI() {
+    return request({
+        url: '/document/vectordb/clear',
+        method: 'GET'
     })
 }
 
