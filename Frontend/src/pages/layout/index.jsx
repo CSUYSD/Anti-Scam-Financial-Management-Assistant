@@ -23,7 +23,8 @@ import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-rout
 import { mainListItems, secondaryListItems } from './ListItems';
 
 // Import the logoutAPI function (assuming it's defined in a separate file)
-import { logoutAPI } from '@/api/user.jsx'; // Adjust the import path as needed
+import { logoutAPI } from '@/api/user.jsx';
+import {removeToken} from "@/utils/index.jsx"; // Adjust the import path as needed
 
 const drawerWidth = 240;
 
@@ -167,6 +168,10 @@ export default function Layout() {
         setLogoutDialogOpen(false);
         try {
             await logoutAPI(); // Call the logout API
+            removeToken(); // Remove the token from local storage
+            localStorage.removeItem('username'); // Clear the username from local storage
+            localStorage.removeItem('chatSessions'); // Clear the chat sessions from local storage
+            localStorage.removeItem('uploadedFiles'); // Clear the user profile from local storage
             navigate('/login'); // Navigate to the login page after successful logout
         } catch (error) {
             console.error('Logout failed:', error);
@@ -297,7 +302,6 @@ export default function Layout() {
                 >
                     <Toolbar />
                     <Outlet />
-                    <Copyright sx={{ pt: 4, pb: 4 }} />
                 </Box>
             </Box>
             <Dialog
