@@ -101,12 +101,15 @@ public class TransactionRecordController {
     }
 
     @GetMapping("/five-days")
-    public ResponseEntity<List<TransactionRecord>> getLatestFiveDaysRecord(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<List<TransactionRecord>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
+        if (duration < 1 || duration >= 30) {
+            return ResponseEntity.badRequest().build();
+        }
         try {
             Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
             String pattern = "login_user:" + userId + ":current_account";
             String accountId = stringRedisTemplate.opsForValue().get(pattern);
-            List<TransactionRecord> records = recordService.getLatestFiveDaysRecords(Long.valueOf(accountId));
+            List<TransactionRecord> records = recordService.getCertainDaysRecords(Long.valueOf(accountId), duration);
             return ResponseEntity.ok(records);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();

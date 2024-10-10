@@ -156,8 +156,8 @@ public class TransactionRecordService {
 
     }
 
-    public List<TransactionRecord> getLatestFiveDaysRecords(Long accountId) {
-        return transactionRecordDao.findLatestFiveDaysRecords(accountId);
+    public List<TransactionRecord> getCertainDaysRecords(Long accountId, Integer duration) {
+        return transactionRecordDao.findCertainDaysRecords(accountId, duration);
     }
 
 
