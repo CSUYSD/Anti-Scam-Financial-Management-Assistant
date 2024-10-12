@@ -98,7 +98,7 @@ public class TransactionUserService {
         if (!userOptional.isPresent()) {
             throw new UserNotFoundException("User not found");
         }
-        
+
         TransactionUser user = userOptional.get();
         user.setAvatar(avatar);
         transactionUserDao.save(user);

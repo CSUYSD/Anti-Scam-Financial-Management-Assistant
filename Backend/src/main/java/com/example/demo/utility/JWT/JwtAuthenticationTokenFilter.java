@@ -60,10 +60,10 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             UserDetails userDetails = userDetailService.loadUserById(userId);
             // 在过滤时直接从token获取用户的角色信息，直接授权，绕开从userdetail里获取role info
             Collection<? extends GrantedAuthority> authorities =
-                Collections.singletonList(new SimpleGrantedAuthority(role));
+                    Collections.singletonList(new SimpleGrantedAuthority(role));
 
             // 4. 将用户信息存入 SecurityContext，在后续的请求中可以直接获取用户信息
-            UsernamePasswordAuthenticationToken authentication = 
+            UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } else {

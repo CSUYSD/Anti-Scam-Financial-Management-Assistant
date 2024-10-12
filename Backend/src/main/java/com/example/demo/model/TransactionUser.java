@@ -1,3 +1,4 @@
+
 package com.example.demo.model;
 
 import java.time.LocalDate;
@@ -47,7 +48,7 @@ public class TransactionUser {
         @JsonSerialize(using = LocalDateSerializer.class)
         private LocalDate dob;
         private String avatar;
-        
+
         // 关联到 Account 表
         @OneToMany(mappedBy = "transactionUser")
         @JsonManagedReference

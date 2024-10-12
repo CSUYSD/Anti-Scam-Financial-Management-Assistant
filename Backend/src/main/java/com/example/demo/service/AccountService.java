@@ -61,11 +61,11 @@ public class AccountService {
                 throw new AccountAlreadyExistException("账户名已存在");
             }
         }
-        
+
         // 获取用户,从token里找到的id
         TransactionUser user = transactionUserDao.findById(userId)
-            .orElseThrow(() -> new UserNotFoundException("用户不存在"));
-        
+                .orElseThrow(() -> new UserNotFoundException("用户不存在"));
+
         // 存到PSQL里
         Account newAccount = new Account();
         newAccount.setAccountName(accountDTO.getName());
@@ -104,15 +104,17 @@ public class AccountService {
                 throw new AccountAlreadyExistException("该用户下的账户名已存在");
             }
         }
-
+        System.out.println("accountDTO"+accountDTO);
         // 更新账户名称和余额
         existingAccount.setAccountName(accountDTO.getName());
-        existingAccount.setTotalIncome(accountDTO.getTotal_income());
-        existingAccount.setTotalExpense(accountDTO.getTotal_expense());
+        double income = existingAccount.getTotalIncome();
+        double expense = existingAccount.getTotalExpense();
+        existingAccount.setTotalIncome(accountDTO.getTotal_income() + income);
+        existingAccount.setTotalExpense(accountDTO.getTotal_expense() + expense);
 
         // 保存并返回更新后的账户信息
         Account updatedAccount = accountDao.save(existingAccount);
-
+        System.out.println(updatedAccount);
         // 更新 Redis 缓存
         String redisKey = "login_user:" + existingAccount.getTransactionUser().getId() + ":account:" + existingAccount.getId();
         RedisAccount redisAccount = new RedisAccount(
@@ -144,6 +146,4 @@ public class AccountService {
         redisTemplate.opsForValue().set(pattern, accountId);
     }
 
-
 }
-
