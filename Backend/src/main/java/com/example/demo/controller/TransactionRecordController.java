@@ -100,7 +100,7 @@ public class TransactionRecordController {
         }
     }
 
-    @GetMapping("/five-days")
+    @GetMapping("/recent")
     public ResponseEntity<List<TransactionRecord>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
         if (duration < 1 || duration >= 30) {
             return ResponseEntity.badRequest().build();
