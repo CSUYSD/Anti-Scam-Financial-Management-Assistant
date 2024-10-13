@@ -88,59 +88,59 @@ public class SecurityService {
             // **生成token
             String token = jwtUtil.generateToken(transactionUser.getId(), transactionUser.getUsername(), transactionUser.getRole().getRoleName());
 
-
             // **Redis 部分
-            // 获取用户账户信息
-            List<Account> accounts = transactionUser.getAccounts();
-            // 创建redisUser并存入Redis
-            RedisUser redisUser = new RedisUser(
-                transactionUser.getId(),
-                transactionUser.getUsername(),
-                transactionUser.getEmail(),
-                transactionUser.getPhone(),
-                transactionUser.getAvatar(),
-                token
-            );
-
-            String redisUserKey = "login_user:" + transactionUser.getId() + ":info";
-            redisTemplate.opsForValue().set(redisUserKey, redisUser, 1, TimeUnit.HOURS);
-            Map<String, Object> response = new HashMap<>();
-            response.put("token", token);
-            response.put("username", transactionUser.getUsername());
-
-            // 在创建 redisUser 后，添加以下代码
-            String userAccountsKey = "login_user:" + transactionUser.getId() + ":account:" + "initial placeholder";
-            if (accounts.isEmpty()) {
-                // 如果用户没有账户，设置一个空列表
-                redisTemplate.opsForValue().set(userAccountsKey, new ArrayList<>(), 1, TimeUnit.HOURS);
-            } else {
-                // 如果用户有账户，保存账户 ID 列表
-                List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
-                redisTemplate.opsForValue().set(userAccountsKey, accountIds, 1, TimeUnit.HOURS);
-
-                // 原有的账户信息保存逻辑
-                for (Account account : accounts) {
-                    String redisAccountKey = "login_user:" + transactionUser.getId() + ":account:" + account.getId();
-                    RedisAccount redisAccount = new RedisAccount(
-                            account.getId(),
-                            account.getAccountName(),
-                            account.getTotalIncome(),
-                            account.getTotalExpense(),
-                            account.getTransactionRecords()
-                    );
-                    redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
-                }
-            }
+            saveRedisUser(transactionUser, token);
+            saveUserAccounts(transactionUser);
 
             //**保存
             logger.info("用户 {} 登录成功", loginVo.getUsername());
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(Map.of("token", token, "username", transactionUser.getUsername()));
         } catch (AuthenticationException e) {
             logger.error("用户 {} 登录失败: {}", loginVo.getUsername(), e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "用户名或密码错误"));
         } catch (Exception e) {
             logger.error("登录过程中发生错误: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "登录过程中发生错误"));
+        }
+    }
+
+    // 提取的保存 Redis 用户信息的方法
+    private void saveRedisUser(TransactionUser transactionUser, String token) {
+        List<Account> accounts = transactionUser.getAccounts();
+        RedisUser redisUser = new RedisUser(
+                transactionUser.getId(),
+                transactionUser.getUsername(),
+                transactionUser.getEmail(),
+                transactionUser.getPhone(),
+                transactionUser.getAvatar(),
+                token
+        );
+
+        String redisUserKey = "login_user:" + transactionUser.getId() + ":info";
+        redisTemplate.opsForValue().set(redisUserKey, redisUser, 1, TimeUnit.HOURS);
+    }
+
+    // 提取的保存用户账户信息的方法
+    private void saveUserAccounts(TransactionUser transactionUser) {
+        List<Account> accounts = transactionUser.getAccounts();
+        String userAccountsKey = "login_user:" + transactionUser.getId() + ":account:" + "initial placeholder";
+        if (accounts.isEmpty()) {
+            redisTemplate.opsForValue().set(userAccountsKey, new ArrayList<>(), 1, TimeUnit.HOURS);
+        } else {
+            List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
+            redisTemplate.opsForValue().set(userAccountsKey, accountIds, 1, TimeUnit.HOURS);
+
+            for (Account account : accounts) {
+                String redisAccountKey = "login_user:" + transactionUser.getId() + ":account:" + account.getId();
+                RedisAccount redisAccount = new RedisAccount(
+                        account.getId(),
+                        account.getAccountName(),
+                        account.getTotalIncome(),
+                        account.getTotalExpense(),
+                        account.getTransactionRecords()
+                );
+                redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
+            }
         }
     }
 
