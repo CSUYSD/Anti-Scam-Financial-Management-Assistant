@@ -9,7 +9,7 @@ import java.io.Serializable;
 import java.util.List;
 @Data
 @NoArgsConstructor
-public class RedisAccount{
+public class RedisAccount {
     private Long id;
     private String name;
     private Double total_income;
