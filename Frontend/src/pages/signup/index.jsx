@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, ChevronLeft, User, Mail, Lock, Calendar, Phone, Check, CheckCircle, EyeIcon, EyeOffIcon } from 'lucide-react'
