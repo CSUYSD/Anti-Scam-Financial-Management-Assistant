@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect,useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 export function useChatSessions() {
@@ -44,10 +44,21 @@ export function useChatSessions() {
     };
 
     const addMessageToActiveSession = (message) => {
+        const messageId = uuidv4();
         setSessions(prev => prev.map(s =>
-            s.id === activeSession ? { ...s, messages: [...s.messages, message] } : s
+            s.id === activeSession ? { ...s, messages: [...s.messages, { id: messageId, ...message }] } : s
         ));
+        return messageId; // 返回消息的唯一ID，用于后续更新
     };
+
+
+    const updateMessageInActiveSession = useCallback((messageId, updatedMessage) => {
+        setSessions(prev => prev.map(s =>
+            s.id === activeSession
+                ? { ...s, messages: s.messages.map(m => m.id === messageId ? { ...m, ...updatedMessage } : m) }
+                : s
+        ));
+    }, [activeSession, setSessions]);
 
     return {
         sessions,
@@ -57,5 +68,6 @@ export function useChatSessions() {
         deleteSession,
         updateSessionName,
         addMessageToActiveSession,
+        updateMessageInActiveSession,
     };
 }
