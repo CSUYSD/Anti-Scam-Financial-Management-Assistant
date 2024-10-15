@@ -55,21 +55,25 @@ public class AccountService {
         }
         // 检查账户名是否已存在
         for (String key : keys){
-            if (key.equals("login_user:" + userId + ":account:initial placeholder")){
+            if (key.equals("login_user:" + userId + ":account:initial placeholder")) {
                 continue;
             }
-            Object rawObject = redisTemplate.opsForValue().get(key);
-            if (rawObject instanceof LinkedHashMap) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                RedisAccount redisAccount = objectMapper.convertValue(rawObject, RedisAccount.class);
-                if (redisAccount.getName().equals(accountDTO.getName())) {
-                    throw new AccountAlreadyExistException("账户名已存在");
-                }
-            } else if (rawObject instanceof RedisAccount) {
-                RedisAccount redisAccount = (RedisAccount) rawObject;
-                if (redisAccount.getName().equals(accountDTO.getName())) {
-                    throw new AccountAlreadyExistException("账户名已存在");
-                }
+            RedisAccount redisAccount = (RedisAccount) redisTemplate.opsForValue().get(key);
+            if (redisAccount.getName().equals(accountDTO.getName())){
+                throw new AccountAlreadyExistException("账户名已存在");
+
+//            Object rawObject = redisTemplate.opsForValue().get(key);
+//            if (rawObject instanceof LinkedHashMap) {
+//                ObjectMapper objectMapper = new ObjectMapper();
+//                RedisAccount redisAccount = objectMapper.convertValue(rawObject, RedisAccount.class);
+//                if (redisAccount.getName().equals(accountDTO.getName())) {
+//                    throw new AccountAlreadyExistException("账户名已存在");
+//                }
+//            } else if (rawObject instanceof RedisAccount) {
+//                RedisAccount redisAccount = (RedisAccount) rawObject;
+//                if (redisAccount.getName().equals(accountDTO.getName())) {
+//                    throw new AccountAlreadyExistException("账户名已存在");
+//                }
             }
         }
 
@@ -150,8 +154,8 @@ public class AccountService {
                 account.getId(),
                 account.getAccountName(),
                 account.getTotalIncome(),
-                account.getTotalExpense(),
-                new ArrayList<>());
+                account.getTotalExpense());
+//                new ArrayList<>());
         redisTemplate.opsForValue().set(redisKey, redisAccount);
     }
 

@@ -34,13 +34,14 @@ public class TransactionRecordService {
     private final TransactionUserDao transactionUserDao;
     private final AccountDao accountDao;
     private final JwtUtil jwtUtil;
-    private final RedisTemplate<String, Object> redisTemplate;
+//    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate redisTemplate;
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
     @Autowired
-    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao) {
+    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, @Qualifier("redisTemplate") RedisTemplate redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao) {
         this.transactionRecordDao = transactionRecordDao;
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
@@ -157,8 +158,8 @@ public class TransactionRecordService {
                 account.getId(),
                 account.getAccountName(),
                 account.getTotalIncome(),
-                account.getTotalExpense(),
-                account.getTransactionRecords());
+                account.getTotalExpense());
+//                account.getTransactionRecords());
 
 //        System.out.println("Redis Account: " + redisAccount);
 
