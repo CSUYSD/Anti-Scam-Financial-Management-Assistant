@@ -67,6 +67,8 @@ dependencies {
 	implementation 'org.springframework.ai:spring-ai-chroma-store-spring-boot-starter'
 	// MQ
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
+	//Websocket
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 }
 
 dependencyManagement {

@@ -1,4 +1,4 @@
-package com.example.demo.controller.AiFunctionController;
+package com.example.demo.controller.ai;
 
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;

@@ -1,12 +1,10 @@
-package com.example.demo.Dao;
+package com.example.demo.repository;
 
 import java.util.Optional;
 
-import com.example.demo.model.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.example.demo.model.TransactionUser;
-import org.springframework.data.jpa.repository.Query;
 
 
 public interface TransactionUserDao extends JpaRepository<TransactionUser, Long> {

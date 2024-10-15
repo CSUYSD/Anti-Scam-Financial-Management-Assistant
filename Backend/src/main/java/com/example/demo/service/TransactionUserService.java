@@ -17,7 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.Dao.TransactionUserDao;
+import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.DTO.TransactionUserDTO;

@@ -1,7 +1,7 @@
 package com.example.demo.service.ES;
 
-import com.example.demo.Dao.TransactionRecordDao;
-import com.example.demo.Dao.ESDao.RecordESDao;
+import com.example.demo.repository.TransactionRecordDao;
+import com.example.demo.repository.ESDao.RecordESDao;
 import com.example.demo.model.TransactionRecordES;
 import com.example.demo.model.TransactionRecord;
 import org.springframework.stereotype.Service;

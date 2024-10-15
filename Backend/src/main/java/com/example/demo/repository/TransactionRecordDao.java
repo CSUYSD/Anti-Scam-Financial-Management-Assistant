@@ -1,4 +1,4 @@
-package com.example.demo.Dao;
+package com.example.demo.repository;
 
 import com.example.demo.model.TransactionRecord;
 

@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.Dao.TransactionUserDao;
+import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
@@ -10,9 +10,8 @@ import com.example.demo.model.TransactionUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.example.demo.Dao.AccountDao;
+import com.example.demo.repository.AccountDao;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 

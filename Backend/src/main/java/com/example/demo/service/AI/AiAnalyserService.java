@@ -17,13 +17,13 @@ import java.util.Map;
 
 @Service
 @Slf4j
-public class TransactionReportAnalyseService {
+public class AiAnalyserService {
     public final OpenAiChatModel openAiChatModel;
     public final JwtUtil jwtUtil;
     public final GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
-    public TransactionReportAnalyseService(OpenAiChatModel openAiChatModel, JwtUtil jwtUtil, GetCurrentUserInfo getCurrentUserInfo) {
+    public AiAnalyserService(OpenAiChatModel openAiChatModel, JwtUtil jwtUtil, GetCurrentUserInfo getCurrentUserInfo) {
         this.openAiChatModel = openAiChatModel;
         this.jwtUtil = jwtUtil;
         this.getCurrentUserInfo = getCurrentUserInfo;

@@ -1,4 +1,4 @@
-package com.example.demo.config.Redis;
+package com.example.demo.config.redis;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;

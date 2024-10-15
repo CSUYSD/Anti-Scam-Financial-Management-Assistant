@@ -17,10 +17,12 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
 
 @SpringBootApplication
 @EnableElasticsearchRepositories
 @EnableJpaRepositories
+@EnableWebSocket
 public class DemoApplication {
 
 	public static void main(String[] args) {

@@ -1,4 +1,4 @@
-package com.example.demo.config.Security;
+package com.example.demo.config.security;
 
 import java.util.Arrays;
 import java.util.List;

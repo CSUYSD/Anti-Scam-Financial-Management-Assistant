@@ -1,7 +1,6 @@
 package com.example.demo.service.Security;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -22,8 +21,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.Dao.TransactionUserDao;
-import com.example.demo.Dao.UserRoleDao;
+import com.example.demo.repository.TransactionUserDao;
+import com.example.demo.repository.UserRoleDao;
 import com.example.demo.exception.PasswordNotCorrectException;
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;

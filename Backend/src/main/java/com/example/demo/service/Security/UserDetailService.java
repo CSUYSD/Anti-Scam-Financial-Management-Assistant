@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import com.example.demo.Dao.TransactionUserDao;
+import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.model.Security.UserDetail;
 import com.example.demo.model.UserRole;
