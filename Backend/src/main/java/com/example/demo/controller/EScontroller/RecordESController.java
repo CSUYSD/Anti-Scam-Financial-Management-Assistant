@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.demo.model.TransactionRecordES;
 import com.example.demo.service.ES.RecordSearchService;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/records-search")
 public class RecordESController {
@@ -21,10 +23,9 @@ public class RecordESController {
     }
 
     @GetMapping("/search")
-    public Page<TransactionRecordES> searchTransactions(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+    public List<TransactionRecordES> searchRecords(@RequestParam(required = false) String keyword,
+                                                   @RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "10") int size) {
         return recordSearchService.searchRecords(keyword, page, size);
     }
 

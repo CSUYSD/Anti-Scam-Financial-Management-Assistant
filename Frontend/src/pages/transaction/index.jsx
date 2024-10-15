@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronDown, ChevronUp, Edit, Trash2, Plus, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import {
     getAllRecordsAPI, getRecordsByTypeAPI, createRecordAPI, updateRecordAPI, deleteRecordAPI, deleteRecordsInBatchAPI
 } from '@/api/record';
@@ -19,20 +19,21 @@ export default function EnhancedTransactionManagement() {
     const [transactionForm, setTransactionForm] = useState({
         type: 'Expense',
         category: '',
-        amount: '',
+        amount: 0,
         transactionMethod: '',
         transactionTime: '',
         transactionDescription: ''
     });
     const [formErrors, setFormErrors] = useState({});
-    const [transactions, setTransactions] = useState([]);
-    const [filteredTransactions, setFilteredTransactions] = useState([]);
+    const [allTransactions, setAllTransactions] = useState([]);
+    const [displayedTransactions, setDisplayedTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [scrollY, setScrollY] = useState(0);
     const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
+    const [isSearchActive, setIsSearchActive] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
@@ -41,58 +42,48 @@ export default function EnhancedTransactionManagement() {
     }, []);
 
     useEffect(() => {
-        fetchTransactions();
+        fetchAllRecords();
     }, []);
 
-    useEffect(() => {
-        filterTransactions();
-    }, [transactions, transactionType]);
-
-    const fetchTransactions = async () => {
+    const fetchAllRecords = async () => {
         try {
             setLoading(true);
-            const response = await getAllRecordsAPI();
-            setTransactions(response.data.content || []);
-            setTotalPages(response.data.totalPages || 1);
-            setLoading(false);
+            const response = await getAllRecordsAPI(0, 10); // Fetch first page of records
+            const transactions = response.data || [];
+            setAllTransactions(transactions);
+            setDisplayedTransactions(transactions);
+            setTotalPages(Math.ceil(transactions.length / 10));
+            setPage(1);
         } catch (error) {
-            setError('Failed to fetch transactions');
+            console.error('Fetch all records error:', error);
+            setError('Failed to fetch all records');
+            setAllTransactions([]);
+            setDisplayedTransactions([]);
+        } finally {
             setLoading(false);
         }
-    };
-
-    const filterTransactions = () => {
-        let filtered = transactions;
-
-        if (transactionType !== 'All') {
-            filtered = filtered.filter(transaction => transaction.type === transactionType);
-        }
-
-        setFilteredTransactions(filtered);
-        setPage(1);
     };
 
     const handleSearch = async () => {
         if (!searchTerm.trim()) {
-            filterTransactions();
+            setIsSearchActive(false);
+            await fetchAllRecords();
             return;
         }
 
         try {
             setLoading(true);
             const response = await searchAPI(searchTerm);
-            let searchResults = response.data.content || [];
+            const searchResults = response.data || [];
 
-            if (transactionType !== 'All') {
-                searchResults = searchResults.filter(transaction => transaction.type === transactionType);
-            }
-
-            setFilteredTransactions(searchResults);
-            setTotalPages(response.data.totalPages || 1);
+            setDisplayedTransactions(searchResults);
+            setTotalPages(Math.ceil(searchResults.length / 10));
             setPage(1);
+            setIsSearchActive(true);
         } catch (error) {
+            console.error('Search error:', error);
             setError('Failed to search transactions');
-            setFilteredTransactions([]);
+            setDisplayedTransactions([]);
         } finally {
             setLoading(false);
         }
@@ -113,8 +104,8 @@ export default function EnhancedTransactionManagement() {
     }, []);
 
     const handleSelectAll = useCallback((checked) => {
-        setSelectedTransactions(checked ? filteredTransactions.map(t => t.id) : []);
-    }, [filteredTransactions]);
+        setSelectedTransactions(checked ? displayedTransactions.map(t => t.id) : []);
+    }, [displayedTransactions]);
 
     const handleBatchDelete = async () => {
         if (selectedTransactions.length === 0) {
@@ -165,7 +156,7 @@ export default function EnhancedTransactionManagement() {
             try {
                 const formattedTransaction = {
                     ...transactionForm,
-                    amount: parseFloat(transactionForm.amount),
+                    amount: parseFloat(transactionForm.amount.toString()),
                     transactionTime: formatDateTimeForBackend(transactionForm.transactionTime)
                 };
                 await createRecordAPI(formattedTransaction);
@@ -174,7 +165,7 @@ export default function EnhancedTransactionManagement() {
                 setTransactionForm({
                     type: 'Expense',
                     category: '',
-                    amount: '',
+                    amount: 0,
                     transactionMethod: '',
                     transactionTime: '',
                     transactionDescription: ''
@@ -196,11 +187,11 @@ export default function EnhancedTransactionManagement() {
     }, []);
 
     const handleUpdateTransaction = async () => {
-        if (validateForm()) {
+        if (validateForm() && editingTransaction !== null) {
             try {
                 const formattedTransaction = {
                     ...transactionForm,
-                    amount: parseFloat(transactionForm.amount),
+                    amount: parseFloat(transactionForm.amount.toString()),
                     transactionTime: formatDateTimeForBackend(transactionForm.transactionTime)
                 };
                 await updateRecordAPI(editingTransaction, formattedTransaction);
@@ -210,7 +201,7 @@ export default function EnhancedTransactionManagement() {
                 setTransactionForm({
                     type: 'Expense',
                     category: '',
-                    amount: '',
+                    amount: 0,
                     transactionMethod: '',
                     transactionTime: '',
                     transactionDescription: ''
@@ -232,7 +223,25 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
-    const paginatedTransactions = filteredTransactions.slice((page - 1) * 10, page * 10);
+    const fetchTransactions = async () => {
+        try {
+            setLoading(true);
+            const response = await getAllRecordsAPI();
+            const transactions = response.data || [];
+            setAllTransactions(transactions);
+            setDisplayedTransactions(transactions);
+            setTotalPages(Math.ceil(transactions.length / 10));
+            setLoading(false);
+        } catch (error) {
+            console.error('Fetch transactions error:', error);
+            setError('Failed to fetch transactions');
+            setAllTransactions([]);
+            setDisplayedTransactions([]);
+            setLoading(false);
+        }
+    };
+
+    const paginatedTransactions = displayedTransactions.slice((page - 1) * 10, page * 10);
 
     const toggleTypeDropdown = () => {
         setTypeDropdownOpen(!typeDropdownOpen);
@@ -241,7 +250,26 @@ export default function EnhancedTransactionManagement() {
     const handleTypeSelect = (type) => {
         setTransactionType(type);
         setTypeDropdownOpen(false);
+        setIsSearchActive(false);
+        fetchAllRecords();
     };
+
+    const handlePageChange = async (newPage) => {
+        setPage(newPage);
+        try {
+            setLoading(true);
+            const response = await getAllRecordsAPI(newPage - 1, 10); // Assuming 0-based page index and 10 items per page
+            const transactions = response.data || [];
+            setDisplayedTransactions(transactions);
+            setTotalPages(Math.ceil(transactions.length / 10));
+        } catch (error) {
+            console.error('Fetch page error:', error);
+            setError('Failed to fetch page');
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     if (loading) {
         return (
@@ -295,16 +323,11 @@ export default function EnhancedTransactionManagement() {
                             placeholder="Search transactions..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            onKeyUp={(e) => {
-                                if (e.key === 'Enter') {
-                                    handleSearch();
-                                }
-                            }}
-                            className="w-full px-6 py-3 rounded-full bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+                            className="w-full px-6 py-3 rounded-l-full bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
                         />
                         <button
                             onClick={handleSearch}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-all duration-300"
+                            className="px-6 py-3 bg-blue-500 text-white rounded-r-full hover:bg-blue-600 transition-all duration-300"
                         >
                             <Search className="h-5 w-5" />
                         </button>
@@ -378,11 +401,11 @@ export default function EnhancedTransactionManagement() {
                                         <h3 className="text-xl font-semibold mb-4">{editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                                <label  className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                                                 <select
                                                     value={transactionForm.type}
                                                     onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value })}
-                                                    className="w-full  p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                 >
                                                     <option value="Income">Income</option>
                                                     <option value="Expense">Expense</option>
@@ -405,7 +428,7 @@ export default function EnhancedTransactionManagement() {
                                                 <input
                                                     type="number"
                                                     value={transactionForm.amount}
-                                                    onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
+                                                    onChange={(e) => setTransactionForm({ ...transactionForm, amount: parseFloat(e.target.value) })}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     placeholder="Enter amount"
                                                 />
@@ -439,7 +462,7 @@ export default function EnhancedTransactionManagement() {
                                                     onChange={(e) => setTransactionForm({ ...transactionForm, transactionDescription: e.target.value })}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     placeholder="Enter description"
-                                                    rows="3"
+                                                    rows={3}
                                                 ></textarea>
                                                 {formErrors.transactionDescription && <p className="text-red-500 text-xs mt-1">{formErrors.transactionDescription}</p>}
                                             </div>
@@ -501,7 +524,7 @@ export default function EnhancedTransactionManagement() {
                                                 ${Number(transaction.amount).toFixed(2)}
                                             </td>
                                             <td className="p-3">{transaction.transactionMethod}</td>
-                                            <td className="p-3">{format(new Date(transaction.transactionTime), 'yyyy-MM-dd HH:mm:ss')}</td>
+                                            <td className="p-3">{format(parseISO(transaction.transactionTime), 'yyyy-MM-dd HH:mm:ss')}</td>
                                             <td className="p-3">{transaction.transactionDescription}</td>
                                             <td className="p-3">
                                                 <motion.button
@@ -547,7 +570,7 @@ export default function EnhancedTransactionManagement() {
                                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
                                     <motion.button
                                         key={pageNum}
-                                        onClick={() => setPage(pageNum)}
+                                        onClick={() => handlePageChange(pageNum)}
                                         className={`px-3 py-1 rounded-full text-sm font-semibold ${
                                             page === pageNum
                                                 ? 'bg-blue-600 text-white'

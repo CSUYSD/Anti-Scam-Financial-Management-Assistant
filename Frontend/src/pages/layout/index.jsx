@@ -1,30 +1,47 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
-import MuiAppBar from '@mui/material/AppBar';
-import MuiDrawer from '@mui/material/Drawer';
-import Box from '@mui/material/Box';
-import CssBaseline from '@mui/material/CssBaseline';
-import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
-import List from '@mui/material/List';
-import Badge from '@mui/material/Badge';
-import MenuIcon from '@mui/icons-material/Menu';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import SettingsIcon from '@mui/icons-material/Settings';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import LogoutIcon from '@mui/icons-material/Logout';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip } from '@mui/material';
-import { Link as MuiLink } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    AppBar as MuiAppBar,
+    Drawer as MuiDrawer,
+    Box,
+    CssBaseline,
+    Toolbar,
+    IconButton,
+    Typography,
+    Divider,
+    List,
+    Badge,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    TextField,
+    Paper,
+    Tooltip,
+    Link as MuiLink,
+} from '@mui/material';
+import {
+    Menu as MenuIcon,
+    ChevronLeft as ChevronLeftIcon,
+    AccountCircle as AccountCircleIcon,
+    Settings as SettingsIcon,
+    Brightness4 as Brightness4Icon,
+    Brightness7 as Brightness7Icon,
+    Logout as LogoutIcon,
+    Chat as ChatIcon,
+    Send as SendIcon,
+    Close as CloseIcon,
+} from '@mui/icons-material';
 import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { mainListItems, secondaryListItems } from './ListItems';
-
-// Import the logoutAPI function (assuming it's defined in a separate file)
-import { logoutAPI } from '@/api/user.jsx';
-import {removeToken} from "@/utils/index.jsx"; // Adjust the import path as needed
+import { logoutAPI } from '@/api/user';
+import { removeToken } from "@/utils/index";
+import { useChatSessions } from '@/hooks/useChatSessions';
+import { FluxMessageWithHistoryAPI } from '@/api/ai';
+import { formatMessageContent } from '@/utils/messageFormatter';
 
 const drawerWidth = 240;
 
@@ -72,6 +89,27 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
     }),
 );
 
+const ChatButton = styled(motion.div)(({ theme }) => ({
+    position: 'fixed',
+    bottom: theme.spacing(4),
+    right: theme.spacing(4),
+    zIndex: 1000,
+}));
+
+const ChatWindow = styled(motion.div)(({ theme }) => ({
+    position: 'fixed',
+    bottom: theme.spacing(12),
+    right: theme.spacing(4),
+    width: 350,
+    height: 500,
+    zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column',
+    borderRadius: theme.shape.borderRadius * 2,
+    overflow: 'hidden',
+    boxShadow: theme.shadows[10],
+}));
+
 function Copyright(props) {
     return (
         <Typography variant="body2" color="text.secondary" align="center" {...props}>
@@ -85,12 +123,24 @@ function Copyright(props) {
     );
 }
 
+
 export default function Layout() {
     const [open, setOpen] = useState(true);
     const [mode, setMode] = useState('light');
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+    const [chatOpen, setChatOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const {
+        sessions,
+        activeSession,
+        addMessageToActiveSession,
+        updateMessageInActiveSession,
+    } = useChatSessions();
+    const [message, setMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
+    const [username, setUsername] = useState(() => localStorage.getItem('username') || 'User');
 
     const theme = useMemo(
         () =>
@@ -167,15 +217,14 @@ export default function Layout() {
     const handleLogoutConfirm = async () => {
         setLogoutDialogOpen(false);
         try {
-            await logoutAPI(); // Call the logout API
-            removeToken(); // Remove the token from local storage
-            localStorage.removeItem('username'); // Clear the username from local storage
-            localStorage.removeItem('chatSessions'); // Clear the chat sessions from local storage
-            localStorage.removeItem('uploadedFiles'); // Clear the user profile from local storage
-            navigate('/login'); // Navigate to the login page after successful logout
+            await logoutAPI();
+            removeToken();
+            localStorage.removeItem('username');
+            localStorage.removeItem('chatSessions');
+            localStorage.removeItem('uploadedFiles');
+            navigate('/login');
         } catch (error) {
             console.error('Logout failed:', error);
-            // Handle logout error (e.g., show an error message to the user)
         }
     };
 
@@ -191,16 +240,60 @@ export default function Layout() {
         navigate('/userprofile');
     };
 
+    const toggleChat = () => {
+        setChatOpen((prev) => !prev);
+    };
+
+    const handleSendMessage = useCallback(async () => {
+        if (message.trim()) {
+            const decodedMessage = decodeURIComponent(message.trim());
+            console.log("User input:", decodedMessage);
+
+            addMessageToActiveSession({ sender: username, content: decodedMessage });
+
+            setMessage('');
+            setIsLoading(true);
+            setIsTyping(true);
+
+            try {
+                const params = {
+                    prompt: decodedMessage,
+                    sessionId: activeSession,
+                };
+                const response = await FluxMessageWithHistoryAPI(params);
+
+                const sseData = response.data;
+                const lines = sseData.split('\n');
+                let aiResponse = '';
+
+                const messageId = addMessageToActiveSession({ sender: 'AI', content: '' });
+
+                for (const line of lines) {
+                    if (line.startsWith('data:')) {
+                        const messagePart = line.replace('data:', '').trim();
+                        if (messagePart) {
+                            aiResponse = formatMessageContent(aiResponse, messagePart);
+                            updateMessageInActiveSession(messageId, { content: aiResponse });
+                            await new Promise(resolve => setTimeout(resolve, 20));
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                updateMessageInActiveSession(messageId, { content: 'Sorry, there was an error processing your request.' });
+            } finally {
+                setIsLoading(false);
+                setIsTyping(false);
+            }
+        }
+    }, [message, activeSession, username, addMessageToActiveSession, updateMessageInActiveSession]);
+
     return (
         <ThemeProvider theme={theme}>
             <Box sx={{ display: 'flex' }}>
                 <CssBaseline />
                 <AppBar position="absolute" open={open}>
-                    <Toolbar
-                        sx={{
-                            pr: '24px',
-                        }}
-                    >
+                    <Toolbar sx={{ pr: '24px' }}>
                         <IconButton
                             edge="start"
                             color="inherit"
@@ -213,13 +306,7 @@ export default function Layout() {
                         >
                             <MenuIcon />
                         </IconButton>
-                        <Typography
-                            component="h1"
-                            variant="h6"
-                            color="inherit"
-                            noWrap
-                            sx={{ flexGrow: 1 }}
-                        >
+                        <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1 }}>
                             {getPageTitle(location.pathname)}
                         </Typography>
                         <IconButton color="inherit" onClick={toggleColorMode}>
@@ -274,13 +361,7 @@ export default function Layout() {
                             >
                                 <LogoutIcon />
                                 {open && (
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            ml: 1,
-                                            display: { xs: 'none', sm: 'block' },
-                                        }}
-                                    >
+                                    <Typography variant="body2" sx={{ ml: 1, display: { xs: 'none', sm: 'block' } }}>
                                         Logout
                                     </Typography>
                                 )}
@@ -323,6 +404,92 @@ export default function Layout() {
                     </Button>
                 </DialogActions>
             </Dialog>
+            <ChatButton
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={toggleChat}
+            >
+                <IconButton
+                    color="primary"
+                    sx={{
+                        backgroundColor: theme.palette.background.paper,
+                        boxShadow: theme.shadows[4],
+                        '&:hover': {
+                            backgroundColor: theme.palette.background.paper,
+                        },
+                    }}
+                >
+                    <ChatIcon />
+                </IconButton>
+            </ChatButton>
+            <AnimatePresence>
+                {chatOpen && (
+                    <ChatWindow
+                        initial={{ opacity: 0, y: 50, scale: 0.3 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 50, scale: 0.3 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                    >
+                        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.paper' }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>AI Assistant</Typography>
+                            <IconButton onClick={toggleChat} size="small">
+                                <CloseIcon />
+                            </IconButton>
+
+                        </Box>
+                        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, bgcolor: 'background.default' }}>
+                            {sessions.find(s => s.id === activeSession)?.messages.map((message, index) => (
+                                <Box key={index} sx={{ mb: 2, display: 'flex', justifyContent: message.sender === username ? 'flex-end' : 'flex-start' }}>
+                                    <Paper
+                                        elevation={0}
+                                        sx={{
+                                            p: 2,
+                                            maxWidth: '80%',
+                                            borderRadius: 2,
+                                            bgcolor: message.sender === username ? 'primary.main' : 'background.paper',
+                                            color: message.sender === username ? 'primary.contrastText' : 'text.primary',
+                                        }}
+                                    >
+                                        <Typography variant="body2">{message.content}</Typography>
+                                    </Paper>
+                                </Box>
+                            ))}
+                            {isTyping && (
+                                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
+                                    <Paper elevation={0} sx={{ p: 2, maxWidth: '80%', borderRadius: 2, bgcolor: 'background.paper' }}>
+                                        <Typography variant="body2">AI is typing...</Typography>
+                                    </Paper>
+                                </Box>
+                            )}
+                        </Box>
+                        <Box component="form" onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+                            <TextField
+                                fullWidth
+                                variant="outlined"
+                                placeholder="Type your message..."
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                disabled={isLoading}
+                                InputProps={{
+                                    endAdornment: (
+                                        <IconButton type="submit" disabled={isLoading || !message.trim()}>
+                                            <SendIcon />
+                                        </IconButton>
+                                    ),
+                                }}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: 4,
+                                        '&.Mui-focused': {
+                                            boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
+                                        },
+                                    },
+                                }}
+                            />
+                        </Box>
+                    </ChatWindow>
+                )}
+            </AnimatePresence>
         </ThemeProvider>
     );
 }
