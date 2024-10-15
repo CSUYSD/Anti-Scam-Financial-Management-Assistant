@@ -8,7 +8,9 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Criteria;
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
+import org.springframework.stereotype.Service;
 
+@Service
 public class RecordSearchService {
 
     private final RecordESDao recordESDao;
@@ -21,26 +23,26 @@ public class RecordSearchService {
 
 
     // Search transactions by keyword
-    public Page<TransactionRecordES> searchTransactions(String keyword, int page, int size) {
+    public Page<TransactionRecordES> searchRecords(String keyword, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
 
         if (keyword != null && !keyword.isEmpty()) {
-            return recordESDao.findByTransactionDescriptionContainingOrTransactionTypeContaining(
+            return recordESDao.findByTransactionDescriptionContainingOrCategoryContaining(
                     keyword, keyword, pageRequest);
         } else {
             return recordESDao.findAll(pageRequest);
         }
     }
 
-    // Advanced search transactions by description, type, and amount range
-    public SearchHits<TransactionRecordES> advancedSearch(String description, String type, Double minAmount, Double maxAmount) {
+    // Advanced search transactions by description, category, and amount range
+    public SearchHits<TransactionRecordES> advancedSearch(String description, String category, Double minAmount, Double maxAmount) {
         CriteriaQuery query = new CriteriaQuery(new Criteria());
 
         if (description != null && !description.isEmpty()) {
             query.addCriteria(Criteria.where("transactionDescription").contains(description));
         }
-        if (type != null && !type.isEmpty()) {
-            query.addCriteria(Criteria.where("transactionType").is(type));
+        if (category != null && !category.isEmpty()) {
+            query.addCriteria(Criteria.where("category").is(category));
         }
         if (minAmount != null && maxAmount != null) {
             query.addCriteria(Criteria.where("amount").between(minAmount, maxAmount));

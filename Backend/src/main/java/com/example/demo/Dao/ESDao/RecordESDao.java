@@ -8,6 +8,6 @@
 
  @Repository
  public interface RecordESDao extends ElasticsearchRepository<TransactionRecordES, String> {
-     Page<TransactionRecordES> findByTransactionDescriptionContainingOrTransactionTypeContaining(
-             String description, String type, Pageable pageable);
+     Page<TransactionRecordES> findByTransactionDescriptionContainingOrCategoryContaining(
+             String description, String category, Pageable pageable);
  }
