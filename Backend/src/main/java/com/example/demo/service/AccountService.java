@@ -7,11 +7,13 @@ import com.example.demo.model.Account;
 import com.example.demo.model.DTO.AccountDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.Dao.AccountDao;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -56,9 +58,18 @@ public class AccountService {
             if (key.equals("login_user:" + userId + ":account:initial placeholder")){
                 continue;
             }
-            RedisAccount redisAccount = (RedisAccount) redisTemplate.opsForValue().get(key);
-            if (redisAccount.getName().equals(accountDTO.getName())){
-                throw new AccountAlreadyExistException("账户名已存在");
+            Object rawObject = redisTemplate.opsForValue().get(key);
+            if (rawObject instanceof LinkedHashMap) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                RedisAccount redisAccount = objectMapper.convertValue(rawObject, RedisAccount.class);
+                if (redisAccount.getName().equals(accountDTO.getName())) {
+                    throw new AccountAlreadyExistException("账户名已存在");
+                }
+            } else if (rawObject instanceof RedisAccount) {
+                RedisAccount redisAccount = (RedisAccount) rawObject;
+                if (redisAccount.getName().equals(accountDTO.getName())) {
+                    throw new AccountAlreadyExistException("账户名已存在");
+                }
             }
         }
 
