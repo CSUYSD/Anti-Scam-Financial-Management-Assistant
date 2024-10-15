@@ -66,7 +66,6 @@ public class AccountService {
         TransactionUser user = transactionUserDao.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("用户不存在"));
 
-        // 存到PSQL里
         Account newAccount = new Account();
         newAccount.setAccountName(accountDTO.getName());
         newAccount.setTransactionUser(user);
