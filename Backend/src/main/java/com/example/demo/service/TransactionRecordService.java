@@ -1,31 +1,29 @@
 package com.example.demo.service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
-import com.example.demo.Dao.ESDao.RecordESDao;
-import com.example.demo.Dao.TransactionUserDao;
-import com.example.demo.exception.AccountAlreadyExistException;
-import com.example.demo.exception.AccountNotFoundException;
+import com.example.demo.model.ai.AnalyseRequest;
+import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.AccountDTO;
-import com.example.demo.model.DTO.TransactionRecordDTO;
-import com.example.demo.model.Redis.RedisAccount;
+import com.example.demo.model.dto.TransactionRecordDTO;
+import com.example.demo.model.redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
-import com.example.demo.service.ES.RecordSyncService;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.service.ai.AiAnalyserService;
+import com.example.demo.service.es.RecordSyncService;
+import com.example.demo.utility.jwt.JwtUtil;
+import com.example.demo.utility.parser.DtoParser;
+import com.example.demo.utility.parser.PromptParser;
+import com.example.demo.utility.GetCurrentUserInfo;
 import jakarta.transaction.Transactional;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import com.example.demo.utility.DtoParser;
 
-import com.example.demo.Dao.TransactionRecordDao;
-import com.example.demo.Dao.AccountDao;
+import com.example.demo.repository.TransactionRecordDao;
+import com.example.demo.repository.AccountDao;
 import com.example.demo.model.TransactionRecord;
 import org.springframework.web.bind.annotation.RequestHeader;
 
@@ -38,18 +36,24 @@ public class TransactionRecordService {
     private final RecordSyncService recordSyncService;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final AiAnalyserService aiAnalyserService;
+    private final GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Autowired
-    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService) {
+    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService, AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo) {
         this.transactionRecordDao = transactionRecordDao;
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.accountDao = accountDao;
         this.recordSyncService = recordSyncService;
+        this.aiAnalyserService = aiAnalyserService;
+        this.getCurrentUserInfo = getCurrentUserInfo;
     }
 
 
@@ -58,17 +62,17 @@ public class TransactionRecordService {
         return transactionRecordDao.findAllByAccountId(accountId);
     }
 
-
+    @Transactional
     public void addTransactionRecord(@RequestHeader String token, TransactionRecordDTO transactionRecordDTO) {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
-        String accountId = getCurrentAccountId(userId);
+        Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
         System.out.printf("===============================accountId: %s===============================", accountId);
 
         Account account = findAccountById(Long.valueOf(accountId));
 
         TransactionUser user = findTransactionUserById(userId);
 
-        // update account income and expense
+
         if (transactionRecordDTO.getType().equalsIgnoreCase("expense")) {
             account.setTotalExpense(account.getTotalExpense() + transactionRecordDTO.getAmount());
         }
@@ -78,14 +82,14 @@ public class TransactionRecordService {
         TransactionRecord transactionRecord = DtoParser.toTransactionRecord(transactionRecordDTO);
         transactionRecord.setAccount(account);
         transactionRecord.setUserId(userId);
-
+        // save DB
         transactionRecordDao.save(transactionRecord);
-//      save record into elastic search
+        // save to elastic search
         recordSyncService.syncToElasticsearch(transactionRecord);
-
-//        System.out.println("Account Total Income: " + account.getTotalIncome());
-//        System.out.println("Account Total Expense: " + account.getTotalExpense());
-
+        // send to AI analyser
+        String currentRecord = PromptParser.parseLatestTransactionRecordsToPrompt(List.of(transactionRecord));
+        rabbitTemplate.convertAndSend("new.record.to.ai.analyser", new AnalyseRequest(accountId, currentRecord));
+        // update redis
         updateRedisAccount(account);
     }
 
@@ -181,11 +185,6 @@ public class TransactionRecordService {
         } catch (Exception e) {
             System.err.println("Error updating Redis account: " + e.getMessage());
         }
-    }
-
-    private String getCurrentAccountId(Long userId) {
-        String pattern = "login_user:" + userId + ":current_account";
-        return stringRedisTemplate.opsForValue().get(pattern);
     }
 
     private TransactionRecord findTransactionRecordById(Long id) {

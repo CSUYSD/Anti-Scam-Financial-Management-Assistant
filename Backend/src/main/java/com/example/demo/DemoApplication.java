@@ -17,10 +17,12 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
 
 @SpringBootApplication
 @EnableElasticsearchRepositories
 @EnableJpaRepositories
+@EnableWebSocket
 public class DemoApplication {
 
 	public static void main(String[] args) {
@@ -35,6 +37,8 @@ public class DemoApplication {
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		return objectMapper;
 	}
+
+
 	@Value("${spring.ai.openai.api-key}")
 	private String openAiApiKey;
 
@@ -45,22 +49,5 @@ public class DemoApplication {
 		return new OpenAiEmbeddingModel(new OpenAiApi(openAiApiKey));
 	}
 
-//	@Bean
-//	public RestClient.Builder builder() {
-//		return RestClient.builder().requestFactory(new SimpleClientHttpRequestFactory());
-//	}
-//
-//
-//	@Bean
-//	public ChromaApi chromaApi(RestClient.Builder restClientBuilder) {
-//		String chromaUrl = "http://localhost:8000";
-//		ChromaApi chromaApi = new ChromaApi(chromaUrl, restClientBuilder);
-//		return chromaApi;
-//	}
-//
-//	@Bean
-//	public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
-//		return new ChromaVectorStore(embeddingModel, chromaApi, "my-collection", false);
-//	}
 
 }

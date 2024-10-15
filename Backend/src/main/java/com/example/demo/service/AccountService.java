@@ -1,18 +1,17 @@
 package com.example.demo.service;
 
-import com.example.demo.Dao.TransactionUserDao;
+import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.AccountDTO;
-import com.example.demo.model.Redis.RedisAccount;
+import com.example.demo.model.dto.AccountDTO;
+import com.example.demo.model.redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.example.demo.Dao.AccountDao;
+import com.example.demo.repository.AccountDao;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -71,7 +70,6 @@ public class AccountService {
         TransactionUser user = transactionUserDao.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("用户不存在"));
 
-        // 存到PSQL里
         Account newAccount = new Account();
         newAccount.setAccountName(accountDTO.getName());
         newAccount.setTransactionUser(user);
