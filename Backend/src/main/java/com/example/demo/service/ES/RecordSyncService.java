@@ -1,42 +1,72 @@
-// package com.example.demo.service.ES;
+package com.example.demo.service.ES;
 
-// import com.example.demo.Dao.TransactionRecordDao;
-// import com.example.demo.Dao.ESDao.RecordESDao;
-// import com.example.demo.model.TransactionRecordES;
-// import com.example.demo.model.TransactionRecord;
-// import org.springframework.stereotype.Service;
-// import org.springframework.transaction.annotation.Transactional;
+import com.example.demo.Dao.TransactionRecordDao;
+import com.example.demo.Dao.ESDao.RecordESDao;
+import com.example.demo.model.TransactionRecordES;
+import com.example.demo.model.TransactionRecord;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-// @Service
-// public class RecordSyncService {
+import java.util.List;
+import java.util.stream.Collectors;
 
-//     private final TransactionRecordDao transactionRecordDao;
-//     private final RecordESDao recordESDao;
+@Service
+public class RecordSyncService {
 
-//     public RecordSyncService(TransactionRecordDao transactionRecordDao,
-//                              RecordESDao recordESDao) {
-//         this.transactionRecordDao = transactionRecordDao;
-//         this.recordESDao = recordESDao;
-//     }
+    private final TransactionRecordDao transactionRecordDao;
+    private final RecordESDao recordESDao;
 
-//     @Transactional
-//     //   Save transaction record to database and sync to Elasticsearch
-//     public void syncToElasticsearch(TransactionRecord transactionRecord) {
-//         TransactionRecordES esRecord = convertToESEntity(transactionRecord);
-//         recordESDao.save(esRecord);
-//     }
+    public RecordSyncService(TransactionRecordDao transactionRecordDao,
+                             RecordESDao recordESDao) {
+        this.transactionRecordDao = transactionRecordDao;
+        this.recordESDao = recordESDao;
+    }
 
-// //    Convert TransactionRecord to TransactionRecordES
-//     private TransactionRecordES convertToESEntity(TransactionRecord record) {
-//         TransactionRecordES esRecord = new TransactionRecordES();
-//         esRecord.setId(String.valueOf(record.getId()));
-//         esRecord.setType(record.getType());
-//         esRecord.setTransactionType(record.getTransactionType());
-//         esRecord.setAmount(record.getAmount());
-//         esRecord.setTransactionMethod(record.getTransactionMethod());
-//         esRecord.setTransactionTime(record.getTransactionTime());
-//         esRecord.setTransactionDescription(record.getTransactionDescription());
-//         esRecord.setAccountId(String.valueOf(record.getAccount().getId()));
-//         return esRecord;
-//     }
-// }
+    @Transactional
+    public void syncToElasticsearch(TransactionRecord record) {
+        TransactionRecordES esRecord = convertToESEntity(record);
+        recordESDao.save(esRecord);
+    }
+
+    @Transactional
+    public void deleteFromElasticsearch(Long recordId) {
+        String esRecordId = String.valueOf(recordId);
+        recordESDao.deleteById(esRecordId);
+    }
+
+    @Transactional
+//  delete batch of records from elastic search
+    public void deleteFromElasticsearchInBatch(List<Long> recordIds) {
+        List<String> esRecordIds = recordIds.stream()
+                .map(String::valueOf)
+                .collect(Collectors.toList());
+        recordESDao.deleteAllById(esRecordIds);
+    }
+
+    @Transactional
+    public void updateInElasticsearch(TransactionRecord record) {
+        TransactionRecordES esRecord = convertToESEntity(record);
+        String esRecordId = String.valueOf(record.getId());
+
+        if (recordESDao.existsById(esRecordId)) {
+            // fi record exist
+            recordESDao.save(esRecord);
+        } else {
+            throw new RuntimeException("Record not found in Elasticsearch: " + esRecordId);
+        }
+    }
+
+    private TransactionRecordES convertToESEntity(TransactionRecord record) {
+        TransactionRecordES esRecord = new TransactionRecordES();
+        esRecord.setId(String.valueOf(record.getId()));
+        esRecord.setType(record.getType());
+        esRecord.setCategory(record.getCategory());
+        esRecord.setAmount(record.getAmount());
+        esRecord.setTransactionMethod(record.getTransactionMethod());
+        esRecord.setTransactionTime(record.getTransactionTime());
+        esRecord.setTransactionDescription(record.getTransactionDescription());
+        esRecord.setUserId(String.valueOf(record.getUserId()));
+        esRecord.setAccountId(String.valueOf(record.getAccount().getId()));
+        return esRecord;
+    }
+}
