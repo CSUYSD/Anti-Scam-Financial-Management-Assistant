@@ -1,27 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import {
-    Box, Button, Card, CardContent, CardHeader, Checkbox, Collapse, FormControlLabel,
-    Grid, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    TextField, Typography, useTheme, Fade, Pagination, CircularProgress, Select, MenuItem,
-    FormHelperText, InputAdornment, Tooltip, Zoom, Paper, Chip
-} from '@mui/material';
-import {
-    Search as SearchIcon, Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon,
-    CheckCircle as CheckCircleIcon, Close as CloseIcon, ArrowUpward as ArrowUpwardIcon,
-    ArrowDownward as ArrowDownwardIcon, FilterList as FilterListIcon
-} from '@mui/icons-material';
+"use client"
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Search, ChevronDown, ChevronUp, Edit, Trash2, Plus, X } from 'lucide-react';
+import { format } from 'date-fns';
 import {
     getAllRecordsAPI, getRecordsByTypeAPI, createRecordAPI, updateRecordAPI, deleteRecordAPI, deleteRecordsInBatchAPI
 } from '@/api/record';
 import { searchAPI } from '@/api/search';
 
-const MotionCard = motion(Card);
-const MotionTableRow = motion.tr;
-
-export default function Transaction() {
-    const theme = useTheme();
+export default function EnhancedTransactionManagement() {
     const [searchTerm, setSearchTerm] = useState('');
+    const [transactionType, setTransactionType] = useState('All');
     const [showSuccess, setShowSuccess] = useState(false);
     const [selectedTransactions, setSelectedTransactions] = useState([]);
     const [editingTransaction, setEditingTransaction] = useState(null);
@@ -36,29 +26,34 @@ export default function Transaction() {
     });
     const [formErrors, setFormErrors] = useState({});
     const [transactions, setTransactions] = useState([]);
+    const [filteredTransactions, setFilteredTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [successMessage, setSuccessMessage] = useState('');
-    const [filterType, setFilterType] = useState('All');
+    const [scrollY, setScrollY] = useState(0);
+    const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => setScrollY(window.scrollY);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     useEffect(() => {
         fetchTransactions();
-    }, [filterType]);
+    }, []);
 
-    const fetchTransactions = async (updateType = 'all') => {
+    useEffect(() => {
+        filterTransactions();
+    }, [transactions, transactionType]);
+
+    const fetchTransactions = async () => {
         try {
             setLoading(true);
-            let response;
-            if (updateType === 'all' || filterType === 'All') {
-                response = await getAllRecordsAPI();
-            } else {
-                response = await getRecordsByTypeAPI(filterType);
-            }
-            const allTransactions = response.data;
-            setTotalPages(Math.ceil(allTransactions.length / 10));
-            setTransactions(allTransactions);
+            const response = await getAllRecordsAPI();
+            setTransactions(response.data.content || []);
+            setTotalPages(response.data.totalPages || 1);
             setLoading(false);
         } catch (error) {
             setError('Failed to fetch transactions');
@@ -66,50 +61,78 @@ export default function Transaction() {
         }
     };
 
+    const filterTransactions = () => {
+        let filtered = transactions;
+
+        if (transactionType !== 'All') {
+            filtered = filtered.filter(transaction => transaction.type === transactionType);
+        }
+
+        setFilteredTransactions(filtered);
+        setPage(1);
+    };
+
     const handleSearch = async () => {
+        if (!searchTerm.trim()) {
+            filterTransactions();
+            return;
+        }
+
         try {
             setLoading(true);
             const response = await searchAPI(searchTerm);
-            const searchResults = response.data.content;
-            setTransactions(searchResults);
-            setTotalPages(response.data.totalPages);
-            setLoading(false);
+            let searchResults = response.data.content || [];
+
+            if (transactionType !== 'All') {
+                searchResults = searchResults.filter(transaction => transaction.type === transactionType);
+            }
+
+            setFilteredTransactions(searchResults);
+            setTotalPages(response.data.totalPages || 1);
+            setPage(1);
         } catch (error) {
             setError('Failed to search transactions');
+            setFilteredTransactions([]);
+        } finally {
             setLoading(false);
         }
     };
 
-    const handleAction = (action) => {
-        setSuccessMessage(`Transaction ${action.toLowerCase()} successful`);
+    const handleAction = useCallback((action) => {
         setShowSuccess(true);
         setTimeout(() => {
             setShowSuccess(false);
             fetchTransactions();
-        }, 2000);
-    };
+        }, 3000);
+    }, []);
 
-    const handleSelectTransaction = (id) => {
+    const handleSelectTransaction = useCallback((id) => {
         setSelectedTransactions(prev =>
             prev.includes(id) ? prev.filter(transId => transId !== id) : [...prev, id]
         );
-    };
+    }, []);
 
-    const handleSelectAll = (checked) => {
-        setSelectedTransactions(checked ? transactions.map(t => t.id) : []);
-    };
+    const handleSelectAll = useCallback((checked) => {
+        setSelectedTransactions(checked ? filteredTransactions.map(t => t.id) : []);
+    }, [filteredTransactions]);
 
     const handleBatchDelete = async () => {
+        if (selectedTransactions.length === 0) {
+            setError('No transactions selected for deletion');
+            return;
+        }
+
         try {
+            setLoading(true);
             await deleteRecordsInBatchAPI(selectedTransactions);
-            setTransactions(prevTransactions =>
-                prevTransactions.filter(t => !selectedTransactions.includes(t.id))
-            );
             handleAction('Batch Delete');
             setSelectedTransactions([]);
-            fetchTransactions();
+            await fetchTransactions();
         } catch (error) {
+            console.error('Batch delete error:', error);
             setError('Failed to delete selected transactions');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -145,8 +168,7 @@ export default function Transaction() {
                     amount: parseFloat(transactionForm.amount),
                     transactionTime: formatDateTimeForBackend(transactionForm.transactionTime)
                 };
-                const response = await createRecordAPI(formattedTransaction);
-                setTransactions(prevTransactions => [...prevTransactions, response.data]);
+                await createRecordAPI(formattedTransaction);
                 handleAction('Add');
                 setShowAddForm(false);
                 setTransactionForm({
@@ -157,21 +179,21 @@ export default function Transaction() {
                     transactionTime: '',
                     transactionDescription: ''
                 });
-                fetchTransactions(formattedTransaction.type);
+                await fetchTransactions();
             } catch (error) {
                 setError('Failed to add transaction');
             }
         }
     };
 
-    const handleEditTransaction = (transaction) => {
+    const handleEditTransaction = useCallback((transaction) => {
         setEditingTransaction(transaction.id);
         setTransactionForm({
             ...transaction,
             transactionTime: transaction.transactionTime.slice(0, 16)
         });
         setShowAddForm(true);
-    };
+    }, []);
 
     const handleUpdateTransaction = async () => {
         if (validateForm()) {
@@ -181,10 +203,7 @@ export default function Transaction() {
                     amount: parseFloat(transactionForm.amount),
                     transactionTime: formatDateTimeForBackend(transactionForm.transactionTime)
                 };
-                const response = await updateRecordAPI(editingTransaction, formattedTransaction);
-                setTransactions(prevTransactions =>
-                    prevTransactions.map(t => t.id === editingTransaction ? response.data : t)
-                );
+                await updateRecordAPI(editingTransaction, formattedTransaction);
                 handleAction('Edit');
                 setShowAddForm(false);
                 setEditingTransaction(null);
@@ -196,7 +215,7 @@ export default function Transaction() {
                     transactionTime: '',
                     transactionDescription: ''
                 });
-                fetchTransactions(formattedTransaction.type);
+                await fetchTransactions();
             } catch (error) {
                 setError('Failed to update transaction');
             }
@@ -206,308 +225,369 @@ export default function Transaction() {
     const handleDeleteTransaction = async (id) => {
         try {
             await deleteRecordAPI(id);
-            setTransactions(prevTransactions => prevTransactions.filter(t => t.id !== id));
             handleAction('Delete');
-            fetchTransactions();
+            await fetchTransactions();
         } catch (error) {
             setError('Failed to delete transaction');
         }
     };
 
-    const paginatedTransactions = transactions.slice((page - 1) * 10, page * 10);
+    const paginatedTransactions = filteredTransactions.slice((page - 1) * 10, page * 10);
+
+    const toggleTypeDropdown = () => {
+        setTypeDropdownOpen(!typeDropdownOpen);
+    };
+
+    const handleTypeSelect = (type) => {
+        setTransactionType(type);
+        setTypeDropdownOpen(false);
+    };
 
     if (loading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress />
-            </Box>
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <motion.div
+                    animate={{
+                        scale: [1, 1.2, 1],
+                        rotate: [0, 180, 360],
+                    }}
+                    transition={{
+                        duration: 2,
+                        ease: "easeInOut",
+                        times: [0, 0.5, 1],
+                        repeat: Infinity,
+                    }}
+                    className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full"
+                />
+            </div>
         );
     }
 
     if (error) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <Typography color="error">{error}</Typography>
-            </Box>
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-lg"
+                    role="alert"
+                >
+                    <p className="font-bold">Error</p>
+                    <p>{error}</p>
+                </motion.div>
+            </div>
         );
     }
 
     return (
-        <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 3 }}>
-            <Fade in={showSuccess}>
-                <Box sx={{
-                    position: 'fixed',
-                    top: theme.spacing(2),
-                    right: theme.spacing(2),
-                    bgcolor: 'success.main',
-                    color: 'white',
-                    px: 3,
-                    py: 1.5,
-                    borderRadius: 2,
-                    boxShadow: 3,
-                    display: 'flex',
-                    alignItems: 'center',
-                    zIndex: 9999,
-                }}>
-                    <CheckCircleIcon sx={{ mr: 1 }} />
-                    <Typography variant="body1">{successMessage}</Typography>
-                    <IconButton size="small" onClick={() => setShowSuccess(false)} sx={{ ml: 2, color: 'white' }}>
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
-            </Fade>
-            <MotionCard
-                sx={{ maxWidth: 'xl', mx: 'auto', overflow: 'hidden', borderRadius: 4 }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-            >
-                <CardHeader
-                    title={<Typography variant="h4">Transaction Records</Typography>}
-                    sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', p: 3 }}
-                />
-                <CardContent sx={{ p: 0 }}>
-                    <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <TextField
-                            label="Search Transactions"
-                            variant="outlined"
+        <div className="min-h-screen bg-gray-100">
+            <div className="max-w-7xl mx-auto px-4 py-8">
+                <motion.div
+                    className="flex flex-col items-center mb-8 space-y-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                    <div className="relative w-full max-w-2xl flex">
+                        <input
+                            type="text"
+                            placeholder="Search transactions..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            fullWidth
-                            size="medium"
-                            InputProps={{
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton onClick={handleSearch}>
-                                            <SearchIcon />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
+                            onKeyUp={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleSearch();
+                                }
                             }}
+                            className="w-full px-6 py-3 rounded-full bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
                         />
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Button
-                                onClick={() => setShowAddForm(!showAddForm)}
-                                variant="contained"
-                                size="large"
-                                startIcon={<AddIcon />}
-                            >
-                                {showAddForm ? 'Hide Form' : 'Add Transaction'}
-                            </Button>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <FilterListIcon />
-                                <Select
-                                    value={filterType}
-                                    onChange={(e) => setFilterType(e.target.value)}
-                                    size="small"
-                                >
-                                    <MenuItem value="All">All</MenuItem>
-                                    <MenuItem value="Income">Income</MenuItem>
-                                    <MenuItem value="Expense">Expense</MenuItem>
-                                </Select>
-                            </Box>
-                        </Box>
-                    </Box>
+                        <button
+                            onClick={handleSearch}
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-all duration-300"
+                        >
+                            <Search className="h-5 w-5" />
+                        </button>
+                    </div>
+                </motion.div>
 
-                    <Collapse in={showAddForm}>
-                        <Box sx={{ px: 3, pb: 3 }}>
-                            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-                                <Typography variant="h6" sx={{ mb: 2 }}>
-                                    {editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}
-                                </Typography>
-                                <Grid container spacing={3}>
-                                    <Grid item xs={12} md={6}>
-                                        <Select
-                                            label="Type"
-                                            value={transactionForm.type}
-                                            onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value })}
-                                            fullWidth
-                                            error={!!formErrors.type}
-                                        >
-                                            <MenuItem value="Income">Income</MenuItem>
-                                            <MenuItem value="Expense">Expense</MenuItem>
-                                        </Select>
-                                        {formErrors.type && <FormHelperText error>{formErrors.type}</FormHelperText>}
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <TextField
-                                            label="Category"
-                                            variant="outlined"
-                                            value={transactionForm.category}
-                                            onChange={(e) => setTransactionForm({ ...transactionForm, category: e.target.value })}
-                                            fullWidth
-                                            required
-                                            error={!!formErrors.category}
-                                            helperText={formErrors.category}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <TextField
-                                            label="Amount"
-                                            variant="outlined"
-                                            type="number"
-                                            value={transactionForm.amount}
-                                            onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
-                                            fullWidth
-                                            required
-                                            error={!!formErrors.amount}
-                                            helperText={formErrors.amount}
-                                            InputProps={{
-                                                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                                            }}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <TextField
-                                            label="Transaction Method"
-                                            variant="outlined"
-                                            value={transactionForm.transactionMethod}
-                                            onChange={(e) => setTransactionForm({ ...transactionForm, transactionMethod: e.target.value })}
-                                            fullWidth
-                                            required
-                                            error={!!formErrors.transactionMethod}
-                                            helperText={formErrors.transactionMethod}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <TextField
-                                            label="Transaction Time"
-                                            variant="outlined"
-                                            type="datetime-local"
-                                            value={transactionForm.transactionTime}
-                                            onChange={(e) => setTransactionForm({ ...transactionForm, transactionTime: e.target.value })}
-                                            fullWidth
-                                            required
-                                            InputLabelProps={{ shrink: true }}
-                                            inputProps={{ max: new Date().toISOString().slice(0, 16) }}
-                                            error={!!formErrors.transactionTime}
-                                            helperText={formErrors.transactionTime}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            label="Transaction Description"
-                                            variant="outlined"
-                                            value={transactionForm.transactionDescription}
-                                            onChange={(e) => setTransactionForm({ ...transactionForm, transactionDescription: e.target.value })}
-                                            fullWidth
-                                            required
-                                            error={!!formErrors.transactionDescription}
-                                            helperText={formErrors.transactionDescription}
-                                            multiline
-                                            rows={2}
-                                        />
-                                    </Grid>
-                                </Grid>
-                                <Button
-                                    onClick={editingTransaction ? handleUpdateTransaction : handleAddTransaction}
-                                    variant="contained"
-                                    size="large"
-                                    sx={{ mt: 3 }}
+                <motion.div
+                    className="bg-white rounded-xl overflow-hidden shadow-lg mb-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                >
+                    <div className="p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-2xl font-semibold text-gray-800">Transactions</h2>
+                            <div className="flex items-center space-x-4">
+                                <div className="relative">
+                                    <motion.button
+                                        onClick={toggleTypeDropdown}
+                                        className="px-4 py-2 bg-gray-200 rounded-full text-sm font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        {transactionType} <ChevronDown className="inline-block ml-1 h-4 w-4" />
+                                    </motion.button>
+                                    <AnimatePresence>
+                                        {typeDropdownOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                transition={{ duration: 0.2 }}
+                                                className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg overflow-hidden z-20"
+                                            >
+                                                {['All', 'Income', 'Expense'].map((type) => (
+                                                    <motion.button
+                                                        key={type}
+                                                        onClick={() => handleTypeSelect(type)}
+                                                        className="block w-full px-4 py-2 text-left hover:bg-gray-100 transition-all duration-300"
+                                                        whileHover={{ backgroundColor: '#f3f4f6' }}
+                                                    >
+                                                        {type}
+                                                    </motion.button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                                <motion.button
+                                    onClick={() => setShowAddForm(!showAddForm)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all duration-300"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
                                 >
-                                    {editingTransaction ? 'Update Transaction' : 'Add Transaction'}
-                                </Button>
-                            </Paper>
-                        </Box>
-                    </Collapse>
+                                    {showAddForm ? <X className="inline-block mr-2 h-5 w-5" /> : <Plus className="inline-block mr-2 h-5 w-5" />}
+                                    {showAddForm ? 'Close Form' : 'Add Transaction'}
+                                </motion.button>
+                            </div>
+                        </div>
 
-                    <TableContainer sx={{ maxHeight: 440, overflowY:  'auto' }}>
-                        <Table stickyHeader>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>
-                                        <FormControlLabel
-                                            control={
-                                                <Checkbox
-                                                    checked={selectedTransactions.length === paginatedTransactions.length}
-                                                    onChange={(e) => handleSelectAll(e.target.checked)}
+                        <AnimatePresence>
+                            {showAddForm && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="mb-6"
+                                >
+                                    <div className="bg-gray-100 p-6 rounded-lg">
+                                        <h3 className="text-xl font-semibold mb-4">{editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                                <select
+                                                    value={transactionForm.type}
+                                                    onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value })}
+                                                    className="w-full  p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="Income">Income</option>
+                                                    <option value="Expense">Expense</option>
+                                                </select>
+                                                {formErrors.type && <p className="text-red-500 text-xs mt-1">{formErrors.type}</p>}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                                <input
+                                                    type="text"
+                                                    value={transactionForm.category}
+                                                    onChange={(e) => setTransactionForm({ ...transactionForm, category: e.target.value })}
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Enter category"
                                                 />
-                                            }
-                                            label="Select All"
+                                                {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                                                <input
+                                                    type="number"
+                                                    value={transactionForm.amount}
+                                                    onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Enter amount"
+                                                />
+                                                {formErrors.amount && <p className="text-red-500 text-xs mt-1">{formErrors.amount}</p>}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Method</label>
+                                                <input
+                                                    type="text"
+                                                    value={transactionForm.transactionMethod}
+                                                    onChange={(e) => setTransactionForm({ ...transactionForm, transactionMethod: e.target.value })}
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Enter transaction method"
+                                                />
+                                                {formErrors.transactionMethod && <p className="text-red-500 text-xs mt-1">{formErrors.transactionMethod}</p>}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Time</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={transactionForm.transactionTime}
+                                                    onChange={(e) => setTransactionForm({ ...transactionForm, transactionTime: e.target.value })}
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                                {formErrors.transactionTime && <p className="text-red-500 text-xs mt-1">{formErrors.transactionTime}</p>}
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                                <textarea
+                                                    value={transactionForm.transactionDescription}
+                                                    onChange={(e) => setTransactionForm({ ...transactionForm, transactionDescription: e.target.value })}
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Enter description"
+                                                    rows="3"
+                                                ></textarea>
+                                                {formErrors.transactionDescription && <p className="text-red-500 text-xs mt-1">{formErrors.transactionDescription}</p>}
+                                            </div>
+                                        </div>
+                                        <motion.button
+                                            onClick={editingTransaction ? handleUpdateTransaction : handleAddTransaction}
+                                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all duration-300"
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                        >
+                                            {editingTransaction ? 'Update Transaction' : 'Add Transaction'}
+                                        </motion.button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                <tr className="bg-gray-100">
+                                    <th className="p-3 text-left">
+                                        <input
+                                            type="checkbox"
+                                            onChange={(e) => handleSelectAll(e.target.checked)}
+                                            checked={selectedTransactions.length === paginatedTransactions.length && paginatedTransactions.length > 0}
                                         />
-                                    </TableCell>
-                                    <TableCell>Type</TableCell>
-                                    <TableCell>Category</TableCell>
-                                    <TableCell>Amount</TableCell>
-                                    <TableCell>Method</TableCell>
-                                    <TableCell>Time</TableCell>
-                                    <TableCell>Description</TableCell>
-                                    <TableCell>Actions</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
+                                    </th>
+                                    <th className="p-3 text-left">Type</th>
+                                    <th className="p-3 text-left">Category</th>
+                                    <th className="p-3 text-left">Amount</th>
+                                    <th className="p-3 text-left">Method</th>
+                                    <th className="p-3 text-left">Time</th>
+                                    <th className="p-3 text-left">Description</th>
+                                    <th className="p-3 text-left">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
                                 <AnimatePresence>
                                     {paginatedTransactions.map((transaction) => (
-                                        <MotionTableRow
+                                        <motion.tr
                                             key={transaction.id}
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: 20 }}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
                                             transition={{ duration: 0.3 }}
+                                            className="border-b border-gray-200 hover:bg-gray-50"
                                         >
-                                            <TableCell>
-                                                <Checkbox
+                                            <td className="p-3">
+                                                <input
+                                                    type="checkbox"
                                                     checked={selectedTransactions.includes(transaction.id)}
                                                     onChange={() => handleSelectTransaction(transaction.id)}
                                                 />
-                                            </TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    icon={transaction.type === 'Income' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />}
-                                                    label={transaction.type}
-                                                    color={transaction.type === 'Income' ? 'success' : 'error'}
-                                                    size="small"
-                                                />
-                                            </TableCell>
-                                            <TableCell>{transaction.category}</TableCell>
-                                            <TableCell sx={{ color: transaction.type === 'Expense' ? 'error.main' : 'success.main', fontWeight: 'bold' }}>
+                                            </td>
+                                            <td className="p-3">{transaction.type}</td>
+                                            <td className="p-3">{transaction.category}</td>
+                                            <td className={`p-3 ${transaction.type === 'Expense' ? 'text-red-600' : 'text-green-600'}`}>
                                                 ${Number(transaction.amount).toFixed(2)}
-                                            </TableCell>
-                                            <TableCell>{transaction.transactionMethod}</TableCell>
-                                            <TableCell>{new Date(transaction.transactionTime).toLocaleString()}</TableCell>
-                                            <TableCell>{transaction.transactionDescription}</TableCell>
-                                            <TableCell>
-                                                <Tooltip title="Edit" arrow>
-                                                    <IconButton onClick={() => handleEditTransaction(transaction)} color="primary">
-                                                        <EditIcon />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Delete" arrow>
-                                                    <IconButton onClick={() => handleDeleteTransaction(transaction.id)} color="error">
-                                                        <DeleteIcon />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </TableCell>
-                                        </MotionTableRow>
+                                            </td>
+                                            <td className="p-3">{transaction.transactionMethod}</td>
+                                            <td className="p-3">{format(new Date(transaction.transactionTime), 'yyyy-MM-dd HH:mm:ss')}</td>
+                                            <td className="p-3">{transaction.transactionDescription}</td>
+                                            <td className="p-3">
+                                                <motion.button
+                                                    onClick={() => handleEditTransaction(transaction)}
+                                                    className="mr-2 text-blue-600 hover:text-blue-800"
+                                                    whileHover={{ scale: 1.1 }}
+                                                    whileTap={{ scale: 0.9 }}
+                                                >
+                                                    <Edit className="h-5 w-5" />
+                                                </motion.button>
+                                                <motion.button
+                                                    onClick={() => handleDeleteTransaction(transaction.id)}
+                                                    className="text-red-600 hover:text-red-800"
+                                                    whileHover={{ scale: 1.1 }}
+                                                    whileTap={{ scale: 0.9 }}
+                                                >
+                                                    <Trash2 className="h-5 w-5" />
+                                                </motion.button>
+                                            </td>
+                                        </motion.tr>
                                     ))}
                                 </AnimatePresence>
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Zoom in={selectedTransactions.length > 0}>
-                            <Button
+                        <div className="mt-6 flex justify-between items-center">
+                            <motion.button
                                 onClick={handleBatchDelete}
-                                variant="contained"
-                                color="error"
-                                size="large"
+                                className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                                    selectedTransactions.length > 0
+                                        ? 'bg-red-600 text-white hover:bg-red-700'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                } transition-all duration-300`}
+                                whileHover={selectedTransactions.length > 0 ? { scale: 1.05 } : {}}
+                                whileTap={selectedTransactions.length > 0 ? { scale: 0.95 } : {}}
                                 disabled={selectedTransactions.length === 0}
-                                startIcon={<DeleteIcon />}
                             >
-                                Batch Delete ({selectedTransactions.length})
-                            </Button>
-                        </Zoom>
-                        <Pagination
-                            count={totalPages}
-                            page={page}
-                            onChange={(event, value) => setPage(value)}
-                            color="primary"
-                            size="large"
-                        />
-                    </Box>
-                </CardContent>
-            </MotionCard>
-        </Box>
+                                <Trash2 className="inline-block mr-2 h-5 w-5" />
+                                Delete Selected ({selectedTransactions.length})
+                            </motion.button>
+                            <div className="flex space-x-2">
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                                    <motion.button
+                                        key={pageNum}
+                                        onClick={() => setPage(pageNum)}
+                                        className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                            page === pageNum
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        } transition-all duration-300`}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        {pageNum}
+                                    </motion.button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+
+            <motion.button
+                className="fixed bottom-8 right-8 p-4 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: scrollY > 100 ? 1 : 0, y: scrollY > 100 ? 0 : 20 }}
+                transition={{ duration: 0.3 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+            >
+                <ChevronUp className="h-6 w-6" />
+            </motion.button>
+
+            {showSuccess && (
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 50 }}
+                    transition={{ duration: 0.5 }}
+                    className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-full shadow-lg"
+                >
+                    Transaction action completed successfully.
+                </motion.div>
+            )}
+        </div>
     );
 }

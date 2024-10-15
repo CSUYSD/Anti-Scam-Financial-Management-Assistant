@@ -1,506 +1,931 @@
-import React, { useState, useEffect } from 'react';
-import {
-    Typography,
-    Container,
-    Grid,
-    Paper,
-    Box,
-    List,
-    ListItem,
-    ListItemText,
-    Divider,
-    useTheme,
-    Alert,
-    AlertTitle,
-    CircularProgress,
-    ToggleButtonGroup,
-    ToggleButton,
-} from '@mui/material';
-import {
-    AccountBalance as AccountBalanceIcon,
-    TrendingUp as TrendingUpIcon,
-    TrendingDown as TrendingDownIcon,
-    Warning as WarningIcon,
-    Savings as SavingsIcon,
-} from '@mui/icons-material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Sector, Cell, AreaChart, Area } from 'recharts';
+import { AccountBalance, TrendingUp, TrendingDown, Warning, Savings, List, ArrowUpward, ArrowDownward, Search, Refresh, MoreVert, Info } from '@mui/icons-material';
 import { getRecentRecordsAPI, getAllRecordsAPI } from '@/api/record';
 import { getCurrentAccountAPI } from '@/api/account';
+import { format, subDays } from 'date-fns';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d'];
 
-const MotionPaper = motion(Paper);
+const COLORS = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF8A80', '#B39DDB', '#81D4FA', '#A5D6A7'];
 
-const BalanceCard = ({ balance, income, expense }) => {
-    const theme = useTheme();
-    return (
-        <MotionPaper
-            elevation={3}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            sx={{
-                p: 3,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: 'linear-gradient(135deg, #3f51b5, #9c27b0)',
-                color: 'white',
-                height: '100%',
-                borderRadius: 4,
-                overflow: 'hidden',
-                position: 'relative',
-            }}
-        >
-            <Box
-                sx={{
-                    position: 'absolute',
-                    top: -50,
-                    left: -50,
-                    width: 200,
-                    height: 200,
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                }}
-            />
-            <Box sx={{ textAlign: 'center', mb: 2, position: 'relative', zIndex: 1 }}>
-                <AccountBalanceIcon sx={{ fontSize: 48, mb: 1 }} />
-                <Typography variant="h6" component="div" gutterBottom>Current Balance</Typography>
-                <Typography variant="h3" component="div" sx={{ fontWeight: 'bold', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
-                    ${balance.toLocaleString()}
-                </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', position: 'relative', zIndex: 1 }}>
-                <Box sx={{ textAlign: 'center' }}>
-                    <TrendingUpIcon sx={{ fontSize: 32, color: theme.palette.success.light }} />
-                    <Typography variant="subtitle1">Income</Typography>
-                    <Typography variant="h6" sx={{ color: theme.palette.success.light, fontWeight: 'bold' }}>
-                        ${income.toLocaleString()}
-                    </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                    <TrendingDownIcon sx={{ fontSize: 32, color: theme.palette.error.light }} />
-                    <Typography variant="subtitle1">Expense</Typography>
-                    <Typography variant="h6" sx={{ color: theme.palette.error.light, fontWeight: 'bold' }}>
-                        ${expense.toLocaleString()}
-                    </Typography>
-                </Box>
-            </Box>
-        </MotionPaper>
-    );
-};
 
-const RecentRecordsList = ({ records }) => {
-    const theme = useTheme();
-    return (
-        <MotionPaper
-            elevation={3}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            sx={{ p: 3, borderRadius: 4, height: '100%' }}
-        >
-            <Typography variant="h6" gutterBottom>Recent Records</Typography>
-            <List>
-                {records.map((record, index) => (
-                    <motion.div
-                        key={record.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                    >
-                        <ListItem>
-                            <ListItemText
-                                primary={record.transactionDescription}
-                                secondary={record.type}
-                            />
-                            <Typography
-                                variant="body2"
-                                color={record.type === 'Income' ? 'success.main' : 'error.main'}
-                                sx={{ fontWeight: 'bold' }}
-                            >
-                                {record.type === 'Income' ? '+' : '-'}${Math.abs(record.amount).toLocaleString()}
-                            </Typography>
-                        </ListItem>
-                        {index < records.length - 1 && <Divider />}
-                    </motion.div>
-                ))}
-            </List>
-        </MotionPaper>
-    );
-};
-
-const WeeklyChart = ({ data, duration, onDurationChange }) => {
-    const theme = useTheme();
-
-    const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
-    const displayData = duration === 30 ? sortedData.slice(-30) : sortedData.slice(-7);
-
-    return (
-        <MotionPaper
-            elevation={3}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            sx={{ p: 3, borderRadius: 4, height: '100%' }}
-        >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">Income/Expense Chart</Typography>
-                <ToggleButtonGroup
-                    value={duration}
-                    exclusive
-                    onChange={onDurationChange}
-                    aria-label="chart duration"
-                >
-                    <ToggleButton value={7} aria-label="7 days">
-                        7 Days
-                    </ToggleButton>
-                    <ToggleButton value={30} aria-label="30 days">
-                        30 Days
-                    </ToggleButton>
-                </ToggleButtonGroup>
-            </Box>
-            <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={displayData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                    <XAxis
-                        dataKey="date"
-                        stroke={theme.palette.text.secondary}
-                        tickFormatter={(value) => {
-                            const date = new Date(value);
-                            return `${date.getMonth() + 1}/${date.getDate()}`;
-                        }}
-                        interval={duration === 30 ? 6 : 0}
-                    />
-                    <YAxis stroke={theme.palette.text.secondary} />
-                    <Tooltip
-                        contentStyle={{
-                            background: theme.palette.background.paper,
-                            border: `1px solid ${theme.palette.divider}`,
-                            borderRadius: theme.shape.borderRadius,
-                        }}
-                        labelFormatter={(value) => new Date(value).toLocaleDateString()}
-                    />
-                    <Legend />
-                    <Line
-                        type="monotone"
-                        dataKey="income"
-                        stroke={theme.palette.success.main}
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
-                        activeDot={{ r: 6 }}
-                        name="Income"
-                    />
-                    <Line
-                        type="monotone"
-                        dataKey="expense"
-                        stroke={theme.palette.error.main}
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
-                        activeDot={{ r: 6 }}
-                        name="Expense"
-                    />
-                </LineChart>
-            </ResponsiveContainer>
-        </MotionPaper>
-    );
-};
-
-const SuspiciousTransactions = ({ transactions }) => {
-    const theme = useTheme();
-    return (
-        <MotionPaper
-            elevation={3}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            sx={{ p: 3, borderRadius: 4, height: '100%' }}
-        >
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                <WarningIcon sx={{ mr: 1, color: theme.palette.warning.main }} />
-                Suspicious Transactions
-            </Typography>
-            {transactions.length > 0 ? (
-                <List>
-                    {transactions.map((transaction, index) => (
-                        <motion.div
-                            key={transaction.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.3, delay: index * 0.1 }}
-                        >
-                            <ListItem>
-                                <ListItemText
-                                    primary={transaction.description}
-                                    secondary={`Date: ${transaction.date}`}
-                                />
-                                <Typography
-                                    variant="body2"
-                                    color="error.main"
-                                    sx={{ fontWeight: 'bold' }}
-                                >
-                                    ${transaction.amount.toLocaleString()}
-                                </Typography>
-                            </ListItem>
-                            {index < transactions.length - 1 && <Divider />}
-                        </motion.div>
-                    ))}
-                </List>
-            ) : (
-                <Alert severity="info">
-                    <AlertTitle>No Suspicious Transactions</AlertTitle>
-                    There are currently no suspicious transactions to report.
-                </Alert>
-            )}
-        </MotionPaper>
-    );
-};
-
-const TransactionTypesPieChart = ({ data }) => {
-    const theme = useTheme();
-    return (
-        <MotionPaper
-            elevation={3}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            sx={{ p: 3, borderRadius: 4, height: '100%' }}
-        >
-            <Typography variant="h6" gutterBottom>Transaction Types</Typography>
-            <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                    <Pie
-                        data={data}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                        {data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                </PieChart>
-            </ResponsiveContainer>
-        </MotionPaper>
-    );
-};
-
-const SavingsGoalWidget = ({ records }) => {
-    const theme = useTheme();
-    const savingsGoal = 10000; // Static savings goal in dollars
-    const totalSavings = records.reduce((sum, record) => {
-        return record.type === 'Income' ? sum + record.amount : sum - record.amount;
-    }, 0);
-    const progress = Math.min((totalSavings / savingsGoal) * 100, 100);
-
-    return (
-        <MotionPaper
-            elevation={3}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            sx={{
-                p: 3,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'linear-gradient(135deg, #4CAF50, #8BC34A)',
-                color: 'white',
-                height: '100%',
-                borderRadius: 4,
-                overflow: 'hidden',
-                position: 'relative',
-            }}
-        >
-            <SavingsIcon sx={{ fontSize: 48, mb: 2 }} />
-            <Typography variant="h6" gutterBottom>Savings Goal Progress</Typography>
-            <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                <CircularProgress
-                    variant="determinate"
-                    value={progress}
-                    size={120}
-                    thickness={4}
-                    sx={{
-                        color: theme.palette.common.white,
-                        backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                    }}
-                />
-                <Box
-                    sx={{
-                        top: 0,
-                        left: 0,
-                        bottom: 0,
-                        right: 0,
-                        position: 'absolute',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <Typography variant="h4" component="div" color="inherit">
-                        {`${Math.round(progress)}%`}
-                    </Typography>
-                </Box>
-            </Box>
-            <Typography variant="body1" sx={{ mt: 2 }}>
-                ${totalSavings.toLocaleString()} / ${savingsGoal.toLocaleString()}
-            </Typography>
-        </MotionPaper>
-    );
-};
-
-const Dashboard = () => {
-    const [accountData, setAccountData] = useState(null);
+export default function Dashboard() {
+    const [accountData, setAccountData] = useState();
     const [recentRecords, setRecentRecords] = useState([]);
     const [chartData, setChartData] = useState([]);
     const [transactionTypes, setTransactionTypes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [chartDuration, setChartDuration] = useState(7);
-    const theme = useTheme();
+    const [savingsGoal, setSavingsGoal] = useState(10000);
+    const [suspiciousTransactions, setSuspiciousTransactions] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState(null);
+    const [showInfoModal, setShowInfoModal] = useState(false);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const accountResponse = await getCurrentAccountAPI();
-                setAccountData(accountResponse.data);
 
-                const recentRecordsResponse = await getRecentRecordsAPI(30); // Fetch 30 days of data
-                setRecentRecords(recentRecordsResponse.data);
+    const fetchData = useCallback(async () => {
+        try {
+            setLoading(true);
+            const accountResponse = await getCurrentAccountAPI();
+            console.log('Account Response:', accountResponse.data);
+            setAccountData(accountResponse.data);
 
-                const processedChartData = processChartData(recentRecordsResponse.data);
-                setChartData(processedChartData);
 
-                const allRecordsResponse =   await getAllRecordsAPI();
-                const processedTransactionTypes = processTransactionTypes(allRecordsResponse.data);
-                setTransactionTypes(processedTransactionTypes);
+            const recentRecordsResponse = await getRecentRecordsAPI(7);
+            setRecentRecords(recentRecordsResponse.data);
 
-                setLoading(false);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                setError('Failed to fetch data. Please try again later.');
-                setLoading(false);
-            }
-        };
 
-        fetchData();
+            const processedChartData = processChartData(recentRecordsResponse.data);
+            setChartData(processedChartData);
+
+
+            const allRecordsResponse = await getAllRecordsAPI();
+            const processedTransactionTypes = processTransactionTypes(allRecordsResponse.data);
+            setTransactionTypes(processedTransactionTypes);
+
+
+            // Simulating suspicious transactions
+            setSuspiciousTransactions([
+                { id: 1, description: 'Large withdrawal', amount: 5000, date: '2023-05-15', risk: 'high' },
+                { id: 2, description: 'Unusual overseas transfer', amount: 2000, date: '2023-05-14', risk: 'medium' },
+                { id: 3, description: 'Multiple small transactions', amount: 500, date: '2023-05-13', risk: 'low' },
+            ]);
+
+
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            setError('Failed to fetch data. Please try again later.');
+            setLoading(false);
+        }
     }, []);
 
-    const processChartData = (records) => {
+
+    useEffect(() => {
+        fetchData();
+        const intervalId = setInterval(fetchData, 30000);
+
+
+        // Clean up interval on component unmount
+        return () => clearInterval(intervalId);
+    }, [fetchData]);
+
+
+    const processChartData = useCallback((records) => {
         const dailyData = {};
         const endDate = new Date();
         const startDate = new Date(endDate);
-        startDate.setDate(startDate.getDate() - 30);
+        startDate.setDate(startDate.getDate() - 29);
+
 
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             const dateStr = d.toISOString().split('T')[0];
-            dailyData[dateStr] = { date: dateStr, income: 0, expense: 0 };
+            dailyData[dateStr] = { date: dateStr, income: 0, expense: 0, balance: 0 };
         }
 
+
+        let runningBalance = 0;
         records.forEach(record => {
             const date = record.transactionTime.split('T')[0];
             if (dailyData[date]) {
                 if (record.type === 'Income') {
                     dailyData[date].income += record.amount;
+                    runningBalance += record.amount;
                 } else {
                     dailyData[date].expense += record.amount;
+                    runningBalance -= record.amount;
                 }
+                dailyData[date].balance = runningBalance;
             }
         });
+
 
         return Object.values(dailyData).sort((a, b) => new Date(a.date) - new Date(b.date));
-    };
+    }, []);
 
-    const processTransactionTypes = (records) => {
+
+    const processTransactionTypes = useCallback((records, duration = 30) => {
         const categories = {};
+        const startDate = subDays(new Date(), duration - 1);
+
 
         records.forEach(record => {
-            if (!categories[record.category]) {
-                categories[record.category] = 0;
+            const recordDate = new Date(record.transactionTime);
+            if (recordDate >= startDate) {
+                if (!categories[record.category]) {
+                    categories[record.category] = { name: record.category, value: 0, type: record.type };
+                }
+                categories[record.category].value += record.amount;
             }
-            categories[record.category] += record.amount;
         });
 
-        return Object.entries(categories).map(([name, value]) => ({ name, value }));
+
+        return Object.values(categories);
+    }, []);
+
+
+    const handleDurationChange = useCallback((newDuration) => {
+        setChartDuration(newDuration);
+        setTransactionTypes(processTransactionTypes(recentRecords, newDuration));
+    }, [recentRecords, processTransactionTypes]);
+
+
+    const handleSavingsGoalChange = useCallback((newGoal) => {
+        setSavingsGoal(newGoal);
+    }, []);
+
+
+    const BalanceCard = useMemo(() => ({balance, income, expense}) => {
+        const controls = useAnimation();
+        useEffect(() => {
+            controls.start({
+                scale: [1, 1.05, 1],
+                transition: { duration: 0.5 },
+            });
+        }, [balance, controls]);
+
+
+
+
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl shadow-xl p-6 text-white col-span-2 h-full relative overflow-hidden"
+            >
+                <motion.div
+                    className="absolute inset-0 bg-white opacity-10"
+                    animate={{
+                        scale: [1, 1.5, 1],
+                        rotate: [0, 180, 360],
+                    }}
+                    transition={{
+                        duration: 10,
+                        ease: "linear",
+                        repeat: Infinity,
+                    }}
+                />
+                <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-2xl font-semibold">Current Balance</h3>
+                        <AccountBalance className="text-4xl" />
+                    </div>
+                    <motion.p
+                        className="text-4xl font-bold mb-4"
+                        animate={controls}
+                    >
+                        ${balance.toLocaleString()}
+                    </motion.p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <motion.div
+                            className="bg-white bg-opacity-20 rounded-lg p-3"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ type: 'spring', stiffness: 300 }}
+                        >
+                            <div className="flex items-center justify-between mb-1">
+                                <TrendingUp className="text-green-300" />
+                                <ArrowUpward className="text-green-300" />
+                            </div>
+                            <p className="text-sm">Income</p>
+                            <p className="text-lg font-semibold">${income.toLocaleString()}</p>
+                        </motion.div>
+                        <motion.div
+                            className="bg-white bg-opacity-20 rounded-lg p-3"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ type: 'spring', stiffness: 300 }}
+                        >
+                            <div className="flex items-center justify-between mb-1">
+                                <TrendingDown className="text-red-300" />
+                                <ArrowDownward className="text-red-300" />
+                            </div>
+                            <p className="text-sm">Expense</p>
+                            <p className="text-lg font-semibold">${expense.toLocaleString()}</p>
+                        </motion.div>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }, []);
+
+
+    const WeeklyChart = React.memo(({ data, duration, onDurationChange }) => {
+        const [hoveredData, setHoveredData] = useState(null);
+
+
+        const CustomTooltip = ({ active, payload, label }) => {
+            if (active && payload && payload.length) {
+                return (
+                    <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
+                        <p className="font-semibold text-gray-800">{format(new Date(label), 'MMM d, yyyy')}</p>
+                        {payload.map((entry, index) => (
+                            <p key={index} className={`text-sm ${entry.name === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                {entry.name.charAt(0).toUpperCase() + entry.name.slice(1)}: ${entry.value.toLocaleString()}
+                            </p>
+                        ))}
+                    </div>
+                );
+            }
+            return null;
+        };
+
+
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="bg-white rounded-2xl shadow-xl p-6 col-span-4 h-full"
+            >
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-2xl font-semibold text-gray-800">Income/Expense Chart</h3>
+                    <div className="flex space-x-2">
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => onDurationChange(7)}
+                            className={`px-4 py-2 rounded-full ${duration === 7 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        >
+                            7 Days
+                        </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => onDurationChange(30)}
+                            className={`px-4 py-2 rounded-full ${duration === 30 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        >
+                            30 Days
+                        </motion.button>
+                    </div>
+                </div>
+                <ResponsiveContainer width="100%" height={250}>
+                    <AreaChart data={data.slice(-duration)} onMouseMove={(data) => setHoveredData(data.activePayload?.[0]?.payload)}>
+                        <defs>
+                            <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                            </linearGradient>
+                            <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis
+                            dataKey="date"
+                            tickFormatter={(value) => format(new Date(value), 'MMM d')}
+                        />
+                        <YAxis />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Area type="monotone" dataKey="income" stroke="#10B981" fillOpacity={1} fill="url(#colorIncome)" />
+                        <Area type="monotone" dataKey="expense" stroke="#EF4444" fillOpacity={1} fill="url(#colorExpense)" />
+                    </AreaChart>
+                </ResponsiveContainer>
+                {hoveredData && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 p-4 bg-gray-100 rounded-lg"
+                    >
+                        <p className="font-semibold">Date: {format(new Date(hoveredData.date), 'MMMM d, yyyy')}</p>
+                        <p className="text-green-600">Income: ${hoveredData.income.toLocaleString()}</p>
+                        <p className="text-red-600">Expense: ${hoveredData.expense.toLocaleString()}</p>
+                        <p className="font-semibold mt-2">Balance: ${(hoveredData.income - hoveredData.expense).toLocaleString()}</p>
+                    </motion.div>
+                )}
+            </motion.div>
+        );
+    });
+
+
+    const TransactionTypesPieChart = ({ data }) => {
+        const [activeIndex, setActiveIndex] = useState(0);
+        const [activeType, setActiveType] = useState('expense');
+
+
+        const onPieEnter = useCallback((_, index) => {
+            setActiveIndex(index);
+        }, []);
+
+
+        const processedData = useMemo(() => {
+            const incomeData = data.filter(item => item.type === 'Income');
+            const expenseData = data.filter(item => item.type === 'Expense');
+            return { income: incomeData, expense: expenseData };
+        }, [data]);
+
+
+        const renderActiveShape = (props) => {
+            const RADIAN = Math.PI / 180;
+            const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+            const sin = Math.sin(-RADIAN * midAngle);
+            const cos = Math.cos(-RADIAN * midAngle);
+            const sx = cx + (outerRadius + 10) *
+                cos;
+            const sy = cy + (outerRadius + 10) * sin;
+            const mx = cx + (outerRadius + 30) * cos;
+            const my = cy + (outerRadius + 30) * sin;
+            const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+            const ey = my;
+            const textAnchor = cos >= 0 ? 'start' : 'end';
+
+
+            return (
+                <g>
+                    <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill}>
+                        {payload.name}
+                    </text>
+                    <Sector
+                        cx={cx}
+                        cy={cy}
+                        innerRadius={innerRadius}
+                        outerRadius={outerRadius}
+                        startAngle={startAngle}
+                        endAngle={endAngle}
+                        fill={fill}
+                    />
+                    <Sector
+                        cx={cx}
+                        cy={cy}
+                        startAngle={startAngle}
+                        endAngle={endAngle}
+                        innerRadius={outerRadius + 6}
+                        outerRadius={outerRadius + 10}
+                        fill={fill}
+                    />
+                    <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+                    <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+                    <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333">{`$${value.toLocaleString()}`}</text>
+                    <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#999">
+                        {`(${(percent * 100).toFixed(2)}%)`}
+                    </text>
+                </g>
+            );
+        };
+
+
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="bg-white rounded-2xl shadow-xl p-6 col-span-3 h-full"
+            >
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-2xl font-semibold text-gray-800">Transaction Types</h3>
+                    <div className="flex space-x-2">
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setActiveType('expense')}
+                            className={`px-4 py-2 rounded-full ${activeType === 'expense' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        >
+                            Expenses
+                        </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setActiveType('income')}
+                            className={`px-4 py-2 rounded-full ${activeType === 'income' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        >
+                            Income
+                        </motion.button>
+                    </div>
+                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                        <Pie
+                            activeIndex={activeIndex}
+                            activeShape={renderActiveShape}
+                            data={processedData[activeType]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                            onMouseEnter={onPieEnter}
+                        >
+                            {processedData[activeType].map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                        </Pie>
+                    </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-4">
+                    {processedData[activeType].map((entry, index) => (
+                        <div key={`legend-${index}`} className="flex items-center mb-2">
+                            <div className="w-4 h-4 mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                            <span>{entry.name}: ${entry.value.toLocaleString()}</span>
+                        </div>
+                    ))}
+                </div>
+            </motion.div>
+        );
     };
 
-    const handleDurationChange = (event, newDuration) => {
-        if (newDuration !== null) {
-            setChartDuration(newDuration);
-        }
-    };
 
-    const suspiciousTransactions = [
-        { id: 1, description: 'Large withdrawal', amount: 5000, date: '2023-05-15' },
-        { id: 2, description: 'Unusual overseas transfer', amount: 2000, date: '2023-05-14' },
-    ];
+    const SavingsGoalWidget = useMemo(() => ({ records, goal, onGoalChange }) => {
+        const [isEditing, setIsEditing] = useState(false);
+        const [newGoal, setNewGoal] = useState(goal);
+        const [progress, setProgress] = useState(0);
+        const [showNotification, setShowNotification] = useState(false);
+        const [notificationMessage, setNotificationMessage] = useState('');
+        const [notificationColor, setNotificationColor] = useState('');
+
+
+        useEffect(() => {
+            const totalSavings = records.reduce((sum, record) => {
+                return record.type === 'Income' ? sum + record.amount : sum - record.amount;
+            }, 0);
+            const calculatedProgress = Math.min((totalSavings / goal) * 100, 100);
+
+
+            setProgress(0);
+            const interval = setInterval(() => {
+                setProgress(prev => {
+                    if (prev >= calculatedProgress) {
+                        clearInterval(interval);
+                        if (calculatedProgress >= 100) {
+                            setNotificationMessage("🎉 Congratulations! You've reached your savings goal!");
+                            setNotificationColor('bg-green-500');
+                        } else if (calculatedProgress === 0) {
+                            setNotificationMessage("💪 You're just starting out. Keep pushing towards your goal!");
+                            setNotificationColor('bg-yellow-500');
+                        } else if (calculatedProgress >= 50) {
+                            setNotificationMessage("👍 You're halfway there! Keep it up!");
+                            setNotificationColor('bg-blue-500');
+                        }
+                        setShowNotification(true);
+                        return calculatedProgress;
+                    }
+                    return prev + 1;
+                });
+            }, 20);
+            return () => clearInterval(interval);
+        }, [records, goal]);
+
+
+        useEffect(() => {
+            if (showNotification) {
+                const timer = setTimeout(() => {
+                    setShowNotification(false);
+                }, 5000);
+                return () => clearTimeout(timer);
+            }
+        }, [showNotification]);
+
+
+        const handleSave = () => {
+            onGoalChange(newGoal);
+            setIsEditing(false);
+        };
+
+
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="bg-white rounded-2xl shadow-xl p-6 col-span-3 relative overflow-hidden"
+            >
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-2xl font-semibold text-gray-800">Savings Goal</h3>
+                    <Savings className="text-blue-500 text-3xl" />
+                </div>
+                <div className="flex flex-col items-center mb-4">
+                    <div className="relative w-48 h-48 mb-4">
+                        <svg className="w-full h-full" viewBox="0 0 100 100">
+                            <circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                fill="none"
+                                stroke="#e0e0e0"
+                                strokeWidth="10"
+                            />
+                            <motion.circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                fill="none"
+                                stroke="#3b82f6"
+                                strokeWidth="10"
+                                strokeLinecap="round"
+                                initial={{ pathLength: 0 }}
+                                animate={{ pathLength: progress / 100 }}
+                                transition={{ duration: 1, ease: "easeInOut" }}
+                                style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+                            />
+                        </svg>
+                        <motion.div
+                            className="absolute inset-0 flex items-center justify-center"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 1, ease: "easeInOut" }}
+                        >
+                            <span className="text-4xl font-bold text-blue-500">{progress.toFixed(0)}%</span>
+                        </motion.div>
+                    </div>
+                    <motion.p
+                        className="text-lg text-gray-600 mb-4"
+                        initial={{ scale: 1 }}
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
+                    >
+                        ${(goal * progress / 100).toLocaleString()} / ${goal.toLocaleString()}
+                    </motion.p>
+                </div>
+                {isEditing ? (
+                    <div className="flex items-center justify-center mb-4">
+                        <input
+                            type="number"
+                            value={newGoal}
+                            onChange={(e) => setNewGoal(Number(e.target.value))}
+                            className="border rounded-l px-3 py-2 w-32"
+                        />
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleSave}
+                            className="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600"
+                        >
+                            Save
+                        </motion.button>
+                    </div>
+                ) : (
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setIsEditing(true)}
+                        className="w-full bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 mb-4"
+                    >
+                        Edit Goal
+                    </motion.button>
+                )}
+                <div className="mt-4">
+                    <h4 className="text-lg font-semibold mb-2">Savings Tips</h4>
+                    <ul className="list-disc list-inside text-sm text-gray-600">
+                        <li>Set up automatic transfers to your savings account</li>
+                        <li>Cut unnecessary expenses and redirect the money to savings</li>
+                        <li>Look for ways to increase your income and save the extra money</li>
+                        <li>Use the 50/30/20 rule: 50% needs, 30% wants, 20% savings</li>
+                    </ul>
+                </div>
+                <AnimatePresence>
+                    {showNotification && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 50 }}
+                            transition={{ duration: 0.5 }}
+                            className={`absolute bottom-0 left-0 right-0 p-4 ${notificationColor} text-white text-center`}
+                        >
+                            {notificationMessage}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                <motion.div
+                    className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full"
+                    style={{ filter: 'blur(40px)' }}
+                    animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [0.3, 0.2, 0.3],
+                    }}
+                    transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        repeatType: 'reverse',
+                    }}
+                />
+                <motion.div
+                    className="absolute bottom-0 left-0 w-24 h-24 bg-green-100 rounded-full"
+                    style={{ filter: 'blur(30px)' }}
+                    animate={{
+                        scale: [1, 1.1, 1],
+                        opacity: [0.2, 0.3, 0.2],
+                    }}
+                    transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        repeatType: 'reverse',
+                    }}
+                />
+            </motion.div>
+        );
+    }, []);
+
+
+    const TransactionList = useMemo(() => ({ title, transactions, icon }) => {
+        const [expandedTransaction, setExpandedTransaction] = useState(null);
+
+
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="bg-white rounded-2xl shadow-xl p-6 col-span-3"
+            >
+                <div className="flex items-center mb-4">
+                    {icon}
+                    <h3 className="text-2xl font-semibold text-gray-800 ml-2">{title}</h3>
+                </div>
+                <ul className="space-y-3 overflow-y-auto" style={{ maxHeight: '300px' }}>
+                    <AnimatePresence>
+                        {transactions.map((transaction, index) => (
+                            <motion.li
+                                key={transaction.id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ duration: 0.3, delay: index * 0.1 }}
+                                className="bg-gray-50 p-3 rounded-lg"
+                            >
+                                <div
+                                    className="flex justify-between items-center cursor-pointer"
+                                    onClick={() => setExpandedTransaction(expandedTransaction === transaction.id ? null : transaction.id)}
+                                >
+                                    <div>
+                                        <p className="font-medium text-gray-900">{transaction.transactionDescription || transaction.description}</p>
+                                        <p className="text-sm text-gray-500">{transaction.date || transaction.transactionTime.split('T')[0]}</p>
+                                    </div>
+                                    <motion.p
+                                        className={`font-bold ${transaction.type === 'Income' ? 'text-green-600' : 'text-red-600'}`}
+                                        initial={{ scale: 0.5 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                                    >
+                                        {transaction.type === 'Income' ? '+' : '-'}${Math.abs(transaction.amount).toLocaleString()}
+                                    </motion.p>
+                                </div>
+                                <AnimatePresence>
+                                    {expandedTransaction === transaction.id && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="mt-2 text-sm text-gray-600"
+                                        >
+                                            <p>Category: {transaction.category}</p>
+                                            <p>Transaction ID: {transaction.id}</p>
+                                            {transaction.notes && <p>Notes: {transaction.notes}</p>}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.li>
+                        ))}
+                    </AnimatePresence>
+                </ul>
+            </motion.div>
+        );
+    }, []);
+
+
+    const SuspiciousTransactions = useMemo(() => ({ transactions }) => {
+        const [isSearching, setIsSearching] = useState(false);
+        const [searchResults, setSearchResults] = useState([]);
+        const [selectedTransaction, setSelectedTransaction] = useState(null);
+
+
+        const handleSearch = () => {
+            setIsSearching(true);
+            setTimeout(() => {
+                setSearchResults(transactions);
+                setIsSearching(false);
+            }, 1500);
+        };
+
+
+        const handleTransactionClick = (transaction) => {
+            setSelectedTransaction(transaction);
+        };
+
+
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="bg-white rounded-2xl shadow-xl p-6 col-span-3"
+            >
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                        <Warning className="text-yellow-500 text-3xl mr-2" />
+                        <h3 className="text-2xl font-semibold text-gray-800">Suspicious Transactions</h3>
+                    </div>
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleSearch}
+                        disabled={isSearching}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 flex items-center"
+                    >
+                        <Search className="mr-2" />
+                        {isSearching ? 'Searching...' : 'Search'}
+                    </motion.button>
+                </div>
+                {isSearching ? (
+                    <div className="flex justify-center items-center h-64">
+                        <motion.div
+                            animate={{
+                                rotate: 360,
+                            }}
+                            transition={{
+                                loop: Infinity,
+                                ease: "linear",
+                                duration: 1,
+                            }}
+                            className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"
+                        />
+                    </div>
+                ) : (
+                    <ul className="space-y-3 overflow-y-auto" style={{ maxHeight: '300px' }}>
+                        <AnimatePresence>
+                            {searchResults.map((transaction, index) => (
+                                <motion.li
+                                    key={transaction.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                                    className={`flex justify-between items-center bg-gray-50 p-3 rounded-lg cursor-pointer ${
+                                        selectedTransaction === transaction ? 'border-2 border-blue-500' : ''
+                                    }`}
+                                    onClick={() => handleTransactionClick(transaction)}
+                                >
+                                    <div>
+                                        <p className="font-medium text-gray-900">{transaction.description}</p>
+                                        <p className="text-sm text-gray-500">{transaction.date}</p>
+                                        <p className={`text-xs font-semibold ${
+                                            transaction.risk === 'high' ? 'text-red-500' :
+                                                transaction.risk === 'medium' ? 'text-yellow-500' : 'text-green-500'
+                                        }`}>
+                                            Risk: {transaction.risk}
+                                        </p>
+                                    </div>
+                                    <motion.p
+                                        className="font-bold text-red-600"
+                                        initial={{ scale: 0.5 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                                    >
+                                        -${Math.abs(transaction.amount).toLocaleString()}
+                                    </motion.p>
+                                </motion.li>
+                            ))}
+                        </AnimatePresence>
+                    </ul>
+                )}
+                {selectedTransaction && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="mt-4 p-4 bg-gray-100 rounded-lg"
+                    >
+                        <h4 className="font-semibold text-lg mb-2">Transaction Details</h4>
+                        <p>Description: {selectedTransaction.description}</p>
+                        <p>Amount: ${selectedTransaction.amount.toLocaleString()}</p>
+                        <p>Date: {selectedTransaction.date}</p>
+                        <p>Risk Level: {selectedTransaction.risk}</p>
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setShowInfoModal(true)}
+                            className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600"
+                        >
+                            More Info
+                        </motion.button>
+                    </motion.div>
+                )}
+            </motion.div>
+        );
+    }, []);
+
+
+    const InfoModal = ({ isOpen, onClose, transaction }) => (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    onClick={onClose}
+                >
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className="bg-white p-6 rounded-lg max-w-md w-full"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h2 className="text-2xl font-bold mb-4">Transaction Information</h2>
+                        <p><strong>Description:</strong> {transaction.description}</p>
+                        <p><strong>Amount:</strong> ${transaction.amount.toLocaleString()}</p>
+                        <p><strong>Date:</strong> {transaction.date}</p>
+                        <p><strong>Risk Level:</strong> {transaction.risk}</p>
+                        <p className="mt-4">This transaction has been flagged as suspicious due to its unusual nature. Please review and confirm its legitimacy.</p>
+                        <div className="mt-6 flex justify-end">
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={onClose}
+                                className="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600"
+                            >
+                                Close
+                            </motion.button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+
 
     if (loading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress />
-            </Box>
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <motion.div
+                    animate={{
+                        scale: [1, 1.2, 1],
+                        rotate: [0, 180, 360],
+                    }}
+                    transition={{
+                        duration: 2,
+                        ease: "easeInOut",
+                        times: [0, 0.5, 1],
+                        repeat: Infinity,
+                    }}
+                    className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full"
+                />
+            </div>
         );
     }
+
 
     if (error) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <Alert severity="error">
-                    <AlertTitle>Error</AlertTitle>
-                    {error}
-                </Alert>
-            </Box>
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-lg"
+                    role="alert"
+                >
+                    <p className="font-bold">Error</p>
+                    <p>{error}</p>
+                </motion.div>
+            </div>
         );
     }
 
-    const balance = accountData ? accountData.totalIncome - accountData.totalExpense : 0;
+
+    const balance = accountData.totalIncome - accountData.totalExpense;
+
 
     return (
-        <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
-            <Container maxWidth="xl">
-                <Grid container spacing={3}>
-                    <Grid item xs={12} md={4}>
-                        <BalanceCard
-                            balance={balance}
-                            income={accountData ? accountData.totalIncome : 0}
-                            expense={accountData ? accountData.totalExpense : 0}
-                        />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <SavingsGoalWidget records={recentRecords} />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <WeeklyChart
-                            data={chartData}
-                            duration={chartDuration}
-                            onDurationChange={handleDurationChange}
-                        />
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <RecentRecordsList records={recentRecords.slice(0, 5)} />
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <SuspiciousTransactions transactions={suspiciousTransactions} />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TransactionTypesPieChart data={transactionTypes} />
-                    </Grid>
-                </Grid>
-            </Container>
-        </Box>
+        <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+                <div className="grid grid-cols-6 gap-6">
+                    <BalanceCard
+                        balance={balance}
+                        income={accountData.totalIncome}
+                        expense={accountData.totalExpense}
+                    />
+                    <WeeklyChart
+                        data={chartData}
+                        duration={chartDuration}
+                        onDurationChange={handleDurationChange}
+                    />
+                    <SuspiciousTransactions
+                        transactions={suspiciousTransactions}
+                    />
+                    <TransactionTypesPieChart data={transactionTypes} />
+                    <TransactionList
+                        title="Recent Transactions"
+                        transactions={recentRecords.slice(0, 5)}
+                        icon={<List className="text-blue-500 text-3xl" />}
+                    />
+                    <SavingsGoalWidget
+                        records={recentRecords}
+                        goal={savingsGoal}
+                        onGoalChange={handleSavingsGoalChange}
+                    />
+                </div>
+            </div>
+            <InfoModal
+                isOpen={showInfoModal}
+                onClose={() => setShowInfoModal(false)}
+                transaction={selectedTransaction}
+            />
+        </div>
     );
-};
-
-export default Dashboard;
+}
 
