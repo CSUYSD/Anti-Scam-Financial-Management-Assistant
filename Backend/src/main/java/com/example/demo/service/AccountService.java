@@ -56,9 +56,18 @@ public class AccountService {
             if (key.equals("login_user:" + userId + ":account:initial placeholder")){
                 continue;
             }
-            RedisAccount redisAccount = (RedisAccount) redisTemplate.opsForValue().get(key);
-            if (redisAccount.getName().equals(accountDTO.getName())){
-                throw new AccountAlreadyExistException("账户名已存在");
+            try{
+                Object redisAccountObject = redisTemplate.opsForValue().get(key);
+                System.out.printf("------------------------Redis Account: %s--------------------", redisAccountObject);
+                RedisAccount redisAccount = (RedisAccount) redisAccountObject;
+                if (redisAccount.getName().equals(accountDTO.getName())){
+                    throw new AccountAlreadyExistException("账户名已存在");
+                }
+                System.out.printf("Current name: %s", redisAccount.getName());
+                System.out.printf("DTO name: %s", accountDTO.getName());
+            } catch (Exception e){
+                System.out.printf("Error: %s", e.getMessage());
+                throw new AccountNotFoundException("账户未找到");
             }
         }
 
@@ -138,9 +147,9 @@ public class AccountService {
                 account.getId(),
                 account.getAccountName(),
                 account.getTotalIncome(),
-                account.getTotalExpense(),
-                new ArrayList<>());
+                account.getTotalExpense());
         redisTemplate.opsForValue().set(redisKey, redisAccount);
     }
+
 
 }
