@@ -65,11 +65,6 @@ export default function Dashboard() {
 
     useEffect(() => {
         fetchData();
-        const intervalId = setInterval(fetchData, 30000);
-
-
-        // Clean up interval on component unmount
-        return () => clearInterval(intervalId);
     }, [fetchData]);
 
 
