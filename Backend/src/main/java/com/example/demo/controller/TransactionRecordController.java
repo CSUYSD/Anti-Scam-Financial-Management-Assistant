@@ -6,6 +6,7 @@ import java.util.List;
 import com.example.demo.model.DTO.TransactionRecordDTO;
 import com.example.demo.utility.JWT.JwtUtil;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -19,8 +20,8 @@ import com.example.demo.model.TransactionRecord;
 import com.example.demo.service.TransactionRecordService;
 @RestController
 @RequestMapping("/records")
-
 @Validated
+@Slf4j
 public class TransactionRecordController {
 
     private final TransactionRecordService recordService;

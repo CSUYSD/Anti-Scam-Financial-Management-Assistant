@@ -2,6 +2,7 @@ package com.example.demo.controller;
 import java.util.List;
 import java.util.logging.Logger;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -23,10 +24,10 @@ import jakarta.validation.Valid;
 @RestController 
 @RequestMapping("/account")
 @Validated
+@Slf4j
 public class AccountController {
     private final JwtUtil jwtUtil;
     private final AccountService accountService;
-    private static final Logger logger = Logger.getLogger(String.valueOf(AccountController.class));
     private final StringRedisTemplate stringRedisTemplate;
 
     @Autowired
@@ -60,7 +61,6 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("用户未找到");
             // 用户未找到
         } catch (Exception e) {
-            logger.severe(e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("服务器错误");
         }
@@ -76,7 +76,6 @@ public class AccountController {
 
             return ResponseEntity.ok(account);
         } catch (AccountNotFoundException e) {
-            logger.severe(e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }

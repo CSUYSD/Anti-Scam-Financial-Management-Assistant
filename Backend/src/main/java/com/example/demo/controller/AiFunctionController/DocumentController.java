@@ -2,6 +2,7 @@ package com.example.demo.controller.AiFunctionController;
 
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -28,14 +29,14 @@ import reactor.core.publisher.Flux;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/document")
 @AllArgsConstructor
 public class DocumentController {
     private final OpenAiEmbeddingModel openAiEmbeddingModel;
     @Autowired VectorStore vectorStore;
-    @Autowired
-    ChromaVectorStore chromaVectorStore;
+    @Autowired ChromaVectorStore chromaVectorStore;
     private final OpenAiChatModel openAiChatModel;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
 

@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import java.util.List;
 import java.util.Optional;
 
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ import com.example.demo.model.TransactionUser;
 import com.example.demo.service.TransactionUserService;
 import com.example.demo.utility.RabbitMQProducer;
 
+@Slf4j
 @RestController
 @RequestMapping("/users")
 public class TransactionUserController {

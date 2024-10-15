@@ -9,12 +9,13 @@ import com.example.demo.model.DTO.TransactionRecordDTO;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.utility.JWT.JwtUtil;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import com.example.demo.utility.DtoParser;
+import com.example.demo.utility.Parser.DtoParser;
 
 import com.example.demo.Dao.TransactionRecordDao;
 import com.example.demo.Dao.AccountDao;
@@ -22,12 +23,12 @@ import com.example.demo.model.TransactionRecord;
 import org.springframework.web.bind.annotation.RequestHeader;
 
 
+@Slf4j
 @Service
 public class TransactionRecordService {
     private final TransactionRecordDao transactionRecordDao;
     private final TransactionUserDao transactionUserDao;
     private final AccountDao accountDao;
-
     private final JwtUtil jwtUtil;
     private final RedisTemplate redisTemplate;
     @Autowired
@@ -51,7 +52,6 @@ public class TransactionRecordService {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         String pattern = "login_user:" + userId +":current_account";
         String accountId = stringRedisTemplate.opsForValue().get(pattern);
-        System.out.printf("===============================accountId: %s===============================", accountId);
 
         Account account = accountDao.findById(Long.valueOf(accountId))
                 .orElseThrow(() -> new RuntimeException("Account not found for id: " + accountId));
@@ -69,6 +69,7 @@ public class TransactionRecordService {
         transactionRecord.setAccount(account);
         transactionRecord.setUserId(userId);
         transactionRecordDao.save(transactionRecord);
+
     }
 
     @Transactional

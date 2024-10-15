@@ -3,6 +3,7 @@ package com.example.demo.controller.AiFunctionController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
