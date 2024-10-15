@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
+import com.example.demo.Dao.ESDao.RecordESDao;
 import com.example.demo.Dao.TransactionUserDao;
 import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
@@ -13,6 +14,7 @@ import com.example.demo.model.DTO.AccountDTO;
 import com.example.demo.model.DTO.TransactionRecordDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
+import com.example.demo.service.ES.RecordSyncService;
 import com.example.demo.utility.JWT.JwtUtil;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,7 @@ public class TransactionRecordService {
     private final TransactionRecordDao transactionRecordDao;
     private final TransactionUserDao transactionUserDao;
     private final AccountDao accountDao;
+    private final RecordSyncService recordSyncService;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -40,12 +43,13 @@ public class TransactionRecordService {
     private StringRedisTemplate stringRedisTemplate;
 
     @Autowired
-    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao) {
+    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService) {
         this.transactionRecordDao = transactionRecordDao;
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.accountDao = accountDao;
+        this.recordSyncService = recordSyncService;
     }
 
 
@@ -76,6 +80,8 @@ public class TransactionRecordService {
         transactionRecord.setUserId(userId);
 
         transactionRecordDao.save(transactionRecord);
+//      save record into elastic search
+        recordSyncService.syncToElasticsearch(transactionRecord);
 
 //        System.out.println("Account Total Income: " + account.getTotalIncome());
 //        System.out.println("Account Total Expense: " + account.getTotalExpense());
@@ -111,6 +117,8 @@ public class TransactionRecordService {
 
 
         transactionRecordDao.save(existingRecord);
+//      update record in the elastic search
+        recordSyncService.updateInElasticsearch(existingRecord);
 
         updateRedisAccount(account);
     }
@@ -132,6 +140,8 @@ public class TransactionRecordService {
         }
 
         transactionRecordDao.delete(record);
+//      delete records from elastic search
+        recordSyncService.deleteFromElasticsearch(id);
 
         updateRedisAccount(account);
     }
@@ -143,6 +153,11 @@ public class TransactionRecordService {
             throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
         }
         transactionRecordDao.deleteAll(records);
+
+//      delete batch of records from elastic search
+        recordSyncService.deleteFromElasticsearchInBatch(recordIds);
+
+
     }
 
     public List<TransactionRecord> getCertainDaysRecords(Long accountId, Integer duration) {
@@ -157,8 +172,7 @@ public class TransactionRecordService {
                 account.getId(),
                 account.getAccountName(),
                 account.getTotalIncome(),
-                account.getTotalExpense(),
-                account.getTransactionRecords());
+                account.getTotalExpense());
 
 //        System.out.println("Redis Account: " + redisAccount);
 

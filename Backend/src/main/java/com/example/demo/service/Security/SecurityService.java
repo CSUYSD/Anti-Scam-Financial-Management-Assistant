@@ -136,8 +136,7 @@ public class SecurityService {
                         account.getId(),
                         account.getAccountName(),
                         account.getTotalIncome(),
-                        account.getTotalExpense(),
-                        account.getTransactionRecords()
+                        account.getTotalExpense()
                 );
                 redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
             }
