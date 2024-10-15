@@ -16,6 +16,7 @@ import jakarta.persistence.OneToMany;
 import lombok.Data;
 @Entity
 @Data
+
 public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

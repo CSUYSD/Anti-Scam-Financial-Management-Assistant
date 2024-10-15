@@ -59,25 +59,29 @@ public class TransactionUserService {
     }
 
     public void updateUser(Long id, TransactionUser updatedUser) throws UserNotFoundException {
-        Optional<TransactionUser> existingUserOptional = transactionUserDao.findById(id);
+        TransactionUser existingUser = findExistingUser(id);
 
-        if (!existingUserOptional.isPresent()) {
-            throw new UserNotFoundException("User not found");
-        }
-
-        TransactionUser existingUser = existingUserOptional.get();
         existingUser.setEmail(updatedUser.getEmail());
         existingUser.setPhone(updatedUser.getPhone());
 
+        // **如果密码不为空，进行加密处理
+        updatePasswordIfNotEmpty(updatedUser, existingUser);
 
-        // 如果密码不为空，进行加密处理
+        transactionUserDao.save(existingUser);
+    }
+
+    // **提取的查找现有用户的方法
+    private TransactionUser findExistingUser(Long id) throws UserNotFoundException {
+        return transactionUserDao.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+    }
+
+    // **提取的更新密码的方法
+    private void updatePasswordIfNotEmpty(TransactionUser updatedUser, TransactionUser existingUser) {
         if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
             String encodedPassword = passwordEncoder.encode(updatedUser.getPassword());
             existingUser.setPassword(encodedPassword);
         }
-
-
-        transactionUserDao.save(existingUser);
     }
 
     public void deleteUser(Long id) throws UserNotFoundException, DataIntegrityViolationException {
@@ -98,7 +102,7 @@ public class TransactionUserService {
         if (!userOptional.isPresent()) {
             throw new UserNotFoundException("User not found");
         }
-        
+
         TransactionUser user = userOptional.get();
         user.setAvatar(avatar);
         transactionUserDao.save(user);
@@ -125,11 +129,7 @@ public class TransactionUserService {
     }
 
     private TransactionUserDTO getUserInfoFromRedis(RedisUser redisUser, Long userId) {
-        TransactionUserDTO userDTO = new TransactionUserDTO();
-        userDTO.setUsername(redisUser.getUsername());
-        userDTO.setEmail(redisUser.getEmail());
-        userDTO.setPhone(redisUser.getPhone());
-        userDTO.setAvatar(redisUser.getAvatar());
+        TransactionUserDTO userDTO = setTransactionUserDTO(redisUser);
 
         List<String> accountNames = new ArrayList<>();
         String keyPattern = "login_user:" + userId + ":account*";
@@ -146,15 +146,33 @@ public class TransactionUserService {
     }
 
     private TransactionUserDTO convertToDTO(TransactionUser user) {
-        TransactionUserDTO userDTO = new TransactionUserDTO();
-        userDTO.setUsername(user.getUsername());
-        userDTO.setEmail(user.getEmail());
-        userDTO.setPhone(user.getPhone());
-        userDTO.setAvatar(user.getAvatar());
+        TransactionUserDTO userDTO = setTransactionUserDTO(user);
         List<Account> accounts = user.getAccounts();
         for (Account account : accounts) {
             userDTO.getAccountName().add(account.getAccountName());
         }
         return userDTO;
     }
+
+    private TransactionUserDTO setTransactionUserDTO(Object user) {
+        TransactionUserDTO userDTO = new TransactionUserDTO();
+
+        if (user instanceof TransactionUser transactionUser) {
+            populateUserDTO(userDTO, transactionUser.getUsername(), transactionUser.getEmail(), transactionUser.getPhone(), transactionUser.getAvatar());
+        } else if (user instanceof RedisUser redisUser) {
+            populateUserDTO(userDTO, redisUser.getUsername(), redisUser.getEmail(), redisUser.getPhone(), redisUser.getAvatar());
+        } else {
+            throw new IllegalArgumentException("Unsupported user type: " + user.getClass().getName());
+        }
+
+        return userDTO;
+    }
+
+    private void populateUserDTO(TransactionUserDTO userDTO, String username, String email, String phone, String avatar) {
+        userDTO.setUsername(username);
+        userDTO.setEmail(email);
+        userDTO.setPhone(phone);
+        userDTO.setAvatar(avatar);
+    }
+
 }

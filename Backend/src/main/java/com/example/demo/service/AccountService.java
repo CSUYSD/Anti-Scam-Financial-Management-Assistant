@@ -61,12 +61,11 @@ public class AccountService {
                 throw new AccountAlreadyExistException("账户名已存在");
             }
         }
-        
+
         // 获取用户,从token里找到的id
         TransactionUser user = transactionUserDao.findById(userId)
-            .orElseThrow(() -> new UserNotFoundException("用户不存在"));
-        
-        // 存到PSQL里
+                .orElseThrow(() -> new UserNotFoundException("用户不存在"));
+
         Account newAccount = new Account();
         newAccount.setAccountName(accountDTO.getName());
         newAccount.setTransactionUser(user);
@@ -75,21 +74,15 @@ public class AccountService {
         accountDao.save(newAccount);
 
         // 把这个新account加进用户关联的redis里
-        String newAccountKey = "login_user:" + userId + ":account:" + newAccount.getId();
-        RedisAccount newRedisAccount =
-                new RedisAccount(
-                        newAccount.getId(),
-                        newAccount.getAccountName(),
-                        newAccount.getTotalIncome(),
-                        newAccount.getTotalExpense(),
-                        new ArrayList<>());
+        updateRedisAccount(userId, newAccount.getId(), newAccount);
 
-        redisTemplate.opsForValue().set(newAccountKey, newRedisAccount);
+//        System.out.println("New Account Key: " + newAccountKey);
+//        System.out.println("New Redis Account: " + newRedisAccount);
         return "账户创建成功";
     }
 
 
-
+    // 这前端似乎没用上过
     public Account updateAccount(Long id, AccountDTO accountDTO) throws AccountNotFoundException {
         Account existingAccount = getAccountByAccountId(id);
         TransactionUser user = existingAccount.getTransactionUser();
@@ -104,24 +97,19 @@ public class AccountService {
                 throw new AccountAlreadyExistException("该用户下的账户名已存在");
             }
         }
-
+        System.out.println("accountDTO"+accountDTO);
         // 更新账户名称和余额
         existingAccount.setAccountName(accountDTO.getName());
-        existingAccount.setTotalIncome(accountDTO.getTotal_income());
-        existingAccount.setTotalExpense(accountDTO.getTotal_expense());
+        double income = existingAccount.getTotalIncome();
+        double expense = existingAccount.getTotalExpense();
+        existingAccount.setTotalIncome(accountDTO.getTotal_income() + income);
+        existingAccount.setTotalExpense(accountDTO.getTotal_expense() + expense);
 
         // 保存并返回更新后的账户信息
         Account updatedAccount = accountDao.save(existingAccount);
-
+        System.out.println(updatedAccount);
         // 更新 Redis 缓存
-        String redisKey = "login_user:" + existingAccount.getTransactionUser().getId() + ":account:" + existingAccount.getId();
-        RedisAccount redisAccount = new RedisAccount(
-                updatedAccount.getId(),
-                updatedAccount.getAccountName(),
-                updatedAccount.getTotalIncome(),
-                updatedAccount.getTotalExpense(),
-                new ArrayList<>());
-        redisTemplate.opsForValue().set(redisKey, redisAccount);
+        updateRedisAccount(existingAccount.getTransactionUser().getId(), existingAccount.getId(), updatedAccount);
 
         return updatedAccount;
     }
@@ -144,6 +132,15 @@ public class AccountService {
         redisTemplate.opsForValue().set(pattern, accountId);
     }
 
+    public void updateRedisAccount(Long userId, Long accountId, Account account) {
+        String redisKey = "login_user:" + userId + ":account:" + accountId;
+        RedisAccount redisAccount = new RedisAccount(
+                account.getId(),
+                account.getAccountName(),
+                account.getTotalIncome(),
+                account.getTotalExpense(),
+                new ArrayList<>());
+        redisTemplate.opsForValue().set(redisKey, redisAccount);
+    }
 
 }
-
