@@ -8,7 +8,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 import com.google.common.net.HttpHeaders;
 
 @AutoConfigureMockMvc

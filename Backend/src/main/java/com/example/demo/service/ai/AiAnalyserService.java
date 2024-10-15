@@ -1,7 +1,7 @@
-package com.example.demo.service.AI;
+package com.example.demo.service.ai;
 
-import com.example.demo.utility.JWT.JwtUtil;
-import com.example.demo.utility.Redis.GetCurrentUserInfo;
+import com.example.demo.utility.jwt.JwtUtil;
+import com.example.demo.utility.GetCurrentUserInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;

@@ -1,6 +1,5 @@
 package com.example.demo.controller;
 import java.util.List;
-import java.util.logging.Logger;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,9 +14,9 @@ import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.AccountDTO;
+import com.example.demo.model.dto.AccountDTO;
 import com.example.demo.service.AccountService;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 
 import jakarta.validation.Valid;
 

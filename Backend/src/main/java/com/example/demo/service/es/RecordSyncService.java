@@ -1,4 +1,4 @@
-package com.example.demo.service.ES;
+package com.example.demo.service.es;
 
 import com.example.demo.repository.TransactionRecordDao;
 import com.example.demo.repository.ESDao.RecordESDao;

@@ -1,10 +1,10 @@
-package com.example.demo.controller.ai;
+package com.example.demo.listener;
 
-import com.example.demo.model.Ai.AnalyseRequest;
-import com.example.demo.service.AI.AiAnalyserService;
+import com.example.demo.model.ai.AnalyseRequest;
+import com.example.demo.service.ai.AiAnalyserService;
 import com.example.demo.service.TransactionRecordService;
-import com.example.demo.utility.Parser.PromptParser;
-import com.example.demo.utility.Redis.GetCurrentUserInfo;
+import com.example.demo.utility.parser.PromptParser;
+import com.example.demo.utility.GetCurrentUserInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,13 +13,13 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class AiAnalyserController {
+public class AiAnalyser {
     public final AiAnalyserService aiAnalyserService;
     public final GetCurrentUserInfo getCurrentUserInfo;
     public final TransactionRecordService transactionRecordService;
     public final SimpMessagingTemplate messagingTemplate;
     @Autowired
-    public AiAnalyserController(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, TransactionRecordService transactionRecordService, SimpMessagingTemplate messagingTemplate) {
+    public AiAnalyser(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, TransactionRecordService transactionRecordService, SimpMessagingTemplate messagingTemplate) {
         this.aiAnalyserService = aiAnalyserService;
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.transactionRecordService = transactionRecordService;

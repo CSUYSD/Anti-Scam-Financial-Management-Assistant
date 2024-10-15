@@ -1,4 +1,4 @@
-package com.example.demo.service.Security;
+package com.example.demo.service.security;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,14 +27,14 @@ import com.example.demo.exception.PasswordNotCorrectException;
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.TransactionUserDTO;
-import com.example.demo.model.Redis.RedisAccount;
-import com.example.demo.model.Redis.RedisUser;
-import com.example.demo.model.Security.UserDetail;
+import com.example.demo.model.dto.TransactionUserDTO;
+import com.example.demo.model.redis.RedisAccount;
+import com.example.demo.model.redis.RedisUser;
+import com.example.demo.model.security.UserDetail;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.model.UserRole;
-import com.example.demo.utility.JWT.JwtUtil;
-import com.example.demo.model.Security.LoginVo;
+import com.example.demo.utility.jwt.JwtUtil;
+import com.example.demo.model.security.LoginVo;
 
 @Service
 public class SecurityService {

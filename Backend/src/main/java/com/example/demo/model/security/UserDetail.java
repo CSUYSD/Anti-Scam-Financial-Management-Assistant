@@ -1,8 +1,7 @@
-package com.example.demo.model.Security;
+package com.example.demo.model.security;
 
 import com.example.demo.model.TransactionUser;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;

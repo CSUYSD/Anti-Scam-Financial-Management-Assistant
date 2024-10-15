@@ -1,4 +1,4 @@
-package com.example.demo.utility.JWT;
+package com.example.demo.utility.jwt;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -14,7 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.example.demo.service.Security.UserDetailService;
+import com.example.demo.service.security.UserDetailService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

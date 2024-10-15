@@ -1,4 +1,4 @@
-package com.example.demo.utility.JWT;
+package com.example.demo.utility.jwt;
 
 import java.util.Date;
 import java.util.Hashtable;

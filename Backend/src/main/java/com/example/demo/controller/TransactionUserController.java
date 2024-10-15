@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.exception.UserNotFoundException;
-import com.example.demo.model.DTO.TransactionUserDTO;
+import com.example.demo.model.dto.TransactionUserDTO;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.service.TransactionUserService;
 import com.example.demo.utility.RabbitMQProducer;

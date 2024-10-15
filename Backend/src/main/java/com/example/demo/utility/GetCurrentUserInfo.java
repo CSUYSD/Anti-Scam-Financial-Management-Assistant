@@ -1,6 +1,6 @@
-package com.example.demo.utility.Redis;
+package com.example.demo.utility;
 
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;

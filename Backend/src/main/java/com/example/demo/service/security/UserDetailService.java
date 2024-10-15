@@ -1,6 +1,6 @@
-package com.example.demo.service.Security;
+package com.example.demo.service.security;
 
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -11,7 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.model.TransactionUser;
-import com.example.demo.model.Security.UserDetail;
+import com.example.demo.model.security.UserDetail;
 import com.example.demo.model.UserRole;
 
 import java.util.Collection;

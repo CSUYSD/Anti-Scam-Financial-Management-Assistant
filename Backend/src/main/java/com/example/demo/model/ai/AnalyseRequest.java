@@ -1,4 +1,4 @@
-package com.example.demo.model.Ai;
+package com.example.demo.model.ai;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

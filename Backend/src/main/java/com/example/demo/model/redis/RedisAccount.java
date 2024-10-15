@@ -1,13 +1,9 @@
-package com.example.demo.model.Redis;
+package com.example.demo.model.redis;
 
-import com.example.demo.model.TransactionRecord;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-import java.util.List;
 @Data
 @NoArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")

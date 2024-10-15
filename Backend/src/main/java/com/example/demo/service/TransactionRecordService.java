@@ -3,18 +3,18 @@ package com.example.demo.service;
 import java.util.List;
 
 
-import com.example.demo.model.Ai.AnalyseRequest;
+import com.example.demo.model.ai.AnalyseRequest;
 import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.TransactionRecordDTO;
-import com.example.demo.model.Redis.RedisAccount;
+import com.example.demo.model.dto.TransactionRecordDTO;
+import com.example.demo.model.redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
-import com.example.demo.service.AI.AiAnalyserService;
-import com.example.demo.service.ES.RecordSyncService;
-import com.example.demo.utility.JWT.JwtUtil;
-import com.example.demo.utility.Parser.DtoParser;
-import com.example.demo.utility.Parser.PromptParser;
-import com.example.demo.utility.Redis.GetCurrentUserInfo;
+import com.example.demo.service.ai.AiAnalyserService;
+import com.example.demo.service.es.RecordSyncService;
+import com.example.demo.utility.jwt.JwtUtil;
+import com.example.demo.utility.parser.DtoParser;
+import com.example.demo.utility.parser.PromptParser;
+import com.example.demo.utility.GetCurrentUserInfo;
 import jakarta.transaction.Transactional;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;

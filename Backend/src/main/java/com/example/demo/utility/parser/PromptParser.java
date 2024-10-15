@@ -1,10 +1,9 @@
-package com.example.demo.utility.Parser;
+package com.example.demo.utility.parser;
 
 import com.example.demo.model.TransactionRecord;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class PromptParser {
     private static final int MAX_RECORDS = 10;

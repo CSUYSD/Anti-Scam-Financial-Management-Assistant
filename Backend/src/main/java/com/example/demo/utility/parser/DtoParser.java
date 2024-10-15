@@ -1,6 +1,6 @@
-package com.example.demo.utility.Parser;
+package com.example.demo.utility.parser;
 
-import com.example.demo.model.DTO.TransactionRecordDTO;
+import com.example.demo.model.dto.TransactionRecordDTO;
 import com.example.demo.model.TransactionRecord;
 
 public class DtoParser {

@@ -1,6 +1,5 @@
-package com.example.demo.utility.JWT;
+package com.example.demo.utility.jwt;
 
-import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;

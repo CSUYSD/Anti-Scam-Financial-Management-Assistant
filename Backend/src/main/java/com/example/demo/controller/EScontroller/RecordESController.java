@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.model.TransactionRecordES;
-import com.example.demo.service.ES.RecordSearchService;
+import com.example.demo.service.es.RecordSearchService;
 
 @RestController
 @RequestMapping("/records-search")
