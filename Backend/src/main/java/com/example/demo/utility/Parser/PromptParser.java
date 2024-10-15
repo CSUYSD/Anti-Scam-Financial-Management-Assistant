@@ -12,8 +12,6 @@ public class PromptParser {
 
     public static String parseLatestTransactionRecordsToPrompt(List<TransactionRecord> records) {
         StringBuilder sb = new StringBuilder();
-        sb.append("----------------- Below are the user's latest transaction records -----------------\n");
-
         records.stream()
                 .limit(MAX_RECORDS)
                 .forEach(record -> {
@@ -23,7 +21,7 @@ public class PromptParser {
         return sb.toString();
     }
 
-    public static String parseTransactionRecordToString(TransactionRecord record) {
+    private static String parseTransactionRecordToString(TransactionRecord record) {
         return String.format("{Type: %s} {Amount: %.2f} {Date: %s} {Category: %s} {Transaction Method: %s} {Description: %s}",
                 record.getType(),
                 record.getAmount(),

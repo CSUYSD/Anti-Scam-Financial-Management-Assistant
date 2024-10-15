@@ -1,28 +1,25 @@
 package com.example.demo.service;
 
-import java.util.ArrayList;
+import java.nio.channels.AsynchronousChannel;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
-import com.example.demo.Dao.ESDao.RecordESDao;
 import com.example.demo.Dao.TransactionUserDao;
-import com.example.demo.exception.AccountAlreadyExistException;
-import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.AccountDTO;
 import com.example.demo.model.DTO.TransactionRecordDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
+import com.example.demo.service.AI.TransactionReportAnalyseService;
 import com.example.demo.service.ES.RecordSyncService;
 import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.Parser.DtoParser;
+import com.example.demo.utility.Parser.PromptParser;
+import com.example.demo.utility.Redis.GetCurrentUserInfo;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import com.example.demo.utility.DtoParser;
 
 import com.example.demo.Dao.TransactionRecordDao;
 import com.example.demo.Dao.AccountDao;
@@ -38,18 +35,22 @@ public class TransactionRecordService {
     private final RecordSyncService recordSyncService;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final TransactionReportAnalyseService transactionReportAnalyseService;
+    private final GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
     @Autowired
-    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService) {
+    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService, TransactionReportAnalyseService transactionReportAnalyseService, GetCurrentUserInfo getCurrentUserInfo) {
         this.transactionRecordDao = transactionRecordDao;
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.accountDao = accountDao;
         this.recordSyncService = recordSyncService;
+        this.transactionReportAnalyseService = transactionReportAnalyseService;
+        this.getCurrentUserInfo = getCurrentUserInfo;
     }
 
 
@@ -61,14 +62,14 @@ public class TransactionRecordService {
 
     public void addTransactionRecord(@RequestHeader String token, TransactionRecordDTO transactionRecordDTO) {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
-        String accountId = getCurrentAccountId(userId);
+        Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
         System.out.printf("===============================accountId: %s===============================", accountId);
 
         Account account = findAccountById(Long.valueOf(accountId));
 
         TransactionUser user = findTransactionUserById(userId);
 
-        // update account income and expense
+        // update account income and expense, 需要封装起来
         if (transactionRecordDTO.getType().equalsIgnoreCase("expense")) {
             account.setTotalExpense(account.getTotalExpense() + transactionRecordDTO.getAmount());
         }
@@ -80,11 +81,13 @@ public class TransactionRecordService {
         transactionRecord.setUserId(userId);
 
         transactionRecordDao.save(transactionRecord);
-//      save record into elastic search
+        // ES
         recordSyncService.syncToElasticsearch(transactionRecord);
 
-//        System.out.println("Account Total Income: " + account.getTotalIncome());
-//        System.out.println("Account Total Expense: " + account.getTotalExpense());
+        String recentRecords = PromptParser.parseLatestTransactionRecordsToPrompt(getCertainDaysRecords(accountId, 10));
+        String currentRecord = PromptParser.parseLatestTransactionRecordsToPrompt(List.of(transactionRecord));
+        String result = transactionReportAnalyseService.analyseCurrentRecord(currentRecord, recentRecords);
+        System.out.printf("Analyse result: %s", result);
 
         updateRedisAccount(account);
     }
@@ -181,11 +184,6 @@ public class TransactionRecordService {
         } catch (Exception e) {
             System.err.println("Error updating Redis account: " + e.getMessage());
         }
-    }
-
-    private String getCurrentAccountId(Long userId) {
-        String pattern = "login_user:" + userId + ":current_account";
-        return stringRedisTemplate.opsForValue().get(pattern);
     }
 
     private TransactionRecord findTransactionRecordById(Long id) {
