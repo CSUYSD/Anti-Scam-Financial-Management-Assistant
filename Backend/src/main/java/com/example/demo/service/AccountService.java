@@ -7,6 +7,7 @@ import com.example.demo.model.Account;
 import com.example.demo.model.DTO.AccountDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.Dao.AccountDao;
@@ -21,18 +22,21 @@ import java.util.stream.Collectors;
 import org.springframework.data.redis.core.RedisTemplate;
 import com.example.demo.exception.UserNotFoundException;
 
+
 @Service
 public class AccountService {
 
     private final AccountDao accountDao;
     private final RedisTemplate<String, Object> redisTemplate;
     private final TransactionUserDao transactionUserDao;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public AccountService(AccountDao accountDao, RedisTemplate<String, Object> redisTemplate, TransactionUserDao transactionUserDao) {
+    public AccountService(AccountDao accountDao, RedisTemplate<String, Object> redisTemplate, TransactionUserDao transactionUserDao, ObjectMapper objectMapper) {
         this.accountDao = accountDao;
         this.redisTemplate = redisTemplate;
         this.transactionUserDao = transactionUserDao;
+        this.objectMapper = objectMapper;
     }
 
     public List<Account> getAllAccounts() {
@@ -56,18 +60,10 @@ public class AccountService {
             if (key.equals("login_user:" + userId + ":account:initial placeholder")){
                 continue;
             }
-            try{
-                Object redisAccountObject = redisTemplate.opsForValue().get(key);
-                System.out.printf("------------------------Redis Account: %s--------------------", redisAccountObject);
-                RedisAccount redisAccount = (RedisAccount) redisAccountObject;
-                if (redisAccount.getName().equals(accountDTO.getName())){
-                    throw new AccountAlreadyExistException("账户名已存在");
-                }
-                System.out.printf("Current name: %s", redisAccount.getName());
-                System.out.printf("DTO name: %s", accountDTO.getName());
-            } catch (Exception e){
-                System.out.printf("Error: %s", e.getMessage());
-                throw new AccountNotFoundException("账户未找到");
+            Object obj = redisTemplate.opsForValue().get(key);
+            RedisAccount redisAccount = convertToRedisAccount(obj);
+            if (redisAccount.getName().equals(accountDTO.getName())){
+                throw new AccountAlreadyExistException("账户名已存在");
             }
         }
 
@@ -151,5 +147,12 @@ public class AccountService {
         redisTemplate.opsForValue().set(redisKey, redisAccount);
     }
 
+    private RedisAccount convertToRedisAccount(Object obj) {
+        if (obj instanceof RedisAccount) {
+            return (RedisAccount) obj;
+        } else {
+            return objectMapper.convertValue(obj, RedisAccount.class);
+        }
+    }
 
 }
