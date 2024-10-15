@@ -28,6 +28,7 @@ public class JwtUtil {
                    @Value("${jwt.expiration}") long expirationTime) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
         this.expirationTime = expirationTime;
+
     }
 
     public String generateToken(Long userId, String username, String roleName) {
