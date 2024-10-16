@@ -5,13 +5,12 @@ import { AccountBalance, TrendingUp, TrendingDown, Warning, Savings, List, Arrow
 import { getRecentRecordsAPI, getAllRecordsAPI } from '@/api/record';
 import { getCurrentAccountAPI } from '@/api/account';
 import { format, subDays } from 'date-fns';
-
+import useWebSocket from '@/hooks/useWebSocket';
 
 const COLORS = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF8A80', '#B39DDB', '#81D4FA', '#A5D6A7'];
 
-
 export default function Dashboard() {
-    const [accountData, setAccountData] = useState();
+    const [accountData, setAccountData] = useState({ totalIncome: 0, totalExpense: 0, id: '' });
     const [recentRecords, setRecentRecords] = useState([]);
     const [chartData, setChartData] = useState([]);
     const [transactionTypes, setTransactionTypes] = useState([]);
@@ -23,36 +22,23 @@ export default function Dashboard() {
     const [isSearching, setIsSearching] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [showInfoModal, setShowInfoModal] = useState(false);
-
+    const webSocketMessage = useWebSocket();
 
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             const accountResponse = await getCurrentAccountAPI();
-            console.log('Account Response:', accountResponse.data);
             setAccountData(accountResponse.data);
 
-
-            const recentRecordsResponse = await getRecentRecordsAPI(7);
+            const recentRecordsResponse = await getRecentRecordsAPI(30);
             setRecentRecords(recentRecordsResponse.data);
-
 
             const processedChartData = processChartData(recentRecordsResponse.data);
             setChartData(processedChartData);
 
-
             const allRecordsResponse = await getAllRecordsAPI();
             const processedTransactionTypes = processTransactionTypes(allRecordsResponse.data);
             setTransactionTypes(processedTransactionTypes);
-
-
-            // Simulating suspicious transactions
-            setSuspiciousTransactions([
-                { id: 1, description: 'Large withdrawal', amount: 5000, date: '2023-05-15', risk: 'high' },
-                { id: 2, description: 'Unusual overseas transfer', amount: 2000, date: '2023-05-14', risk: 'medium' },
-                { id: 3, description: 'Multiple small transactions', amount: 500, date: '2023-05-13', risk: 'low' },
-            ]);
-
 
             setLoading(false);
         } catch (error) {
@@ -62,11 +48,49 @@ export default function Dashboard() {
         }
     }, []);
 
-
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
+    useEffect(() => {
+        if (webSocketMessage) {
+            console.log('Updating suspicious transactions with:', webSocketMessage);
+            setSuspiciousTransactions(prevTransactions => {
+                const newTransaction = {
+                    id: Date.now(),
+                    ...webSocketMessage
+                };
+                return [newTransaction, ...prevTransactions].slice(0, 5);
+            });
+        }
+    }, [webSocketMessage]);
+
+    useEffect(() => {
+        if (webSocketMessage) {
+            console.log('Received WebSocket message:', webSocketMessage);
+            try {
+                const messageLines = webSocketMessage.split('\n');
+                const contentIndex = messageLines.findIndex(line => line.startsWith('content-length:')) + 1;
+                const jsonContent = messageLines.slice(contentIndex).join('\n');
+                const parsedMessage = JSON.parse(jsonContent);
+
+                if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
+                    const newTransactions = parsedMessage.map(message => ({
+                        id: Date.now(),
+                        description: message.textContent,
+                        date: new Date().toISOString().split('T')[0],
+                        risk: message.textContent.toLowerCase().includes('warning') ? 'high' : 'low'
+                    }));
+
+                    setSuspiciousTransactions(prevTransactions =>
+                        [...newTransactions, ...prevTransactions].slice(0, 5)
+                    );
+                }
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+            }
+        }
+    }, [webSocketMessage]);
 
     const processChartData = useCallback((records) => {
         const dailyData = {};
@@ -74,12 +98,10 @@ export default function Dashboard() {
         const startDate = new Date(endDate);
         startDate.setDate(startDate.getDate() - 29);
 
-
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             const dateStr = d.toISOString().split('T')[0];
             dailyData[dateStr] = { date: dateStr, income: 0, expense: 0, balance: 0 };
         }
-
 
         let runningBalance = 0;
         records.forEach(record => {
@@ -96,15 +118,12 @@ export default function Dashboard() {
             }
         });
 
-
         return Object.values(dailyData).sort((a, b) => new Date(a.date) - new Date(b.date));
     }, []);
-
 
     const processTransactionTypes = useCallback((records, duration = 30) => {
         const categories = {};
         const startDate = subDays(new Date(), duration - 1);
-
 
         records.forEach(record => {
             const recordDate = new Date(record.transactionTime);
@@ -116,21 +135,17 @@ export default function Dashboard() {
             }
         });
 
-
         return Object.values(categories);
     }, []);
-
 
     const handleDurationChange = useCallback((newDuration) => {
         setChartDuration(newDuration);
         setTransactionTypes(processTransactionTypes(recentRecords, newDuration));
     }, [recentRecords, processTransactionTypes]);
 
-
     const handleSavingsGoalChange = useCallback((newGoal) => {
         setSavingsGoal(newGoal);
     }, []);
-
 
     const BalanceCard = useMemo(() => ({balance, income, expense}) => {
         const controls = useAnimation();
@@ -140,9 +155,6 @@ export default function Dashboard() {
                 transition: { duration: 0.5 },
             });
         }, [balance, controls]);
-
-
-
 
         return (
             <motion.div
@@ -205,10 +217,8 @@ export default function Dashboard() {
         );
     }, []);
 
-
     const WeeklyChart = React.memo(({ data, duration, onDurationChange }) => {
         const [hoveredData, setHoveredData] = useState(null);
-
 
         const CustomTooltip = ({ active, payload, label }) => {
             if (active && payload && payload.length) {
@@ -225,7 +235,6 @@ export default function Dashboard() {
             }
             return null;
         };
-
 
         return (
             <motion.div
@@ -295,38 +304,35 @@ export default function Dashboard() {
         );
     });
 
-
     const TransactionTypesPieChart = ({ data }) => {
         const [activeIndex, setActiveIndex] = useState(0);
         const [activeType, setActiveType] = useState('expense');
-
 
         const onPieEnter = useCallback((_, index) => {
             setActiveIndex(index);
         }, []);
 
-
         const processedData = useMemo(() => {
             const incomeData = data.filter(item => item.type === 'Income');
+
             const expenseData = data.filter(item => item.type === 'Expense');
             return { income: incomeData, expense: expenseData };
         }, [data]);
 
-
         const renderActiveShape = (props) => {
             const RADIAN = Math.PI / 180;
-            const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+            const { cx, cy, midAngle, innerRadius,
+                outerRadius, startAngle, endAngle,
+                fill, payload, percent, value } = props;
             const sin = Math.sin(-RADIAN * midAngle);
             const cos = Math.cos(-RADIAN * midAngle);
-            const sx = cx + (outerRadius + 10) *
-                cos;
+            const sx = cx + (outerRadius + 10) * cos;
             const sy = cy + (outerRadius + 10) * sin;
             const mx = cx + (outerRadius + 30) * cos;
             const my = cy + (outerRadius + 30) * sin;
             const ex = mx + (cos >= 0 ? 1 : -1) * 22;
             const ey = my;
             const textAnchor = cos >= 0 ? 'start' : 'end';
-
 
             return (
                 <g>
@@ -360,7 +366,6 @@ export default function Dashboard() {
                 </g>
             );
         };
-
 
         return (
             <motion.div
@@ -422,7 +427,6 @@ export default function Dashboard() {
         );
     };
 
-
     const SavingsGoalWidget = useMemo(() => ({ records, goal, onGoalChange }) => {
         const [isEditing, setIsEditing] = useState(false);
         const [newGoal, setNewGoal] = useState(goal);
@@ -431,13 +435,11 @@ export default function Dashboard() {
         const [notificationMessage, setNotificationMessage] = useState('');
         const [notificationColor, setNotificationColor] = useState('');
 
-
         useEffect(() => {
             const totalSavings = records.reduce((sum, record) => {
                 return record.type === 'Income' ? sum + record.amount : sum - record.amount;
             }, 0);
             const calculatedProgress = Math.min((totalSavings / goal) * 100, 100);
-
 
             setProgress(0);
             const interval = setInterval(() => {
@@ -463,7 +465,6 @@ export default function Dashboard() {
             return () => clearInterval(interval);
         }, [records, goal]);
 
-
         useEffect(() => {
             if (showNotification) {
                 const timer = setTimeout(() => {
@@ -473,12 +474,10 @@ export default function Dashboard() {
             }
         }, [showNotification]);
 
-
         const handleSave = () => {
             onGoalChange(newGoal);
             setIsEditing(false);
         };
-
 
         return (
             <motion.div
@@ -613,10 +612,8 @@ export default function Dashboard() {
         );
     }, []);
 
-
     const TransactionList = useMemo(() => ({ title, transactions, icon }) => {
         const [expandedTransaction, setExpandedTransaction] = useState(null);
-
 
         return (
             <motion.div
@@ -667,7 +664,7 @@ export default function Dashboard() {
                                             className="mt-2 text-sm text-gray-600"
                                         >
                                             <p>Category: {transaction.category}</p>
-                                            <p>Transaction ID: {transaction.id}</p>
+                                            <p>Account: {transaction.accountName}</p>
                                             {transaction.notes && <p>Notes: {transaction.notes}</p>}
                                         </motion.div>
                                     )}
@@ -680,12 +677,11 @@ export default function Dashboard() {
         );
     }, []);
 
-
     const SuspiciousTransactions = useMemo(() => ({ transactions }) => {
+        console.log('Rendering SuspiciousTransactions with:', transactions);
         const [isSearching, setIsSearching] = useState(false);
         const [searchResults, setSearchResults] = useState([]);
         const [selectedTransaction, setSelectedTransaction] = useState(null);
-
 
         const handleSearch = () => {
             setIsSearching(true);
@@ -695,11 +691,9 @@ export default function Dashboard() {
             }, 1500);
         };
 
-
         const handleTransactionClick = (transaction) => {
             setSelectedTransaction(transaction);
         };
-
 
         return (
             <motion.div
@@ -748,8 +742,10 @@ export default function Dashboard() {
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
                                     transition={{ duration: 0.3, delay: index * 0.1 }}
-                                    className={`flex justify-between items-center bg-gray-50 p-3 rounded-lg cursor-pointer ${
+                                    className={`flex justify-between items-center p-3 rounded-lg cursor-pointer ${
                                         selectedTransaction === transaction ? 'border-2 border-blue-500' : ''
+                                    } ${
+                                        transaction.risk === 'high' ? 'bg-yellow-100' : 'bg-gray-50'
                                     }`}
                                     onClick={() => handleTransactionClick(transaction)}
                                 >
@@ -757,8 +753,7 @@ export default function Dashboard() {
                                         <p className="font-medium text-gray-900">{transaction.description}</p>
                                         <p className="text-sm text-gray-500">{transaction.date}</p>
                                         <p className={`text-xs font-semibold ${
-                                            transaction.risk === 'high' ? 'text-red-500' :
-                                                transaction.risk === 'medium' ? 'text-yellow-500' : 'text-green-500'
+                                            transaction.risk === 'high' ? 'text-red-500' : 'text-green-500'
                                         }`}>
                                             Risk: {transaction.risk}
                                         </p>
@@ -802,60 +797,58 @@ export default function Dashboard() {
         );
     }, []);
 
+    const InfoModal = ({ isOpen, onClose, transaction }) => {
+        if (!isOpen || !transaction) return null;
 
-    const InfoModal = ({ isOpen, onClose, transaction }) => (
-        <AnimatePresence>
-            {isOpen && (
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                onClick={onClose}
+            >
                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-                    onClick={onClose}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.5, opacity: 0 }}
+                    className="bg-white p-6 rounded-lg max-w-md w-full"
+                    onClick={(e) => e.stopPropagation()}
                 >
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        className="bg-white p-6 rounded-lg max-w-md w-full"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <h2 className="text-2xl font-bold mb-4">Transaction Information</h2>
-                        <p><strong>Description:</strong> {transaction.description}</p>
-                        <p><strong>Amount:</strong> ${transaction.amount.toLocaleString()}</p>
-                        <p><strong>Date:</strong> {transaction.date}</p>
-                        <p><strong>Risk Level:</strong> {transaction.risk}</p>
-                        <p className="mt-4">This transaction has been flagged as suspicious due to its unusual nature. Please review and confirm its legitimacy.</p>
-                        <div className="mt-6 flex justify-end">
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={onClose}
-                                className="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600"
-                            >
-                                Close
-                            </motion.button>
-                        </div>
-                    </motion.div>
+                    <h2 className="text-2xl font-bold mb-4">Transaction Details</h2>
+                    <p><strong>Description:</strong> {transaction.description}</p>
+                    <p><strong>Amount:</strong> ${transaction.amount.toLocaleString()}</p>
+                    <p><strong>Date:</strong> {transaction.date}</p>
+                    <p><strong>Risk Level:</strong> {transaction.risk}</p>
+                    <p><strong>Category:</strong> {transaction.category || 'N/A'}</p>
+                    <p><strong>Account:</strong> {transaction.accountName || 'N/A'}</p>
+                    <p><strong>Notes:</strong> {transaction.notes || 'N/A'}</p>
+                    <div className="mt-6 flex justify-end">
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={onClose}
+                            className="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600"
+                        >
+                            Close
+                        </motion.button>
+                    </div>
                 </motion.div>
-            )}
-        </AnimatePresence>
-    );
-
+            </motion.div>
+        );
+    };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+            <div className="flex justify-center items-center h-screen">
                 <motion.div
                     animate={{
-                        scale: [1, 1.2, 1],
-                        rotate: [0, 180, 360],
+                        rotate: 360,
                     }}
                     transition={{
-                        duration: 2,
-                        ease: "easeInOut",
-                        times: [0, 0.5, 1],
-                        repeat: Infinity,
+                        loop: Infinity,
+                        ease: "linear",
+                        duration: 1,
                     }}
                     className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full"
                 />
@@ -863,34 +856,20 @@ export default function Dashboard() {
         );
     }
 
-
     if (error) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-lg"
-                    role="alert"
-                >
-                    <p className="font-bold">Error</p>
-                    <p>{error}</p>
-                </motion.div>
+            <div className="flex justify-center items-center h-screen">
+                <p className="text-red-500 text-xl">{error}</p>
             </div>
         );
     }
-
-
-    const balance = accountData.totalIncome - accountData.totalExpense;
-
 
     return (
         <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-6 gap-6">
                     <BalanceCard
-                        balance={balance}
+                        balance={accountData.totalIncome - accountData.totalExpense}
                         income={accountData.totalIncome}
                         expense={accountData.totalExpense}
                     />
@@ -899,19 +878,19 @@ export default function Dashboard() {
                         duration={chartDuration}
                         onDurationChange={handleDurationChange}
                     />
-                    <SuspiciousTransactions
-                        transactions={suspiciousTransactions}
-                    />
                     <TransactionTypesPieChart data={transactionTypes} />
-                    <TransactionList
-                        title="Recent Transactions"
-                        transactions={recentRecords.slice(0, 5)}
-                        icon={<List className="text-blue-500 text-3xl" />}
-                    />
                     <SavingsGoalWidget
                         records={recentRecords}
                         goal={savingsGoal}
                         onGoalChange={handleSavingsGoalChange}
+                    />
+                    <TransactionList
+                        title="Recent Transactions"
+                        transactions={recentRecords}
+                        icon={<List className="text-blue-500 text-3xl" />}
+                    />
+                    <SuspiciousTransactions
+                        transactions={suspiciousTransactions}
                     />
                 </div>
             </div>
@@ -923,4 +902,3 @@ export default function Dashboard() {
         </div>
     );
 }
-

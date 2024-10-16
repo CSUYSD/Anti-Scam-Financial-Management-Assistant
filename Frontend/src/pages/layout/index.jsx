@@ -42,6 +42,7 @@ import { removeToken } from "@/utils/index";
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { FluxMessageWithHistoryAPI } from '@/api/ai';
 import { formatMessageContent } from '@/utils/messageFormatter';
+import WebSocketService from "@/service/WebSocketService.js";
 
 const drawerWidth = 240;
 
@@ -222,6 +223,7 @@ export default function Layout() {
             localStorage.removeItem('username');
             localStorage.removeItem('chatSessions');
             localStorage.removeItem('uploadedFiles');
+            WebSocketService.handleLogout();
             navigate('/login');
         } catch (error) {
             console.error('Logout failed:', error);

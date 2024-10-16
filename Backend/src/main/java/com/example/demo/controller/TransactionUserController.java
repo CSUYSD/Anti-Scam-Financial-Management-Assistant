@@ -26,7 +26,6 @@ import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.dto.TransactionUserDTO;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.service.TransactionUserService;
-import com.example.demo.utility.RabbitMQProducer;
 
 @Slf4j
 @RestController
@@ -40,9 +39,6 @@ public class TransactionUserController {
     public TransactionUserController(TransactionUserService transactionUserService) {
         this.transactionUserService = transactionUserService;
     }
-
-    @Autowired
-    private RabbitMQProducer rabbitMQProducer;
 
     @GetMapping("/allusers")
     public ResponseEntity<List<TransactionUser>> getAllUsers() {
@@ -124,10 +120,5 @@ public class TransactionUserController {
     }
 
 
-    @PostMapping("/rabbit")
-    public String testRabbitMQ(@RequestBody String message) {
-        rabbitMQProducer.sendMessage(message);
-        return message;
-    }
 
 }
