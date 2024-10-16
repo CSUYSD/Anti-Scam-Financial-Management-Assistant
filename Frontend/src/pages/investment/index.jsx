@@ -1,63 +1,28 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { PlayCircle, Globe, Star, ArrowUpRight, X, Search, Bookmark, BookmarkPlus, Filter, SortAsc, ChevronUp, BarChart2, Youtube } from 'lucide-react';
+'use client'
+
+
+import React, { useState, useEffect, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { PlayCircle, Globe, Star, ArrowUpRight, Search, Bookmark, BookmarkPlus, Filter, ChevronDown, ChevronUp, BarChart2, Youtube } from 'lucide-react'
+
 
 export default function EnhancedInvestmentResources() {
-    const [activeView, setActiveView] = useState('channels');
-    const [openItem, setOpenItem] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [bookmarkedItems, setBookmarkedItems] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [sortBy, setSortBy] = useState('rating');
-    const [filterMenuOpen, setFilterMenuOpen] = useState(false);
-    const [sortMenuOpen, setSortMenuOpen] = useState(false);
-    const [scrollY, setScrollY] = useState(0);
+    const [activeView, setActiveView] = useState('channels')
+    const [openItem, setOpenItem] = useState(null)
+    const [searchTerm, setSearchTerm] = useState('')
+    const [bookmarkedItems, setBookmarkedItems] = useState([])
+    const [selectedCategory, setSelectedCategory] = useState('All')
+    const [sortBy, setSortBy] = useState('rating')
+    const [scrollY, setScrollY] = useState(0)
+    const [showFilters, setShowFilters] = useState(false)
+
 
     useEffect(() => {
-        const handleScroll = () => setScrollY(window.scrollY);
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+        const handleScroll = () => setScrollY(window.scrollY)
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
 
-    const handleViewChange = (view) => {
-        setActiveView(view);
-    };
-
-    const handleOpenItem = (item) => {
-        setOpenItem(item);
-    };
-
-    const handleCloseItem = () => {
-        setOpenItem(null);
-    };
-
-    const handleBookmark = (item) => {
-        setBookmarkedItems(prev =>
-            prev.some(bookmarked => bookmarked.id === item.id)
-                ? prev.filter(bookmarked => bookmarked.id !== item.id)
-                : [...prev, item]
-        );
-    };
-
-    const toggleFilterMenu = () => {
-        setFilterMenuOpen(!filterMenuOpen);
-        setSortMenuOpen(false);
-    };
-
-    const toggleSortMenu = () => {
-        setSortMenuOpen(!sortMenuOpen);
-        setFilterMenuOpen(false);
-    };
-
-    const handleCategorySelect = (category) => {
-        setSelectedCategory(category);
-        setFilterMenuOpen(false);
-    };
-
-    const handleSortSelect = (sortOption) => {
-        setSortBy(sortOption);
-        setSortMenuOpen(false);
-    };
 
     const channelsData = [
         {
@@ -132,7 +97,8 @@ export default function EnhancedInvestmentResources() {
             views: 950000,
             likes: 72000,
         }
-    ];
+    ]
+
 
     const websitesData = [
         {
@@ -165,50 +131,92 @@ export default function EnhancedInvestmentResources() {
             category: "News",
             monthlyVisits: 50000000,
         }
-    ];
+    ]
+
+
+    const categories = useMemo(() => {
+        const allCategories = [...new Set([...channelsData, ...websitesData].map(item => item.category))]
+        return ['All', ...allCategories]
+    }, [])
+
+
+    const sortOptions = useMemo(() => {
+        if (activeView === 'channels') {
+            return [
+                { value: 'rating', label: 'Rating' },
+                { value: 'views', label: 'Views' },
+                { value: 'likes', label: 'Likes' }
+            ]
+        } else {
+            return [{ value: 'monthlyVisits', label: 'Monthly Visits' }]
+        }
+    }, [activeView])
+
 
     const filteredAndSortedItems = useMemo(() => {
-        let items = activeView === 'channels' ? channelsData : websitesData;
+        let items = activeView === 'channels' ? channelsData : websitesData
+
 
         items = items.filter(item =>
             (item.title || item.name).toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.description.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        )
+
 
         if (selectedCategory !== 'All') {
-            items = items.filter(item => item.category === selectedCategory);
+            items = items.filter(item => item.category === selectedCategory)
         }
 
-        items.sort((a, b) => {
-            if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-            if (sortBy === 'views') return (b.views || 0) - (a.views || 0);
-            if (sortBy === 'likes') return (b.likes || 0) - (a.likes || 0);
-            if (sortBy === 'monthlyVisits') return (b.monthlyVisits || 0) - (a.monthlyVisits || 0);
-            return 0;
-        });
 
-        return items;
-    }, [activeView, searchTerm, selectedCategory, sortBy]);
+        items.sort((a, b) => {
+            if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0)
+            if (sortBy === 'views') return (b.views || 0) - (a.views || 0)
+            if (sortBy === 'likes') return (b.likes || 0) - (a.likes || 0)
+            if (sortBy === 'monthlyVisits') return (b.monthlyVisits || 0) - (a.monthlyVisits || 0)
+            return 0
+        })
+
+
+        return items
+    }, [activeView, searchTerm, selectedCategory, sortBy])
+
+
+    const handleViewChange = (view) => {
+        setActiveView(view)
+        setSelectedCategory('All')
+        setSortBy(view === 'channels' ? 'rating' : 'monthlyVisits')
+    }
+
+
+    const handleOpenItem = (item) => {
+        setOpenItem(item)
+    }
+
+
+    const handleCloseItem = () => {
+        setOpenItem(null)
+    }
+
+
+    const handleBookmark = (item) => {
+        setBookmarkedItems(prev =>
+            prev.some(bookmarked => bookmarked.id === item.id)
+                ? prev.filter(bookmarked => bookmarked.id !== item.id)
+                : [...prev, item]
+        )
+    }
+
 
     return (
         <div className="min-h-screen bg-gray-100">
             <div className="max-w-7xl mx-auto px-4 py-8">
-                <motion.h1
-                    className="text-4xl font-bold text-center mb-8 text-blue-600"
-                    initial={{ y: -50, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.8, type: 'spring', stiffness: 100 }}
-                >
-                    Premium Investment Resources
-                </motion.h1>
-
                 <motion.div
                     className="flex flex-col items-center mb-8 space-y-6"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                    <div className="flex space-x-4">
+                    <div className="flex space-x-4 mb-6">
                         <button
                             onClick={() => handleViewChange('channels')}
                             className={`px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${
@@ -233,64 +241,92 @@ export default function EnhancedInvestmentResources() {
                         </button>
                     </div>
 
-                    <div className="relative w-full max-w-2xl">
-                        <input
-                            type="text"
-                            placeholder="Search premium resources..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-6 py-4 rounded-full bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
-                        />
-                        <Search className="absolute right-6 top-1/2 transform -translate-y-1/2 text-gray-500" />
-                    </div>
 
-                    <div className="flex justify-between w-full max-w-2xl">
-                        <div className="relative">
+                    <div className="w-full max-w-4xl relative">
+                        <div className="flex items-center bg-white rounded-full shadow-md">
                             <button
-                                onClick={toggleFilterMenu}
-                                className="px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 bg-gray-200 hover:bg-gray-300"
+                                onClick={() => setShowFilters(!showFilters)}
+                                className="p-3 text-gray-500 hover:text-blue-500 transition-all duration-300"
                             >
-                                <Filter className="inline-block mr-2 h-5 w-5" />
-                                Filter
+                                <Filter className="h-5 w-5" />
                             </button>
-                            {filterMenuOpen && (
-                                <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg overflow-hidden z-10">
-                                    {['All', 'Investing', 'Personal Finance', 'Real Estate', 'Education', 'Stock Analysis', 'News'].map((category) => (
-                                        <button
-                                            key={category}
-                                            onClick={() => handleCategorySelect(category)}
-                                            className="block w-full px-4 py-2 text-left hover:bg-gray-100 transition-all duration-300"
-                                        >
-                                            {category}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search resources..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full px-4 py-3 rounded-full bg-transparent text-gray-900 placeholder-gray-500 focus:outline-none"
+                            />
                             <button
-                                onClick={toggleSortMenu}
-                                className="px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 bg-gray-200 hover:bg-gray-300"
+                                className="p-3 text-gray-500 hover:text-blue-500 transition-all duration-300"
                             >
-                                <SortAsc className="inline-block mr-2 h-5 w-5" />
-                                Sort
+                                <Search className="h-5 w-5" />
                             </button>
-                            {sortMenuOpen && (
-                                <div className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-lg overflow-hidden z-10">
-                                    {['rating', 'views', 'likes', 'monthlyVisits'].map((option) => (
-                                        <button
-                                            key={option}
-                                            onClick={() => handleSortSelect(option)}
-                                            className="block w-full px-4 py-2 text-left hover:bg-gray-100 transition-all duration-300"
-                                        >
-                                            {option.charAt(0).toUpperCase() + option.slice(1)}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     </div>
                 </motion.div>
+
+
+                <AnimatePresence>
+                    {showFilters && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                            className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-20 z-50"
+                            onClick={() => setShowFilters(false)}
+                        >
+                            <motion.div
+                                className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <h2 className="text-2xl font-bold mb-4">Filters and Sorting</h2>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                        <select
+                                            id="category"
+                                            value={selectedCategory}
+                                            onChange={(e) => setSelectedCategory(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-md bg-gray-100 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+                                        >
+                                            {categories.map((category) => (
+                                                <option key={category} value={category}>
+                                                    {category}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
+                                        <select
+                                            id="sortBy"
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-md bg-gray-100 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+                                        >
+                                            {sortOptions.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+
+
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowFilters(false)}
+                                    className="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all duration-300"
+                                >
+                                    Apply Filters
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
 
                 <motion.div
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
@@ -311,7 +347,6 @@ export default function EnhancedInvestmentResources() {
                         >
                             <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
                                 <img
-
                                     src={item.thumbnail || item.image}
                                     alt={item.title || item.name}
                                     className="w-full h-48 object-cover"
@@ -322,13 +357,13 @@ export default function EnhancedInvestmentResources() {
                                     <div className="flex items-center mb-4">
                                         {item.rating && (
                                             <div className="flex items-center mr-4">
-                                                <Star className="h-5 w-5 text-yellow-500 mr-1" />
+                                                <Star className="h-5 w-5 text-yellow-500 mr-1" aria-hidden="true" />
                                                 <span>{item.rating}</span>
                                             </div>
                                         )}
                                         {item.monthlyVisits && (
                                             <div className="flex items-center">
-                                                <BarChart2 className="h-5 w-5 text-blue-500 mr-1" />
+                                                <BarChart2 className="h-5 w-5 text-blue-500 mr-1" aria-hidden="true" />
                                                 <span>{(item.monthlyVisits / 1000000).toFixed(1)}M visits/month</span>
                                             </div>
                                         )}
@@ -339,7 +374,7 @@ export default function EnhancedInvestmentResources() {
                                                 onClick={() => handleOpenItem(item)}
                                                 className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all duration-300"
                                             >
-                                                <PlayCircle className="inline-block mr-2 h-5 w-5" />
+                                                <PlayCircle className="inline-block mr-2 h-5 w-5" aria-hidden="true" />
                                                 Watch Now
                                             </button>
                                         ) : (
@@ -349,17 +384,18 @@ export default function EnhancedInvestmentResources() {
                                                 rel="noopener noreferrer"
                                                 className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all duration-300"
                                             >
-                                                <ArrowUpRight className="inline-block mr-2 h-5 w-5" />
+                                                <ArrowUpRight className="inline-block mr-2 h-5 w-5" aria-hidden="true" />
                                                 Visit Site
                                             </a>
                                         )}
                                         <button
                                             onClick={() => handleBookmark(item)}
                                             className="p-2 text-gray-500 hover:text-blue-500 transition-all duration-300"
+                                            aria-label={bookmarkedItems.some(bookmarked => bookmarked.id === item.id) ? "Remove bookmark" : "Add bookmark"}
                                         >
                                             {bookmarkedItems.some(bookmarked => bookmarked.id === item.id) ?
-                                                <Bookmark className="h-6 w-6" /> :
-                                                <BookmarkPlus className="h-6 w-6" />
+                                                <Bookmark className="h-6 w-6" aria-hidden="true" /> :
+                                                <BookmarkPlus className="h-6 w-6" aria-hidden="true" />
                                             }
                                         </button>
                                     </div>
@@ -369,6 +405,7 @@ export default function EnhancedInvestmentResources() {
                     ))}
                 </motion.div>
             </div>
+
 
             <AnimatePresence>
                 {openItem && activeView === 'channels' && (
@@ -409,7 +446,7 @@ export default function EnhancedInvestmentResources() {
                                         rel="noopener noreferrer"
                                         className="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-semibold hover:bg-red-700 transition-all duration-300 flex items-center"
                                     >
-                                        <Youtube className="mr-2 h-5 w-5" />
+                                        <Youtube className="mr-2 h-5 w-5" aria-hidden="true" />
                                         Watch on YouTube
                                     </a>
                                 </div>
@@ -419,15 +456,18 @@ export default function EnhancedInvestmentResources() {
                 )}
             </AnimatePresence>
 
+
             <motion.button
                 className="fixed bottom-8 right-8 p-4 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: scrollY > 100 ? 1 : 0, y: scrollY > 100 ? 0 : 20 }}
                 transition={{ duration: 0.3 }}
+                aria-label="Scroll to top"
             >
-                <ChevronUp className="h-6 w-6" />
+                <ChevronUp className="h-6 w-6" aria-hidden="true" />
             </motion.button>
         </div>
-    );
+    )
 }
+

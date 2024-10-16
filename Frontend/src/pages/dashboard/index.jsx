@@ -54,31 +54,12 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (webSocketMessage) {
-            console.log('Received WebSocket message:', webSocketMessage);
-            try {
-                const newTransaction = {
-                    id: Date.now(),
-                    ...webSocketMessage
-                };
-
-                // 从 sessionStorage 获取现有的可疑交易
-                const existingTransactions = JSON.parse(sessionStorage.getItem('suspiciousTransactions') || '[]');
-
-                // 添加新交易并保持最多5个
-                const updatedTransactions = [newTransaction, ...existingTransactions].slice(0, 5);
-
-                // 更新 sessionStorage
-                sessionStorage.setItem('suspiciousTransactions', JSON.stringify(updatedTransactions));
-
-                // 更新状态
-                setSuspiciousTransactions(updatedTransactions);
-            } catch (error) {
-                console.error('Error processing WebSocket message:', error);
-            }
+            setSuspiciousTransactions(prevTransactions =>
+                [webSocketMessage, ...prevTransactions].slice(0, 5)
+            );
         }
     }, [webSocketMessage]);
 
-// 在组件挂载时从 sessionStorage 加载可疑交易
     useEffect(() => {
         const storedTransactions = JSON.parse(sessionStorage.getItem('suspiciousTransactions') || '[]');
         setSuspiciousTransactions(storedTransactions);
