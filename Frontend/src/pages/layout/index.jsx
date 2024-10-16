@@ -22,6 +22,7 @@ import {
     Paper,
     Tooltip,
     Link as MuiLink,
+    Avatar,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -54,6 +55,8 @@ const AppBar = styled(MuiAppBar, {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
     }),
+    background: 'linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)',
+    boxShadow: 'none',
     ...(open && {
         marginLeft: drawerWidth,
         width: `calc(100% - ${drawerWidth}px)`,
@@ -124,8 +127,7 @@ function Copyright(props) {
     );
 }
 
-
-export default function Layout() {
+export default function Component() {
     const [open, setOpen] = useState(true);
     const [mode, setMode] = useState('light');
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
@@ -151,7 +153,8 @@ export default function Layout() {
                     ...(mode === 'light'
                         ? {
                             primary: {
-                                main: '#3a7bd5',
+                                main: '#1976D2',
+                                light: '#42A5F5',
                             },
                             background: {
                                 default: '#f5f7fa',
@@ -160,7 +163,8 @@ export default function Layout() {
                         }
                         : {
                             primary: {
-                                main: '#90caf9',
+                                main: '#90CAF9',
+                                light: '#BBDEFB',
                             },
                             background: {
                                 default: '#121212',
@@ -187,7 +191,7 @@ export default function Layout() {
                     MuiListItemIcon: {
                         styleOverrides: {
                             root: {
-                                color: mode === 'dark' ? '#90caf9' : '#3a7bd5',
+                                color: mode === 'dark' ? '#90CAF9' : '#1976D2',
                             },
                         },
                     },
@@ -197,7 +201,7 @@ export default function Layout() {
     );
 
     const toggleDrawer = () => {
-        setOpen((prevOpen) => !prevOpen);
+        setOpen(!open);
     };
 
     const getPageTitle = (path) => {
@@ -243,7 +247,7 @@ export default function Layout() {
     };
 
     const toggleChat = () => {
-        setChatOpen((prev) => !prev);
+        setChatOpen(!chatOpen);
     };
 
     const handleSendMessage = useCallback(async () => {
@@ -308,7 +312,7 @@ export default function Layout() {
                         >
                             <MenuIcon />
                         </IconButton>
-                        <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1 }}>
+                        <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1, fontWeight: 600 }}>
                             {getPageTitle(location.pathname)}
                         </Typography>
                         <IconButton color="inherit" onClick={toggleColorMode}>
@@ -318,9 +322,9 @@ export default function Layout() {
                             <SettingsIcon />
                         </IconButton>
                         <IconButton color="inherit" onClick={handleUserProfileClick} aria-label="user profile">
-                            <Badge color="secondary">
-                                <AccountCircleIcon />
-                            </Badge>
+                            <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.secondary.main }}>
+                                {username.charAt(0).toUpperCase()}
+                            </Avatar>
                         </IconButton>
                     </Toolbar>
                 </AppBar>
@@ -331,6 +335,7 @@ export default function Layout() {
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             px: [1],
+                            background: 'linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)',
                         }}
                     >
                         {open && (
@@ -338,7 +343,7 @@ export default function Layout() {
                                 <img src="/public/logo.png" alt="Logo" style={{ height: '40px' }} />
                             </Box>
                         )}
-                        <IconButton onClick={toggleDrawer}>
+                        <IconButton onClick={toggleDrawer} sx={{ color: 'white' }}>
                             <ChevronLeftIcon />
                         </IconButton>
                     </Toolbar>
@@ -417,7 +422,7 @@ export default function Layout() {
                         backgroundColor: theme.palette.background.paper,
                         boxShadow: theme.shadows[4],
                         '&:hover': {
-                            backgroundColor: theme.palette.background.paper,
+                            backgroundColor:  theme.palette.background.paper,
                         },
                     }}
                 >
@@ -432,12 +437,11 @@ export default function Layout() {
                         exit={{ opacity: 0, y: 50, scale: 0.3 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                     >
-                        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.paper' }}>
+                        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems:  'center', bgcolor: 'background.paper' }}>
                             <Typography variant="h6" sx={{ fontWeight: 600 }}>AI Assistant</Typography>
                             <IconButton onClick={toggleChat} size="small">
                                 <CloseIcon />
                             </IconButton>
-
                         </Box>
                         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, bgcolor: 'background.default' }}>
                             {sessions.find(s => s.id === activeSession)?.messages.map((message, index) => (

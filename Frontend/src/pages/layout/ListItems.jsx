@@ -1,91 +1,103 @@
 import * as React from 'react';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import ListSubheader from '@mui/material/ListSubheader';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import PaymentIcon from '@mui/icons-material/Payment';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import ContactSupportIcon from '@mui/icons-material/ContactSupport';
-import {NavLink} from "react-router-dom";
+import { ListItemButton, ListItemIcon, ListItemText, ListSubheader } from '@mui/material';
+import { NavLink } from "react-router-dom";
+import {
+    Dashboard as DashboardIcon,
+    AttachMoney as AttachMoneyIcon,
+    BarChart as BarChartIcon,
+    AccountBalance as AccountBalanceIcon,
+    ContactSupport as ContactSupportIcon,
+    Assignment as AssignmentIcon
+} from '@mui/icons-material';
+import { styled } from '@mui/material/styles';
 
-const activeStyle = {
-    textDecoration: "none",
-    color: "inherit",
+const StyledListItemButton = styled(ListItemButton)(({ theme }) => ({
+    borderRadius: theme.shape.borderRadius,
+    margin: '4px 8px',
     '&.active': {
-        backgroundColor: 'rgba(0, 0, 0, 0.08)',
+        backgroundColor: theme.palette.action.selected,
         '& .MuiListItemIcon-root': {
-            color: 'inherit',
-        }
-    }
-};
+            color: theme.palette.primary.main,
+        },
+        '& .MuiListItemText-primary': {
+            fontWeight: 600,
+            color: theme.palette.text.primary,
+        },
+    },
+    '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+    },
+}));
+
+const StyledListItemIcon = styled(ListItemIcon)(({ theme }) => ({
+    minWidth: 40,
+    color: theme.palette.text.secondary,
+}));
+
+const StyledListItemText = styled(ListItemText)(({ theme }) => ({
+    '& .MuiListItemText-primary': {
+        fontSize: '0.875rem',
+        fontWeight: 500,
+    },
+}));
+
+const StyledListSubheader = styled(ListSubheader)(({ theme }) => ({
+    textTransform: 'uppercase',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    letterSpacing: '0.5px',
+    color: theme.palette.text.secondary,
+    lineHeight: '2.5em',
+    backgroundColor: 'transparent',
+}));
 
 export const mainListItems = (
     <React.Fragment>
-        <ListItemButton component={NavLink} to="/" sx={activeStyle}>
-            <ListItemIcon>
+        <StyledListItemButton component={NavLink} to="/">
+            <StyledListItemIcon>
                 <DashboardIcon />
-            </ListItemIcon>
-            <ListItemText primary="Dashboard" />
-        </ListItemButton>
-        <ListItemButton component={NavLink} to="/transaction" sx={activeStyle}>
-            <ListItemIcon>
+            </StyledListItemIcon>
+            <StyledListItemText primary="Dashboard" />
+        </StyledListItemButton>
+        <StyledListItemButton component={NavLink} to="/transaction">
+            <StyledListItemIcon>
                 <AttachMoneyIcon/>
-            </ListItemIcon>
-            <ListItemText primary="Transaction" />
-        </ListItemButton>
-        <ListItemButton component={NavLink} to="/report" sx={activeStyle}>
-            <ListItemIcon>
+            </StyledListItemIcon>
+            <StyledListItemText primary="Transaction" />
+        </StyledListItemButton>
+        <StyledListItemButton component={NavLink} to="/report">
+            <StyledListItemIcon>
                 <BarChartIcon />
-            </ListItemIcon>
-            <ListItemText primary="Reports" />
-        </ListItemButton>
-        <ListItemButton component={NavLink} to="/investment" sx={activeStyle}>
-            <ListItemIcon>
+            </StyledListItemIcon>
+            <StyledListItemText primary="Reports" />
+        </StyledListItemButton>
+        <StyledListItemButton component={NavLink} to="/investment">
+            <StyledListItemIcon>
                 <AccountBalanceIcon />
-            </ListItemIcon>
-            <ListItemText primary="Investment" />
-        </ListItemButton>
-        <ListItemButton component={NavLink} to="/contact-us" sx={activeStyle}>
-            <ListItemIcon>
+            </StyledListItemIcon>
+            <StyledListItemText primary="Investment" />
+        </StyledListItemButton>
+        <StyledListItemButton component={NavLink} to="/contact-us">
+            <StyledListItemIcon>
                 <ContactSupportIcon />
-            </ListItemIcon>
-            <ListItemText primary="Contact Us" />
-        </ListItemButton>
+            </StyledListItemIcon>
+            <StyledListItemText primary="Contact Us" />
+        </StyledListItemButton>
     </React.Fragment>
 );
 
 export const secondaryListItems = (
     <React.Fragment>
-        <ListSubheader component="div" inset>
+        <StyledListSubheader component="div" inset>
             Additional Features
-        </ListSubheader>
-        {/*<ListItemButton component={NavLink} to="/current-month" sx={activeStyle}>*/}
-        {/*    <ListItemIcon>*/}
-        {/*        <AssignmentIcon />*/}
-        {/*    </ListItemIcon>*/}
-        {/*    <ListItemText primary="Current month" />*/}
-        {/*</ListItemButton>*/}
-        {/*<ListItemButton component={NavLink} to="/last-quarter" sx={activeStyle}>*/}
-        {/*    <ListItemIcon>*/}
-        {/*        <AssignmentIcon />*/}
-        {/*    </ListItemIcon>*/}
-        {/*    <ListItemText primary="Last quarter" />*/}
-        {/*</ListItemButton>*/}
-        {/*<ListItemButton component={NavLink} to="/year-end-sale" sx={activeStyle}>*/}
-        {/*    <ListItemIcon>*/}
-        {/*        <AssignmentIcon />*/}
-        {/*    </ListItemIcon>*/}
-        {/*    <ListItemText primary="Year-end sale" />*/}
-        {/*</ListItemButton>*/}
-        {/*<ListItemButton component={NavLink} to="/contact-us" sx={activeStyle}>*/}
-        {/*    <ListItemIcon>*/}
-        {/*        <ContactSupportIcon />*/}
-        {/*    </ListItemIcon>*/}
-        {/*    <ListItemText primary="Contact Us" />*/}
-        {/*</ListItemButton>*/}
+        </StyledListSubheader>
+        {/* Uncomment and modify as needed
+        <StyledListItemButton component={NavLink} to="/current-month">
+            <StyledListItemIcon>
+                <AssignmentIcon />
+            </StyledListItemIcon>
+            <StyledListItemText primary="Current month" />
+        </StyledListItemButton>
+        */}
     </React.Fragment>
 );

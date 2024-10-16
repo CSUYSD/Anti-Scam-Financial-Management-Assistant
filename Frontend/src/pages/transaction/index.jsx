@@ -9,6 +9,11 @@ import {
 } from '@/api/record';
 import { searchAPI } from '@/api/search';
 
+const transactionTypes = ['Income', 'Expense'];
+const expenseCategories = ['Grocery', 'Electronic', 'Devices', 'Rent', 'Bills', 'Tuition Fees'];
+const incomeCategories = ['Salary', 'Investment', 'Gift', 'Other'];
+const transactionMethods = ['Credit Card', 'Cash', 'PayPal'];
+
 export default function EnhancedTransactionManagement() {
     const [searchTerm, setSearchTerm] = useState('');
     const [transactionType, setTransactionType] = useState('All');
@@ -44,6 +49,19 @@ export default function EnhancedTransactionManagement() {
     useEffect(() => {
         fetchAllRecords();
     }, []);
+
+    useEffect(() => {
+        if (transactionType !== 'All') {
+            const filteredTransactions = allTransactions.filter(t => t.type === transactionType);
+            setDisplayedTransactions(filteredTransactions);
+            setTotalPages(Math.ceil(filteredTransactions.length / 10));
+            setPage(1);
+        } else {
+            setDisplayedTransactions(allTransactions);
+            setTotalPages(Math.ceil(allTransactions.length / 10));
+            setPage(1);
+        }
+    }, [transactionType, allTransactions]);
 
     const fetchAllRecords = async () => {
         try {
@@ -93,7 +111,7 @@ export default function EnhancedTransactionManagement() {
         setShowSuccess(true);
         setTimeout(() => {
             setShowSuccess(false);
-            fetchTransactions();
+            fetchAllRecords();
         }, 3000);
     }, []);
 
@@ -118,7 +136,7 @@ export default function EnhancedTransactionManagement() {
             await deleteRecordsInBatchAPI(selectedTransactions);
             handleAction('Batch Delete');
             setSelectedTransactions([]);
-            await fetchTransactions();
+            await fetchAllRecords();
         } catch (error) {
             console.error('Batch delete error:', error);
             setError('Failed to delete selected transactions');
@@ -170,7 +188,7 @@ export default function EnhancedTransactionManagement() {
                     transactionTime: '',
                     transactionDescription: ''
                 });
-                await fetchTransactions();
+                await fetchAllRecords();
             } catch (error) {
                 setError('Failed to add transaction');
             }
@@ -206,7 +224,7 @@ export default function EnhancedTransactionManagement() {
                     transactionTime: '',
                     transactionDescription: ''
                 });
-                await fetchTransactions();
+                await fetchAllRecords();
             } catch (error) {
                 setError('Failed to update transaction');
             }
@@ -217,7 +235,7 @@ export default function EnhancedTransactionManagement() {
         try {
             await deleteRecordAPI(id);
             handleAction('Delete');
-            await fetchTransactions();
+            await fetchAllRecords();
         } catch (error) {
             setError('Failed to delete transaction');
         }
@@ -251,7 +269,6 @@ export default function EnhancedTransactionManagement() {
         setTransactionType(type);
         setTypeDropdownOpen(false);
         setIsSearchActive(false);
-        fetchAllRecords();
     };
 
     const handlePageChange = async (newPage) => {
@@ -269,7 +286,6 @@ export default function EnhancedTransactionManagement() {
             setLoading(false);
         }
     };
-
 
     if (loading) {
         return (
@@ -360,9 +376,9 @@ export default function EnhancedTransactionManagement() {
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: -10 }}
                                                 transition={{ duration: 0.2 }}
-                                                className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg overflow-hidden z-20"
+                                                className="absolute top-full left-0 mt-1  bg-white rounded-lg shadow-lg overflow-hidden z-20"
                                             >
-                                                {['All', 'Income', 'Expense'].map((type) => (
+                                                {['All', ...transactionTypes].map((type) => (
                                                     <motion.button
                                                         key={type}
                                                         onClick={() => handleTypeSelect(type)}
@@ -401,26 +417,35 @@ export default function EnhancedTransactionManagement() {
                                         <h3 className="text-xl font-semibold mb-4">{editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label  className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                                                 <select
                                                     value={transactionForm.type}
-                                                    onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value })}
+                                                    onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value, category: '' })}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                 >
-                                                    <option value="Income">Income</option>
-                                                    <option value="Expense">Expense</option>
+                                                    {transactionTypes.map((type) => (
+                                                        <option key={type} value={type}>{type}</option>
+                                                    ))}
                                                 </select>
                                                 {formErrors.type && <p className="text-red-500 text-xs mt-1">{formErrors.type}</p>}
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                                <input
-                                                    type="text"
+                                                <select
                                                     value={transactionForm.category}
                                                     onChange={(e) => setTransactionForm({ ...transactionForm, category: e.target.value })}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    placeholder="Enter category"
-                                                />
+                                                >
+                                                    <option value="">Select a category</option>
+                                                    {transactionForm.type === 'Expense'
+                                                        ? expenseCategories.map((category) => (
+                                                            <option key={category} value={category}>{category}</option>
+                                                        ))
+                                                        : incomeCategories.map((category) => (
+                                                            <option key={category} value={category}>{category}</option>
+                                                        ))
+                                                    }
+                                                </select>
                                                 {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
                                             </div>
                                             <div>
@@ -436,13 +461,16 @@ export default function EnhancedTransactionManagement() {
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Method</label>
-                                                <input
-                                                    type="text"
+                                                <select
                                                     value={transactionForm.transactionMethod}
                                                     onChange={(e) => setTransactionForm({ ...transactionForm, transactionMethod: e.target.value })}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    placeholder="Enter transaction method"
-                                                />
+                                                >
+                                                    <option value="">Select a method</option>
+                                                    {transactionMethods.map((method) => (
+                                                        <option key={method} value={method}>{method}</option>
+                                                    ))}
+                                                </select>
                                                 {formErrors.transactionMethod && <p className="text-red-500 text-xs mt-1">{formErrors.transactionMethod}</p>}
                                             </div>
                                             <div>

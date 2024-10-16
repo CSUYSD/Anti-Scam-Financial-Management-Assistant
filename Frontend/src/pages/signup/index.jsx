@@ -1,4 +1,5 @@
-// eslint-disable-next-line no-unused-vars
+'use client'
+
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, ChevronLeft, User, Mail, Lock, Calendar, Phone, Check, CheckCircle, EyeIcon, EyeOffIcon } from 'lucide-react'
@@ -10,9 +11,13 @@ import { signUpAPI } from "@/api/user.jsx"
 const schema = Yup.object().shape({
     username: Yup.string().required('Username is required').min(3, 'Username must be at least 3 characters'),
     email: Yup.string().email('Invalid email').required('Email is required'),
-    password: Yup.string().required('Password is required').min(8, 'Password must be at least 8 characters'),
+    password: Yup.string()
+        .required('Password is required')
+        .matches(
+            /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+            'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character'
+        ),
     DOB: Yup.date().required('Date of Birth is required').max(new Date(), 'Date of Birth cannot be in the future'),
-    fullName: Yup.string().required('Full Name is required'),
     phone: Yup.string().matches(/^[0-9]+$/, 'Must be only digits').min(10, 'Must be exactly 10 digits').max(10, 'Must be exactly 10 digits')
 })
 
@@ -24,7 +29,7 @@ export default function SignUp() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [error, setError] = useState(null)
-    const { register, handleSubmit, formState: { errors }, trigger, getValues } = useForm({
+    const { register, handleSubmit, formState: { errors }, trigger, getValues, reset } = useForm({
         resolver: yupResolver(schema),
         mode: 'onChange'
     })
@@ -54,9 +59,15 @@ export default function SignUp() {
     }
 
     const nextStep = async () => {
-        const fields = step === 0 ? ['username', 'email', 'password'] : ['fullName', 'DOB', 'phone']
+        const fields = step === 0 ? ['username', 'email', 'password'] : ['DOB', 'phone']
         const isStepValid = await trigger(fields)
-        if (isStepValid) setStep(step + 1)
+        if (isStepValid) {
+            setStep(step + 1)
+            if (step === 0) {
+                // Reset the fields for the next step
+                reset({ ...getValues(), DOB: '', phone: '' })
+            }
+        }
     }
 
     const prevStep = () => setStep(step - 1)
@@ -119,13 +130,6 @@ export default function SignUp() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -50 }}
                     >
-                        <InputField
-                            icon={<User className="text-purple-500" />}
-                            label="Full Name"
-                            name="fullName"
-                            register={register}
-                            error={errors.fullName}
-                        />
                         <InputField
                             icon={<Calendar className="text-purple-500" />}
                             label="Date of Birth"

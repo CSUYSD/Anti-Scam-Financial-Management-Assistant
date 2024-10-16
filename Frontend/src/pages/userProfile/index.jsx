@@ -1,21 +1,19 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Mail, Lock, Calendar, Phone, Check, CheckCircle, EyeIcon, EyeOffIcon, Save, Edit } from 'lucide-react'
+import { User, Mail, Lock, Calendar, Phone, Save, Edit, EyeIcon, EyeOffIcon } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as Yup from 'yup'
 import { updateUserAPI, updatePasswordAPI, getProfileAPI } from "@/api/user"
-import { Snackbar, Alert } from '@mui/material'
-
 
 const schema = Yup.object().shape({
     username: Yup.string().required('Username is required').min(3, 'Username must be at least 3 characters'),
     email: Yup.string().email('Invalid email').required('Email is required'),
-    fullName: Yup.string().required('Full Name is required'),
-    phone: Yup.string().matches(/^[0-9]+$/, 'Must be only digits').min(10, 'Must be exactly 10 digits').max(10, 'Must be exactly 10 digits'),
+    phone: Yup.string().matches(/^[0-9]+$/, 'Must be only digits').min(11, 'Must be exactly 10 digits').max(11, 'Must be exactly 11 digits'),
     birthday: Yup.date().required('Date of Birth is required').max(new Date(), 'Date of Birth cannot be in the future'),
 })
-
 
 const passwordSchema = Yup.object().shape({
     currentPassword: Yup.string().required('Current password is required'),
@@ -23,6 +21,12 @@ const passwordSchema = Yup.object().shape({
     confirmPassword: Yup.string().oneOf([Yup.ref('newPassword'), null], 'Passwords must match'),
 })
 
+const defaultFormValues = {
+    username: '',
+    email: '',
+    phone: '',
+    birthday: '',
+}
 
 export default function UserProfile() {
     const [user, setUser] = useState(null)
@@ -30,93 +34,108 @@ export default function UserProfile() {
     const [passwordDialog, setPasswordDialog] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
-
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'success' })
+    const [loading, setLoading] = useState(true)
 
     const { control, handleSubmit, formState: { errors }, reset } = useForm({
         resolver: yupResolver(schema),
-        mode: 'onChange'
+        mode: 'onChange',
+        defaultValues: defaultFormValues,
     })
-
 
     const { control: passwordControl, handleSubmit: handleSubmitPassword, formState: { errors: passwordErrors }, reset: resetPassword } = useForm({
         resolver: yupResolver(passwordSchema),
-        mode: 'onChange'
+        mode: 'onChange',
+        defaultValues: {
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+        },
     })
-
 
     useEffect(() => {
         fetchUserProfile()
     }, [])
 
-
     const fetchUserProfile = async () => {
+        setLoading(true)
         try {
             const response = await getProfileAPI()
             if (response && response.status === 200) {
-                setUser(response.data)
-                reset(response.data)
+                const userData = response.data || {}
+                setUser(userData)
+                reset({
+                    username: userData.username || '',
+                    email: userData.email || '',
+                    phone: userData.phone || '',
+                    birthday: userData.birthday || '',
+                })
             } else {
                 throw new Error('Failed to fetch user profile')
             }
         } catch (error) {
             console.error('Fetch user profile error:', error)
-            setSnackbar({ open: true, message: 'Failed to load user profile. Please try again later.', severity: 'error' })
+            showNotification('Failed to load user profile. Please try again later.', 'error')
+        } finally {
+            setLoading(false)
         }
     }
 
-
     const onSubmit = async (data) => {
+        if (!user || !user.id) {
+            showNotification('User ID is missing. Unable to update profile.', 'error')
+            return
+        }
+
         setIsSubmitting(true)
         try {
             const response = await updateUserAPI(user.id, data)
             if (response && response.status === 200) {
                 setUser(response.data)
                 setEditing(false)
-                setSnackbar({ open: true, message: 'Profile updated successfully', severity: 'success' })
-                // Refresh the user data to ensure we have the latest information from the database
+                showNotification('Profile updated successfully', 'success')
                 fetchUserProfile()
             } else {
                 throw new Error('Failed to update profile')
             }
         } catch (error) {
             console.error('Update profile error:', error)
-            setSnackbar({ open: true, message: 'Failed to update profile. Please try again.', severity: 'error' })
+            showNotification('Failed to update profile. Please try again.', 'error')
         } finally {
             setIsSubmitting(false)
         }
     }
 
-
     const onPasswordSubmit = async (data) => {
+        if (!user || !user.id) {
+            showNotification('User ID is missing. Unable to update password.', 'error')
+            return
+        }
+
         setIsSubmitting(true)
         try {
             const response = await updatePasswordAPI(user.id, data.currentPassword, data.newPassword)
             if (response && response.status === 200) {
                 setPasswordDialog(false)
                 resetPassword()
-                setSnackbar({ open: true, message: 'Password updated successfully', severity: 'success' })
+                showNotification('Password updated successfully', 'success')
             } else {
                 throw new Error('Failed to update password')
             }
         } catch (error) {
             console.error('Update password error:', error)
-            setSnackbar({ open: true, message: 'Failed to update password. Please try again.', severity: 'error' })
+            showNotification('Failed to update password. Please try again.', 'error')
         } finally {
             setIsSubmitting(false)
         }
     }
 
-
-    const handleCloseSnackbar = (event, reason) => {
-        if (reason === 'clickaway') {
-            return
-        }
-        setSnackbar({ ...snackbar, open: false })
+    const showNotification = (message, type) => {
+        setNotification({ show: true, message, type })
+        setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 5000)
     }
 
-
-    if (!user) {
+    if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center">
                 <div className="bg-white p-8 rounded-lg shadow-lg">
@@ -126,6 +145,15 @@ export default function UserProfile() {
         )
     }
 
+    if (!user) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center">
+                <div className="bg-white p-8 rounded-lg shadow-lg">
+                    <p className="text-xl text-purple-700">Failed to load user profile. Please try again later.</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center p-4">
@@ -170,14 +198,6 @@ export default function UserProfile() {
                                         name="email"
                                         control={control}
                                         error={errors.email}
-                                        disabled={!editing}
-                                    />
-                                    <InputField
-                                        icon={<User className="text-purple-500" />}
-                                        label="Full Name"
-                                        name="fullName"
-                                        control={control}
-                                        error={errors.fullName}
                                         disabled={!editing}
                                     />
                                     <InputField
@@ -298,15 +318,14 @@ export default function UserProfile() {
                     </motion.div>
                 </motion.div>
             )}
-            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
+            {notification.show && (
+                <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+                    {notification.message}
+                </div>
+            )}
         </div>
     )
 }
-
 
 const InputField = ({ icon, label, name, control, error, type = 'text', rightIcon, disabled = false }) => (
     <div className="mb-6">
@@ -338,4 +357,3 @@ const InputField = ({ icon, label, name, control, error, type = 'text', rightIco
         {error && <p className="mt-2 text-sm text-red-600">{error.message}</p>}
     </div>
 )
-

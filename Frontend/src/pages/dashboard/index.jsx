@@ -7,7 +7,29 @@ import { getCurrentAccountAPI } from '@/api/account';
 import { format, subDays } from 'date-fns';
 import useWebSocket from '@/hooks/useWebSocket';
 
-const COLORS = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF8A80', '#B39DDB', '#81D4FA', '#A5D6A7'];
+const INCOME_COLORS = [
+    '#7986CB',
+    '#EF5350',
+    '#F06292',
+    '#FFF176',
+    '#D4E157',
+    '#FFD54F',
+    '#81C784',
+    '#AED581'
+];
+
+const EXPENSE_COLORS = [
+    '#9575CD',
+    '#7986CB',
+    '#FFF176',
+    '#D4E157',
+    '#FFD54F',
+    '#81C784',
+    '#EF5350',
+    '#F06292',
+    '#BA68C8'
+];
+
 
 export default function Dashboard() {
     const [accountData, setAccountData] = useState({ totalIncome: 0, totalExpense: 0, id: '' });
@@ -209,20 +231,27 @@ export default function Dashboard() {
         );
     }, []);
 
+
     const WeeklyChart = React.memo(({ data, duration, onDurationChange }) => {
         const [hoveredData, setHoveredData] = useState(null);
 
         const CustomTooltip = ({ active, payload, label }) => {
             if (active && payload && payload.length) {
                 return (
-                    <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.5, ease: "easeInOut" }}
+                        className="bg-white p-4 rounded-lg shadow-lg border border-gray-200"
+                    >
                         <p className="font-semibold text-gray-800">{format(new Date(label), 'MMM d, yyyy')}</p>
                         {payload.map((entry, index) => (
                             <p key={index} className={`text-sm ${entry.name === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                                 {entry.name.charAt(0).toUpperCase() + entry.name.slice(1)}: ${entry.value.toLocaleString()}
                             </p>
                         ))}
-                    </div>
+                    </motion.div>
                 );
             }
             return null;
@@ -275,26 +304,66 @@ export default function Dashboard() {
                         />
                         <YAxis />
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend />
                         <Area type="monotone" dataKey="income" stroke="#10B981" fillOpacity={1} fill="url(#colorIncome)" />
                         <Area type="monotone" dataKey="expense" stroke="#EF4444" fillOpacity={1} fill="url(#colorExpense)" />
                     </AreaChart>
                 </ResponsiveContainer>
-                {hoveredData && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-4 p-4 bg-gray-100 rounded-lg"
-                    >
-                        <p className="font-semibold">Date: {format(new Date(hoveredData.date), 'MMMM d, yyyy')}</p>
-                        <p className="text-green-600">Income: ${hoveredData.income.toLocaleString()}</p>
-                        <p className="text-red-600">Expense: ${hoveredData.expense.toLocaleString()}</p>
-                        <p className="font-semibold mt-2">Balance: ${(hoveredData.income - hoveredData.expense).toLocaleString()}</p>
-                    </motion.div>
-                )}
+                <AnimatePresence>
+                    {hoveredData && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.8, ease: "easeInOut" }}
+                            className="mt-4 bg-gray-100 rounded-lg overflow-hidden"
+                        >
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5, delay: 0.3 }}
+                                className="p-4"
+                            >
+                                <motion.p
+                                    initial={{ y: 10, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ duration: 0.5, delay: 0.4 }}
+                                    className="font-semibold"
+                                >
+                                    Date: {format(new Date(hoveredData.date), 'MMMM d, yyyy')}
+                                </motion.p>
+                                <motion.p
+                                    initial={{ y: 10, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ duration: 0.5, delay: 0.5 }}
+                                    className="text-green-600"
+                                >
+                                    Income: ${hoveredData.income.toLocaleString()}
+                                </motion.p>
+                                <motion.p
+                                    initial={{ y: 10, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ duration: 0.5, delay: 0.6 }}
+                                    className="text-red-600"
+                                >
+                                    Expense: ${hoveredData.expense.toLocaleString()}
+                                </motion.p>
+                                <motion.p
+                                    initial={{ y: 10, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ duration: 0.5, delay: 0.7 }}
+                                    className="font-semibold mt-2"
+                                >
+                                    Balance: ${(hoveredData.income - hoveredData.expense).toLocaleString()}
+                                </motion.p>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </motion.div>
         );
     });
+
 
     const TransactionTypesPieChart = ({ data }) => {
         const [activeIndex, setActiveIndex] = useState(0);
@@ -306,15 +375,13 @@ export default function Dashboard() {
 
         const processedData = useMemo(() => {
             const incomeData = data.filter(item => item.type === 'Income');
-
             const expenseData = data.filter(item => item.type === 'Expense');
             return { income: incomeData, expense: expenseData };
         }, [data]);
 
         const renderActiveShape = (props) => {
             const RADIAN = Math.PI / 180;
-            const { cx, cy, midAngle, innerRadius,
-                outerRadius, startAngle, endAngle,
+            const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle,
                 fill, payload, percent, value } = props;
             const sin = Math.sin(-RADIAN * midAngle);
             const cos = Math.cos(-RADIAN * midAngle);
@@ -402,7 +469,10 @@ export default function Dashboard() {
                             onMouseEnter={onPieEnter}
                         >
                             {processedData[activeType].map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={activeType === 'income' ? INCOME_COLORS[index % INCOME_COLORS.length] : EXPENSE_COLORS[index % EXPENSE_COLORS.length]}
+                                />
                             ))}
                         </Pie>
                     </PieChart>
@@ -410,7 +480,10 @@ export default function Dashboard() {
                 <div className="mt-4">
                     {processedData[activeType].map((entry, index) => (
                         <div key={`legend-${index}`} className="flex items-center mb-2">
-                            <div className="w-4 h-4 mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                            <div
+                                className="w-4 h-4 mr-2"
+                                style={{ backgroundColor: activeType === 'income' ? INCOME_COLORS[index % INCOME_COLORS.length] : EXPENSE_COLORS[index % EXPENSE_COLORS.length] }}
+                            ></div>
                             <span>{entry.name}: ${entry.value.toLocaleString()}</span>
                         </div>
                     ))}
@@ -626,7 +699,7 @@ export default function Dashboard() {
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 20 }}
-                                transition={{ duration: 0.3, delay: index * 0.1 }}
+                                transition={{ duration: 0.8, delay: index * 0.1 }}
                                 className="bg-gray-50 p-3 rounded-lg"
                             >
                                 <div
