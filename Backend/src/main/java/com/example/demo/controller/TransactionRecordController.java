@@ -56,7 +56,7 @@ public class TransactionRecordController {
         try {
             recordService.addTransactionRecord(token, transactionRecordDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body("Transaction record has been created successfully.");
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error creating transaction record: " + e.getMessage());
         }
     }

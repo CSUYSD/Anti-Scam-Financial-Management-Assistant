@@ -32,7 +32,7 @@ public class AiAnalyserService {
 
     public String analyseCurrentRecord(String currentRecord, String recentRecords) {
         String context = """
-        Based on the following recent transaction records, generate a reply using the context provided:
+        Based on the following recent transaction records, generate a reply using the context provided.:
         ---------------------
         {context}
         ---------------------

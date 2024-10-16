@@ -709,7 +709,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                         <Warning className="text-yellow-500 text-3xl mr-2" />
-                        <h3 className="text-2xl font-semibold text-gray-800">Suspicious Transactions</h3>
+                        <h3 className="text-2xl font-semibold text-gray-800">Scam Alert</h3>
                     </div>
                     <motion.button
                         whileHover={{ scale: 1.05 }}

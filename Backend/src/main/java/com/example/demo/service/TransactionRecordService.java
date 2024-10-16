@@ -90,9 +90,13 @@ public class TransactionRecordService {
         // send to AI analyser
         String currentRecord = PromptParser.parseLatestTransactionRecordsToPrompt(List.of(transactionRecord));
         AnalyseRequest request = new AnalyseRequest(accountId, currentRecord);
-
-        rabbitTemplate.convertAndSend("new.record.to.ai.analyser", request);
-        updateRedisAccount(account);
+        log.info("Sending AnalyseRequest to AI analyser for accountId: {}", accountId);
+        try {
+            rabbitTemplate.convertAndSend("new.record.to.ai.analyser", request);
+            log.info("AnalyseRequest sent successfully to AI analyser for accountId: {}", accountId);
+        } catch (Exception e) {
+            throw new RuntimeException("Error sending AnalyseRequest to AI analyser: " + e.getMessage());
+        }
     }
 
     @Transactional
