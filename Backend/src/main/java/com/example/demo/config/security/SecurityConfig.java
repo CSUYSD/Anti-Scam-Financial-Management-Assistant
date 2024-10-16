@@ -48,10 +48,10 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/signup", "/login", "/h2-console/**", "/ws/**", "/message/**", "/document/**").permitAll()
+//                .requestMatchers("/signup", "/login", "/h2-console/**", "/ws/**", "/message/**", "/document/**").permitAll()
 //                .requestMatchers("/account/**", "/records/**", "/users").hasRole("USER")
 //                .requestMatchers("/users/**").hasRole("ADMIN")
-                  .anyRequest().authenticated()
+                  .anyRequest().permitAll()
             )
             .csrf(AbstractHttpConfigurer::disable)
             .headers(headers -> headers

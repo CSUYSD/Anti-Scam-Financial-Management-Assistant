@@ -23,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Paperclip, X, Send, Download, Copy } from 'lucide-react'
+import { Paperclip, X, Send, Download, Copy, Edit, Trash, ChevronDown } from 'lucide-react'
 
 export default function Web3Chat() {
   const {
@@ -43,6 +43,8 @@ export default function Web3Chat() {
   const [isLoading, setIsLoading] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [username, setUsername] = useState(() => localStorage.getItem('username') || 'User')
+  const [editSessionId, setEditSessionId] = useState(null)
+  const [newSessionName, setNewSessionName] = useState('')
   const fileInputRef = useRef(null)
 
   const handleSendMessage = useCallback(async () => {
@@ -134,9 +136,6 @@ export default function Web3Chat() {
     const lastUserMessage = [...currentSession.messages].reverse().find(m => m.sender === username)
     if (!lastUserMessage) return
 
-    const updatedMessages = currentSession.messages.slice(0, -1)
-    updateSessionName(activeSession, currentSession.name)
-
     setMessage(lastUserMessage.content)
     await handleSendMessage()
   }
@@ -178,6 +177,19 @@ export default function Web3Chat() {
     document.body.removeChild(element)
   }
 
+  const startEditSession = (id) => {
+    setEditSessionId(id)
+    setNewSessionName(sessions.find(s => s.id === id)?.name || '')
+  }
+
+  const handleEditSessionConfirm = () => {
+    if (editSessionId) {
+      updateSessionName(editSessionId, newSessionName)
+      setEditSessionId(null)
+      setNewSessionName('')
+    }
+  }
+
   const canSendMessage = message.trim() || (isRetrievalMode && files.length > 0)
   const currentSession = sessions.find(s => s.id === activeSession)
   const hasMessages = currentSession && currentSession.messages.length > 0
@@ -186,20 +198,35 @@ export default function Web3Chat() {
       <div className="flex flex-col h-full bg-background">
         <header className="bg-card shadow-sm p-4">
           <div className="flex justify-between items-center">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  {currentSession?.name || 'Select Session'}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {sessions.map((session) => (
-                    <DropdownMenuItem key={session.id} onSelect={() => setActiveSession(session.id)}>
-                      {session.name}
-                    </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="ml-12"> {/* Increased left margin */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="text-lg px-6 py-3">
+                    {currentSession?.name || 'Select Session'} <ChevronDown className="ml-2 h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {sessions.map((session) => (
+                      <DropdownMenuItem key={session.id} onSelect={() => setActiveSession(session.id)}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{session.name}</span>
+                          <div className="flex space-x-2">
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); startEditSession(session.id); }}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}>
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuItem onSelect={() => addNewSession()}>
+                    New Session
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Switch
@@ -233,7 +260,7 @@ export default function Web3Chat() {
             />
           </ScrollArea>
           <div className="p-4 border-t border-border">
-            <div className="flex items-end space-x-2">
+            <div className="flex items-center space-x-2"> {/* Changed to items-center */}
               <div className="flex-grow">
               <textarea
                   className="w-full p-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent resize-none transition-shadow duration-200"
@@ -250,48 +277,70 @@ export default function Web3Chat() {
                   disabled={isLoading}
               />
               </div>
-              {isRetrievalMode && (
-                  <div className="flex space-x-2">
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isLoading}
-                        aria-label="Upload file"
-                    >
-                      <Paperclip className="h-4 w-4" />
-                    </Button>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileUpload}
-                        className="hidden"
-                    />
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handleClearFiles}
-                        disabled={isLoading || files.length === 0}
-                        aria-label="Clear files"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-              )}
-              <Button
-                  onClick={handleSendMessage}
-                  disabled={isLoading || !canSendMessage}
-                  className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 ${
-                      canSendMessage
-                          ? 'bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary'
-                          : 'bg-muted text-muted-foreground cursor-not-allowed'
-                  }`}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+              <div className="flex space-x-2">
+                {isRetrievalMode && (
+                    <>
+                      <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isLoading}
+                          aria-label="Upload file"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                      </Button>
+                      <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleFileUpload}
+                          className="hidden"
+                      />
+                      <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={handleClearFiles}
+                          disabled={isLoading || files.length === 0}
+                          aria-label="Clear files"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                )}
+                <Button
+                    onClick={handleSendMessage}
+                    disabled={isLoading || !canSendMessage}
+                    className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 ${
+                        canSendMessage
+                            ? 'bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary'
+                            : 'bg-muted text-muted-foreground cursor-not-allowed'
+                    }`}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </main>
+
+        {editSessionId && (
+            <div className="fixed inset-0 bg-background/80 flex items-center justify-center">
+              <Card className="w-full max-w-sm">
+                <CardContent className="pt-6">
+                  <h2 className="text-lg font-semibold mb-4">Rename Session</h2>
+                  <Input
+                      value={newSessionName}
+                      onChange={(e) => setNewSessionName(e.target.value)}
+                      placeholder="Enter new session name"
+                      className="mb-4"
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setEditSessionId(null)}>Cancel</Button>
+                    <Button onClick={handleEditSessionConfirm}>Save</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+        )}
       </div>
   )
 }
@@ -320,7 +369,7 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
                     className="w-10 h-10 rounded-full"
                 />
                 <div className={`${message.sender === username ? 'text-right' : 'text-left'}`}>
-                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
+                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' :   'bg-secondary text-secondary-foreground'}`}>
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -366,9 +415,7 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
         {isTyping && (
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1,
-
-                  y: 0 }}
+                animate={{ opacity: 1, y: 0 }}
                 className="flex justify-start"
             >
               <div className="bg-secondary rounded-lg p-3">
