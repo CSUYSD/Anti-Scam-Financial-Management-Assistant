@@ -3,7 +3,7 @@ package com.example.demo.controller.Security;
 import java.util.Map;
 
 import com.example.demo.exception.PasswordNotCorrectException;
-import com.example.demo.model.Security.LoginVo;
+import com.example.demo.model.security.LoginVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,9 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
-import com.example.demo.model.DTO.TransactionUserDTO;
-import com.example.demo.service.Security.SecurityService;
-import com.example.demo.service.Security.UserDetailService;
+import com.example.demo.model.dto.TransactionUserDTO;
+import com.example.demo.service.security.SecurityService;
+import com.example.demo.service.security.UserDetailService;
 
 
 import jakarta.validation.Valid;

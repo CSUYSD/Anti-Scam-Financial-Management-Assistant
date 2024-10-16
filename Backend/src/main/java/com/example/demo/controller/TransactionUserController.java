@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import java.util.List;
 import java.util.Optional;
 
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +23,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.exception.UserNotFoundException;
-import com.example.demo.model.DTO.TransactionUserDTO;
+import com.example.demo.model.dto.TransactionUserDTO;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.service.TransactionUserService;
-import com.example.demo.utility.RabbitMQProducer;
 
+
+@Slf4j
 @RestController
 @RequestMapping("/users")
 public class TransactionUserController {
@@ -38,9 +40,6 @@ public class TransactionUserController {
     public TransactionUserController(TransactionUserService transactionUserService) {
         this.transactionUserService = transactionUserService;
     }
-
-    @Autowired
-    private RabbitMQProducer rabbitMQProducer;
 
     @GetMapping("/allusers")
     public ResponseEntity<List<TransactionUser>> getAllUsers() {
@@ -119,13 +118,6 @@ public class TransactionUserController {
             logger.error("Error updating avatar: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating avatar: " + e.getMessage());
         }
-    }
-
-
-    @PostMapping("/rabbit")
-    public String testRabbitMQ(@RequestBody String message) {
-        rabbitMQProducer.sendMessage(message);
-        return message;
     }
 
 }

@@ -5,9 +5,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import com.example.demo.Dao.TransactionUserDao;
+import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.model.TransactionUser;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 import static com.google.common.truth.Truth.assertThat;
 
 @SpringBootTest

@@ -1,7 +1,6 @@
 package com.example.demo.model.Redis;
 
 import java.io.Serializable;
-import java.util.Map;
 
 import lombok.*;
 
