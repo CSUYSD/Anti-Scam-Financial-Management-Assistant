@@ -35,14 +35,11 @@ class WebSocketService {
             const match = content.match(/textContent=([^,]+)/);
             if (match) {
               const textContent = match[1];
-              // 从textContent中提取更多信息
-              const amountMatch = textContent.match(/\$(\d+(\.\d{2})?)/);
               const dateMatch = textContent.match(/(\d{4}-\d{2}-\d{2})/);
               const payload = {
                 description: textContent,
                 date: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
-                amount: amountMatch ? parseFloat(amountMatch[1]) : 0,
-                risk: 'high'
+                risk: textContent.toLowerCase().includes('warning') ? 'high' : 'low'
               };
               console.log('Processed payload:', payload);
               this.messageHandlers.forEach(handler => handler(payload));

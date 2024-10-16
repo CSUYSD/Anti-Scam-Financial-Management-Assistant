@@ -679,20 +679,29 @@ export default function Dashboard() {
 
     const SuspiciousTransactions = useMemo(() => ({ transactions }) => {
         console.log('Rendering SuspiciousTransactions with:', transactions);
-        const [isSearching, setIsSearching] = useState(false);
-        const [searchResults, setSearchResults] = useState([]);
-        const [selectedTransaction, setSelectedTransaction] = useState(null);
+        const [isLoading, setIsLoading] = useState(true);
+        const [suspiciousTransactions, setSuspiciousTransactions] = useState([]);
 
-        const handleSearch = () => {
-            setIsSearching(true);
+
+        const loadTransactions = useCallback(() => {
+            setIsLoading(true);
+            // 模拟从服务器加载数据
             setTimeout(() => {
-                setSearchResults(transactions);
-                setIsSearching(false);
-            }, 1500);
+                setSuspiciousTransactions(transactions);
+                setIsLoading(false);
+            }, 1000);
+        }, [transactions]);
+
+        useEffect(() => {
+            loadTransactions();
+        }, [loadTransactions]);
+
+        const handleReload = () => {
+            loadTransactions();
         };
 
-        const handleTransactionClick = (transaction) => {
-            setSelectedTransaction(transaction);
+        const formatDescription = (description) => {
+            return description.replace(/^WARNING:\s*/i, '').trim();
         };
 
         return (
@@ -710,15 +719,15 @@ export default function Dashboard() {
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={handleSearch}
-                        disabled={isSearching}
+                        onClick={handleReload}
+                        disabled={isLoading}
                         className="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 flex items-center"
                     >
-                        <Search className="mr-2" />
-                        {isSearching ? 'Searching...' : 'Search'}
+                        <Refresh className="mr-2" />
+                        {isLoading ? 'Loading...' : 'Reload'}
                     </motion.button>
                 </div>
-                {isSearching ? (
+                {isLoading ? (
                     <div className="flex justify-center items-center h-64">
                         <motion.div
                             animate={{
@@ -735,63 +744,33 @@ export default function Dashboard() {
                 ) : (
                     <ul className="space-y-3 overflow-y-auto" style={{ maxHeight: '300px' }}>
                         <AnimatePresence>
-                            {searchResults.map((transaction, index) => (
+                            {suspiciousTransactions.map((transaction, index) => (
                                 <motion.li
                                     key={transaction.id}
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
                                     transition={{ duration: 0.3, delay: index * 0.1 }}
-                                    className={`flex justify-between items-center p-3 rounded-lg cursor-pointer ${
-                                        selectedTransaction === transaction ? 'border-2 border-blue-500' : ''
-                                    } ${
-                                        transaction.risk === 'high' ? 'bg-yellow-100' : 'bg-gray-50'
+                                    className={`flex justify-between items-center p-3 rounded-lg ${
+                                        transaction.risk === 'high' ? 'bg-yellow-100' : 'bg-green-100'
                                     }`}
-                                    onClick={() => handleTransactionClick(transaction)}
                                 >
                                     <div>
-                                        <p className="font-medium text-gray-900">{transaction.description}</p>
+                                        <p className="font-medium text-gray-900">
+                                            {transaction.risk === 'high' && '⚠️ '}
+                                            {formatDescription(transaction.description)}
+                                        </p>
                                         <p className="text-sm text-gray-500">{transaction.date}</p>
                                         <p className={`text-xs font-semibold ${
-                                            transaction.risk === 'high' ? 'text-red-500' : 'text-green-500'
+                                            transaction.risk === 'high' ? 'text-yellow-500' : 'text-green-500'
                                         }`}>
                                             Risk: {transaction.risk}
                                         </p>
                                     </div>
-                                    <motion.p
-                                        className="font-bold text-red-600"
-                                        initial={{ scale: 0.5 }}
-                                        animate={{ scale: 1 }}
-                                        transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-                                    >
-                                        -${Math.abs(transaction.amount).toLocaleString()}
-                                    </motion.p>
                                 </motion.li>
                             ))}
                         </AnimatePresence>
                     </ul>
-                )}
-                {selectedTransaction && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="mt-4 p-4 bg-gray-100 rounded-lg"
-                    >
-                        <h4 className="font-semibold text-lg mb-2">Transaction Details</h4>
-                        <p>Description: {selectedTransaction.description}</p>
-                        <p>Amount: ${selectedTransaction.amount.toLocaleString()}</p>
-                        <p>Date: {selectedTransaction.date}</p>
-                        <p>Risk Level: {selectedTransaction.risk}</p>
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setShowInfoModal(true)}
-                            className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600"
-                        >
-                            More Info
-                        </motion.button>
-                    </motion.div>
                 )}
             </motion.div>
         );
