@@ -37,8 +37,16 @@ public class AccountController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<Account>> getAllAccounts() {
-        return ResponseEntity.ok(accountService.getAllAccounts());
+    public ResponseEntity<List<Account>> getAllAccountsByUserId(@RequestHeader("Authorization") String token) {
+        try{
+            return ResponseEntity.ok(accountService.getAllAccountsByUserId(token));
+        } catch (UserNotFoundException e) {
+            log.info("User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } catch (AccountNotFoundException e) {
+            log.info("Account not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 
     @PostMapping("/create")
@@ -79,6 +87,7 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
+
 
 
     @PutMapping("/update/{id}")
