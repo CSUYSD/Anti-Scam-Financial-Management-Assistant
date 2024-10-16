@@ -44,7 +44,7 @@ public class SecurityService {
     private final TransactionUserDao transactionUserDao;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
-    private final RedisTemplate redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final UserRoleDao userRoleDao;
 
     @Autowired
@@ -137,7 +137,6 @@ public class SecurityService {
                         account.getAccountName(),
                         account.getTotalIncome(),
                         account.getTotalExpense()
-//                        account.getTransactionRecords()
                 );
                 redisTemplate.opsForValue().set(redisAccountKey, redisAccount, 1, TimeUnit.HOURS);
             }

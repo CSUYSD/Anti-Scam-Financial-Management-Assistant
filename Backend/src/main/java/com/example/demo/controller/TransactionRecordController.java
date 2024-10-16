@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 
+import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.DTO.TransactionRecordDTO;
 import com.example.demo.service.AccountService;
 import com.example.demo.utility.JWT.JwtUtil;
@@ -86,7 +87,7 @@ public class TransactionRecordController {
             recordService.deleteTransactionRecordsInBatch(accountId, recordIds);
             return ResponseEntity.ok("Records deleted successfully.");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to delete records: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete records: " + e.getMessage());
         }
     }
 

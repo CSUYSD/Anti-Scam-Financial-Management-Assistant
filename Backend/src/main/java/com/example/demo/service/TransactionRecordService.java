@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
+import com.example.demo.Dao.ESDao.RecordESDao;
 import com.example.demo.Dao.TransactionUserDao;
 import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
@@ -13,6 +14,7 @@ import com.example.demo.model.DTO.AccountDTO;
 import com.example.demo.model.DTO.TransactionRecordDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
+import com.example.demo.service.ES.RecordSyncService;
 import com.example.demo.utility.JWT.JwtUtil;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,20 +35,21 @@ public class TransactionRecordService {
     private final TransactionRecordDao transactionRecordDao;
     private final TransactionUserDao transactionUserDao;
     private final AccountDao accountDao;
+    private final RecordSyncService recordSyncService;
     private final JwtUtil jwtUtil;
-//    private final RedisTemplate<String, Object> redisTemplate;
-    private final RedisTemplate redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
     @Autowired
-    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, @Qualifier("redisTemplate") RedisTemplate redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao) {
+    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService) {
         this.transactionRecordDao = transactionRecordDao;
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.accountDao = accountDao;
+        this.recordSyncService = recordSyncService;
     }
 
 
@@ -77,6 +80,8 @@ public class TransactionRecordService {
         transactionRecord.setUserId(userId);
 
         transactionRecordDao.save(transactionRecord);
+//      save record into elastic search
+        recordSyncService.syncToElasticsearch(transactionRecord);
 
 //        System.out.println("Account Total Income: " + account.getTotalIncome());
 //        System.out.println("Account Total Expense: " + account.getTotalExpense());
@@ -112,6 +117,8 @@ public class TransactionRecordService {
 
 
         transactionRecordDao.save(existingRecord);
+//      update record in the elastic search
+        recordSyncService.updateInElasticsearch(existingRecord);
 
         updateRedisAccount(account);
     }
@@ -133,17 +140,40 @@ public class TransactionRecordService {
         }
 
         transactionRecordDao.delete(record);
+//      delete records from elastic search
+        recordSyncService.deleteFromElasticsearch(id);
 
         updateRedisAccount(account);
     }
 
     @Transactional
     public void deleteTransactionRecordsInBatch(Long accountId, List<Long> recordIds) {
-        List<TransactionRecord> records = transactionRecordDao.findAllByIdInAndAccountId(recordIds, accountId);
-        if (records.isEmpty()) {
-            throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
+        Account account = findAccountById(accountId); // 使用传入的 accountId 查找账户
+
+        // 计算并更新账户的总收入和总支出
+        for (Long recordId : recordIds) {
+            TransactionRecord transactionRecord = findTransactionRecordById(recordId);
+            if (transactionRecord.getType().equalsIgnoreCase("expense")) {
+                account.setTotalExpense(account.getTotalExpense() - transactionRecord.getAmount());
+            } else if (transactionRecord.getType().equalsIgnoreCase("income")) {
+                account.setTotalIncome(account.getTotalIncome() - transactionRecord.getAmount());
+            }
         }
-        transactionRecordDao.deleteAll(records);
+
+        // 删除记录
+        List<TransactionRecord> transactionRecords = transactionRecordDao.findAllByIdInAndAccountId(recordIds, account.getId());
+        if (transactionRecords.isEmpty()) {
+            throw new RuntimeException("No records found for provided IDs and accountId: " + account.getId());
+        }
+
+        for (TransactionRecord recordToDelete : transactionRecords) {
+            transactionRecordDao.delete(recordToDelete);
+        }
+
+        // 从 Elasticsearch 中删除批量记录
+        recordSyncService.deleteFromElasticsearchInBatch(recordIds);
+
+        updateRedisAccount(account);
     }
 
     public List<TransactionRecord> getCertainDaysRecords(Long accountId, Integer duration) {
@@ -159,7 +189,6 @@ public class TransactionRecordService {
                 account.getAccountName(),
                 account.getTotalIncome(),
                 account.getTotalExpense());
-//                account.getTransactionRecords());
 
 //        System.out.println("Redis Account: " + redisAccount);
 

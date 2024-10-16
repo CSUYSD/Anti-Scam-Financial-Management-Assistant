@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.Dao.AccountDao;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -23,18 +22,21 @@ import java.util.stream.Collectors;
 import org.springframework.data.redis.core.RedisTemplate;
 import com.example.demo.exception.UserNotFoundException;
 
+
 @Service
 public class AccountService {
 
     private final AccountDao accountDao;
     private final RedisTemplate<String, Object> redisTemplate;
     private final TransactionUserDao transactionUserDao;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public AccountService(AccountDao accountDao, RedisTemplate<String, Object> redisTemplate, TransactionUserDao transactionUserDao) {
+    public AccountService(AccountDao accountDao, RedisTemplate<String, Object> redisTemplate, TransactionUserDao transactionUserDao, ObjectMapper objectMapper) {
         this.accountDao = accountDao;
         this.redisTemplate = redisTemplate;
         this.transactionUserDao = transactionUserDao;
+        this.objectMapper = objectMapper;
     }
 
     public List<Account> getAllAccounts() {
@@ -55,25 +57,13 @@ public class AccountService {
         }
         // 检查账户名是否已存在
         for (String key : keys){
-            if (key.equals("login_user:" + userId + ":account:initial placeholder")) {
+            if (key.equals("login_user:" + userId + ":account:initial placeholder")){
                 continue;
             }
-            RedisAccount redisAccount = (RedisAccount) redisTemplate.opsForValue().get(key);
+            Object obj = redisTemplate.opsForValue().get(key);
+            RedisAccount redisAccount = convertToRedisAccount(obj);
             if (redisAccount.getName().equals(accountDTO.getName())){
                 throw new AccountAlreadyExistException("账户名已存在");
-
-//            Object rawObject = redisTemplate.opsForValue().get(key);
-//            if (rawObject instanceof LinkedHashMap) {
-//                ObjectMapper objectMapper = new ObjectMapper();
-//                RedisAccount redisAccount = objectMapper.convertValue(rawObject, RedisAccount.class);
-//                if (redisAccount.getName().equals(accountDTO.getName())) {
-//                    throw new AccountAlreadyExistException("账户名已存在");
-//                }
-//            } else if (rawObject instanceof RedisAccount) {
-//                RedisAccount redisAccount = (RedisAccount) rawObject;
-//                if (redisAccount.getName().equals(accountDTO.getName())) {
-//                    throw new AccountAlreadyExistException("账户名已存在");
-//                }
             }
         }
 
@@ -155,8 +145,15 @@ public class AccountService {
                 account.getAccountName(),
                 account.getTotalIncome(),
                 account.getTotalExpense());
-//                new ArrayList<>());
         redisTemplate.opsForValue().set(redisKey, redisAccount);
+    }
+
+    private RedisAccount convertToRedisAccount(Object obj) {
+        if (obj instanceof RedisAccount) {
+            return (RedisAccount) obj;
+        } else {
+            return objectMapper.convertValue(obj, RedisAccount.class);
+        }
     }
 
 }
