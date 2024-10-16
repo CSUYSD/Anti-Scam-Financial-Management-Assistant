@@ -11,13 +11,21 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Transition } from '@headlessui/react'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Paperclip, X, Send, Download, Copy } from 'lucide-react'
 
-export default function Component() {
+export default function Web3Chat() {
   const {
     sessions,
     activeSession,
@@ -33,13 +41,9 @@ export default function Component() {
   const [message, setMessage] = useState('')
   const [isRetrievalMode, setIsRetrievalMode] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [newSessionDialogOpen, setNewSessionDialogOpen] = useState(false)
-  const [newSessionName, setNewSessionName] = useState('')
-  const [editSessionId, setEditSessionId] = useState(null)
-  const fileInputRef = useRef(null)
   const [isTyping, setIsTyping] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [username, setUsername] = useState(() => localStorage.getItem('username') || 'User')
+  const fileInputRef = useRef(null)
 
   const handleSendMessage = useCallback(async () => {
     if (message.trim() || (isRetrievalMode && files.length > 0)) {
@@ -123,29 +127,6 @@ export default function Component() {
     }
   }
 
-  const handleNewSessionConfirm = () => {
-    addNewSession(newSessionName)
-    setNewSessionDialogOpen(false)
-    setNewSessionName('')
-  }
-
-  const startEditSession = (id) => {
-    setEditSessionId(id)
-    setNewSessionName(sessions.find(s => s.id === id)?.name || '')
-  }
-
-  const handleEditSessionConfirm = () => {
-    if (editSessionId) {
-      updateSessionName(editSessionId, newSessionName)
-      setEditSessionId(null)
-      setNewSessionName('')
-    }
-  }
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen)
-  }
-
   const handleRetry = async () => {
     const currentSession = sessions.find(s => s.id === activeSession)
     if (!currentSession) return
@@ -202,285 +183,115 @@ export default function Component() {
   const hasMessages = currentSession && currentSession.messages.length > 0
 
   return (
-      <div className="flex h-screen overflow-hidden bg-gray-50">
-        <AnimatePresence>
-          {sidebarOpen && (
-              <motion.div
-                  initial={{ x: -240 }}
-                  animate={{ x: 0 }}
-                  exit={{ x: -240 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  className="w-60 flex-shrink-0 overflow-hidden bg-white shadow-lg"
-              >
-                <Sidebar
-                    sessions={sessions}
-                    activeSession={activeSession}
-                    setActiveSession={setActiveSession}
-                    addNewSession={() => setNewSessionDialogOpen(true)}
-                    deleteSession={deleteSession}
-                    startEditSession={startEditSession}
-                    editSessionId={editSessionId}
-                    newSessionName={newSessionName}
-                    setNewSessionName={setNewSessionName}
-                    handleEditSessionConfirm={handleEditSessionConfirm}
-                    isRetrievalMode={isRetrievalMode}
-                    files={files}
-                    handleFileUpload={handleFileUpload}
-                    fileInputRef={fileInputRef}
-                    isLoading={isLoading}
-                    handleClearFiles={handleClearFiles}
-                />
-              </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="flex-grow flex flex-col h-full overflow-hidden bg-white">
-          <header className="flex justify-between items-center p-4 border-b border-gray-200">
-            <div className="flex items-center">
-              <button onClick={toggleSidebar} className="mr-4 text-gray-600 hover:text-gray-900 transition-colors duration-200">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <h1 className="text-xl font-bold text-gray-900">
-                {currentSession?.name || 'New Chat'}
-              </h1>
-            </div>
+      <div className="flex flex-col h-full bg-background">
+        <header className="bg-card shadow-sm p-4">
+          <div className="flex justify-between items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  {currentSession?.name || 'Select Session'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {sessions.map((session) => (
+                    <DropdownMenuItem key={session.id} onSelect={() => setActiveSession(session.id)}>
+                      {session.name}
+                    </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <label className="flex items-center cursor-pointer">
-                  <span className="mr-2 text-sm text-gray-700">Retrieval Mode</span>
-                  <div className="relative">
-                    <input
-                        type="checkbox"
-                        className="sr-only"
-                        checked={isRetrievalMode}
-                        onChange={(e) => {
-                          setIsRetrievalMode(e.target.checked)
-                          if (!e.target.checked) {
-                            handleClearFiles()
-                          }
-                        }}
-                    />
-                    <div className="w-10 h-4 bg-gray-400 rounded-full shadow-inner"></div>
-                    <div className={`absolute w-6 h-6 bg-white rounded-full shadow -left-1 -top-1 transition-transform duration-200 ease-in-out ${isRetrievalMode ? 'transform translate-x-full bg-blue-600' : ''}`}></div>
-                  </div>
-                </label>
-                {isRetrievalMode && (
-                    <button
-                        onClick={handleClearFiles}
-                        disabled={isLoading || files.length === 0}
-                        className="p-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors duration-200"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                )}
+                <Switch
+                    id="retrieval-mode"
+                    checked={isRetrievalMode}
+                    onCheckedChange={setIsRetrievalMode}
+                />
+                <Label htmlFor="retrieval-mode">Retrieval Mode</Label>
               </div>
               <button
                   onClick={handleExportConversation}
                   disabled={!hasMessages}
-                  className="p-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors duration-200"
+                  className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors duration-200"
+                  aria-label="Export conversation"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+                <Download className="w-5 h-5" />
               </button>
             </div>
-          </header>
+          </div>
+        </header>
 
-          <main className="flex-grow overflow-hidden flex flex-col">
-            <div className="flex-grow overflow-y-auto p-4">
-              <ChatMessages
-                  messages={currentSession?.messages || []}
-                  username={username}
-                  isTyping={isTyping}
-                  handleRetry={handleRetry}
-                  handleCopy={handleCopy}
-                  handleDownload={handleDownload}
+        <main className="flex-grow overflow-hidden flex flex-col">
+          <ScrollArea className="flex-grow p-4">
+            <ChatMessages
+                messages={currentSession?.messages || []}
+                username={username}
+                isTyping={isTyping}
+                handleRetry={handleRetry}
+                handleCopy={handleCopy}
+                handleDownload={handleDownload}
+            />
+          </ScrollArea>
+          <div className="p-4 border-t border-border">
+            <div className="flex items-end space-x-2">
+              <div className="flex-grow">
+              <textarea
+                  className="w-full p-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent resize-none transition-shadow duration-200"
+                  rows={1}
+                  placeholder="Type your message here"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendMessage()
+                    }
+                  }}
+                  disabled={isLoading}
               />
-            </div>
-            <div className="p-4 border-t border-gray-200">
-              <div className="flex items-end space-x-2">
-                <div className="flex-grow">
-                <textarea
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-shadow duration-200"
-                    rows={1}
-                    placeholder="Type your message here"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault()
-                        handleSendMessage()
-                      }
-                    }}
-                    disabled={isLoading}
-                />
-                </div>
-                {isRetrievalMode && (
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
-                        disabled={isLoading}
-                    >
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586  6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                      </svg>
-                    </button>
-                )}
-                <Button
-                    onClick={handleSendMessage}
-                    disabled={isLoading || !canSendMessage}
-                    className={`px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 ${
-                        canSendMessage
-                            ? 'bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                >
-                  Send
-                </Button>
               </div>
-            </div>
-          </main>
-        </div>
-
-        <AnimatePresence>
-          {newSessionDialogOpen && (
-              <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-              >
-                <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white rounded-lg p-6 w-96 shadow-xl"
-                >
-                  <h2 className="text-xl font-bold mb-4">Create New Chat Session</h2>
-                  <Input
-                      type="text"
-                      value={newSessionName}
-                      onChange={(e) => setNewSessionName(e.target.value)}
-                      placeholder="Session Name"
-                      className="w-full p-2 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200"
-                  />
-                  <div className="flex justify-end space-x-2">
+              {isRetrievalMode && (
+                  <div className="flex space-x-2">
                     <Button
-                        onClick={() => setNewSessionDialogOpen(false)}
                         variant="outline"
-                        className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+                        size="icon"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isLoading}
+                        aria-label="Upload file"
                     >
-                      Cancel
+                      <Paperclip className="h-4 w-4" />
                     </Button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        className="hidden"
+                    />
                     <Button
-                        onClick={handleNewSessionConfirm}
-                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-200"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleClearFiles}
+                        disabled={isLoading || files.length === 0}
+                        aria-label="Clear files"
                     >
-                      Create
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
-                </motion.div>
-              </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-  )
-}
-
-function Sidebar({ sessions, activeSession, setActiveSession, addNewSession, deleteSession, startEditSession, editSessionId, newSessionName, setNewSessionName, handleEditSessionConfirm, isRetrievalMode, files, handleFileUpload, fileInputRef, isLoading, handleClearFiles }) {
-  return (
-      <div className="h-full flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <Button
-              onClick={addNewSession}
-              className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105"
-          >
-            New Chat
-          </Button>
-        </div>
-        <div className="flex-grow overflow-y-auto">
-          {sessions.map((session) => (
-              <Transition
-                  key={session.id}
-                  show={true}
-                  enter="transition-opacity duration-300"
-                  enterFrom="opacity-0"
-                  enterTo="opacity-100"
-                  leave="transition-opacity duration-300"
-                  leaveFrom="opacity-100"
-                  leaveTo="opacity-0"
-              >
-                <div
-                    className={`p-4 cursor-pointer hover:bg-gray-100 ${activeSession === session.id ? 'bg-gray-200' : ''} transition-colors duration-200`}
-                    onClick={() => setActiveSession(session.id)}
-                >
-                  {editSessionId === session.id ? (
-                      <Input
-                          type="text"
-                          value={newSessionName}
-                          onChange={(e) => setNewSessionName(e.target.value)}
-                          onBlur={handleEditSessionConfirm}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              handleEditSessionConfirm()
-                            }
-                          }}
-                          className="w-full p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200"
-                          autoFocus
-                      />
-                  ) : (
-                      <div className="flex justify-between items-center">
-                        <span className="truncate">{session.name}</span>
-                        <div className="flex space-x-2">
-                          <button onClick={() => startEditSession(session.id)} className="text-gray-600 hover:text-gray-900 transition-colors duration-200">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button onClick={() => deleteSession(session.id)} className="text-gray-600 hover:text-gray-900 transition-colors duration-200">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                  )}
-                </div>
-              </Transition>
-          ))}
-        </div>
-        {isRetrievalMode && (
-            <div className="p-4 border-t border-gray-200">
-              <h3 className="font-semibold mb-2">Uploaded Files</h3>
-              <ul className="space-y-2 mb-4">
-                {files.map((file, index) => (
-                    <li key={index} className="text-sm text-gray-600 flex items-center">
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      {file.name}
-                    </li>
-                ))}
-              </ul>
-              <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  className="hidden"
-              />
+              )}
               <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
-                  className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
+                  onClick={handleSendMessage}
+                  disabled={isLoading || !canSendMessage}
+                  className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 ${
+                      canSendMessage
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary'
+                          : 'bg-muted text-muted-foreground cursor-not-allowed'
+                  }`}
               >
-                Upload File
+                <Send className="h-4 w-4" />
               </Button>
             </div>
-        )}
+          </div>
+        </main>
       </div>
   )
 }
@@ -509,7 +320,7 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
                     className="w-10 h-10 rounded-full"
                 />
                 <div className={`${message.sender === username ? 'text-right' : 'text-left'}`}>
-                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-gray-200 text-gray-900'}`}>
+                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -535,19 +346,15 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
                       {message.content}
                     </ReactMarkdown>
                   </div>
-                  <div className="mt-1 text-xs text-gray-500 flex items-center justify-end space-x-2">
+                  <div className="mt-1 text-xs text-muted-foreground flex items-center justify-end space-x-2">
                     <span>{message.timestamp ? format(parseISO(message.timestamp), 'HH:mm:ss') : 'No timestamp'}</span>
                     {message.sender !== username && (
                         <>
-                          <button onClick={() => handleCopy(message.content)} className="p-1 text-gray-600 hover:text-gray-900 transition-colors duration-200">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
+                          <button onClick={() => handleCopy(message.content)} className="p-1 text-muted-foreground hover:text-foreground transition-colors duration-200" aria-label="Copy message">
+                            <Copy className="w-4 h-4" />
                           </button>
-                          <button onClick={() => handleDownload(message.content)} className="p-1 text-gray-600 hover:text-gray-900 transition-colors duration-200">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
+                          <button onClick={() => handleDownload(message.content)} className="p-1 text-muted-foreground hover:text-foreground transition-colors duration-200" aria-label="Download message">
+                            <Download className="w-4 h-4" />
                           </button>
                         </>
                     )}
@@ -559,14 +366,16 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
         {isTyping && (
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1,
+
+                  y: 0 }}
                 className="flex justify-start"
             >
-              <div className="bg-gray-200 rounded-lg p-3">
+              <div className="bg-secondary rounded-lg p-3">
                 <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                 </div>
               </div>
             </motion.div>

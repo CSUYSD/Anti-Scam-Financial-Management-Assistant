@@ -40,6 +40,7 @@ import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-rout
 import { mainListItems, secondaryListItems } from './ListItems';
 import { logoutAPI } from '@/api/user';
 import { removeToken } from "@/utils/index";
+// @ts-ignore
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { FluxMessageWithHistoryAPI } from '@/api/ai';
 import { formatMessageContent } from '@/utils/messageFormatter';
@@ -308,7 +309,7 @@ export default function Component() {
 
     return (
         <ThemeProvider theme={theme}>
-            <Box sx={{ display: 'flex' }}>
+            <Box sx={{ display: 'flex', minHeight: '100vh' }}>
                 <CssBaseline />
                 <AppBar position="absolute" open={open}>
                     <Toolbar sx={{ pr: '24px' }}>
@@ -397,11 +398,15 @@ export default function Component() {
                                 : theme.palette.grey[900],
                         flexGrow: 1,
                         height: '100vh',
-                        overflow: 'auto',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
                     }}
                 >
                     <Toolbar />
-                    <Outlet />
+                    <Box sx={{ flexGrow: 1, overflow: 'auto', p: 0 }}>
+                        <Outlet />
+                    </Box>
                 </Box>
             </Box>
             <Dialog
