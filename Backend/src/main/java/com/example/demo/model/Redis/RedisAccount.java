@@ -1,4 +1,4 @@
-package com.example.demo.model.redis;
+package com.example.demo.model.Redis;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import com.example.demo.model.redis.RedisAccount;
+import com.example.demo.model.Redis.RedisAccount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.TransactionUserDTO;
-import com.example.demo.model.redis.RedisUser;
+import com.example.demo.model.Redis.RedisUser;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.utility.jwt.JwtUtil;
 

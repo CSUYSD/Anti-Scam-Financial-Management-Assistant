@@ -28,17 +28,13 @@ public class AiAnalyser {
 
     @RabbitListener(queues = "new.record.to.ai.analyser")
     public void handleCurrentRecordAnalyse(AnalyseRequest request) {
-
+        System.out.printf("==============Received new record to analyse: %s===================", request);
         String currentRecord = request.getContent();
+
         long accountId = request.getAccountId();
         String recentRecords = PromptParser.parseLatestTransactionRecordsToPrompt(transactionRecordService.getCertainDaysRecords(accountId, 10));
         String result =  aiAnalyserService.analyseCurrentRecord(currentRecord, recentRecords);
+        System.out.printf("====================Analyse result: %s====================", result);
         messagingTemplate.convertAndSend("/topic/analysis-result/" + accountId, result);
     }
-
-    @RabbitListener(queues = "new.record.to.ai.analyser")
-    public void String (String message) {
-        ;
-    }
-
 }

@@ -7,7 +7,7 @@ import com.example.demo.model.ai.AnalyseRequest;
 import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.TransactionRecordDTO;
-import com.example.demo.model.redis.RedisAccount;
+import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.service.ai.AiAnalyserService;
 import com.example.demo.service.es.RecordSyncService;
@@ -16,7 +16,11 @@ import com.example.demo.utility.parser.DtoParser;
 import com.example.demo.utility.parser.PromptParser;
 import com.example.demo.utility.GetCurrentUserInfo;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -27,7 +31,7 @@ import com.example.demo.repository.AccountDao;
 import com.example.demo.model.TransactionRecord;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-
+@Slf4j
 @Service
 public class TransactionRecordService {
     private final TransactionRecordDao transactionRecordDao;
@@ -36,24 +40,22 @@ public class TransactionRecordService {
     private final RecordSyncService recordSyncService;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final AiAnalyserService aiAnalyserService;
     private final GetCurrentUserInfo getCurrentUserInfo;
 
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
+    @Autowired private StringRedisTemplate stringRedisTemplate;
+
+    private final RabbitTemplate rabbitTemplate;
 
     @Autowired
-    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService, AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo) {
+    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService, GetCurrentUserInfo getCurrentUserInfo, RabbitTemplate rabbitTemplate) {
         this.transactionRecordDao = transactionRecordDao;
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.accountDao = accountDao;
         this.recordSyncService = recordSyncService;
-        this.aiAnalyserService = aiAnalyserService;
         this.getCurrentUserInfo = getCurrentUserInfo;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
 
@@ -62,7 +64,6 @@ public class TransactionRecordService {
         return transactionRecordDao.findAllByAccountId(accountId);
     }
 
-    @Transactional
     public void addTransactionRecord(@RequestHeader String token, TransactionRecordDTO transactionRecordDTO) {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
@@ -88,8 +89,9 @@ public class TransactionRecordService {
         recordSyncService.syncToElasticsearch(transactionRecord);
         // send to AI analyser
         String currentRecord = PromptParser.parseLatestTransactionRecordsToPrompt(List.of(transactionRecord));
-        rabbitTemplate.convertAndSend("new.record.to.ai.analyser", new AnalyseRequest(accountId, currentRecord));
-        // update redis
+        AnalyseRequest request = new AnalyseRequest(accountId, currentRecord);
+
+        rabbitTemplate.convertAndSend("new.record.to.ai.analyser", request);
         updateRedisAccount(account);
     }
 
