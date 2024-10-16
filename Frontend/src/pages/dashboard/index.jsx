@@ -54,43 +54,35 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (webSocketMessage) {
-            console.log('Updating suspicious transactions with:', webSocketMessage);
-            setSuspiciousTransactions(prevTransactions => {
+            console.log('Received WebSocket message:', webSocketMessage);
+            try {
                 const newTransaction = {
                     id: Date.now(),
                     ...webSocketMessage
                 };
-                return [newTransaction, ...prevTransactions].slice(0, 5);
-            });
-        }
-    }, [webSocketMessage]);
 
-    useEffect(() => {
-        if (webSocketMessage) {
-            console.log('Received WebSocket message:', webSocketMessage);
-            try {
-                const messageLines = webSocketMessage.split('\n');
-                const contentIndex = messageLines.findIndex(line => line.startsWith('content-length:')) + 1;
-                const jsonContent = messageLines.slice(contentIndex).join('\n');
-                const parsedMessage = JSON.parse(jsonContent);
+                // 从 sessionStorage 获取现有的可疑交易
+                const existingTransactions = JSON.parse(sessionStorage.getItem('suspiciousTransactions') || '[]');
 
-                if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
-                    const newTransactions = parsedMessage.map(message => ({
-                        id: Date.now(),
-                        description: message.textContent,
-                        date: new Date().toISOString().split('T')[0],
-                        risk: message.textContent.toLowerCase().includes('warning') ? 'high' : 'low'
-                    }));
+                // 添加新交易并保持最多5个
+                const updatedTransactions = [newTransaction, ...existingTransactions].slice(0, 5);
 
-                    setSuspiciousTransactions(prevTransactions =>
-                        [...newTransactions, ...prevTransactions].slice(0, 5)
-                    );
-                }
+                // 更新 sessionStorage
+                sessionStorage.setItem('suspiciousTransactions', JSON.stringify(updatedTransactions));
+
+                // 更新状态
+                setSuspiciousTransactions(updatedTransactions);
             } catch (error) {
-                console.error('Error parsing WebSocket message:', error);
+                console.error('Error processing WebSocket message:', error);
             }
         }
     }, [webSocketMessage]);
+
+// 在组件挂载时从 sessionStorage 加载可疑交易
+    useEffect(() => {
+        const storedTransactions = JSON.parse(sessionStorage.getItem('suspiciousTransactions') || '[]');
+        setSuspiciousTransactions(storedTransactions);
+    }, []);
 
     const processChartData = useCallback((records) => {
         const dailyData = {};
@@ -679,22 +671,25 @@ export default function Dashboard() {
 
     const SuspiciousTransactions = useMemo(() => ({ transactions }) => {
         console.log('Rendering SuspiciousTransactions with:', transactions);
-        const [isLoading, setIsLoading] = useState(true);
+        const [isLoading, setIsLoading] = useState(false);
         const [suspiciousTransactions, setSuspiciousTransactions] = useState([]);
-
 
         const loadTransactions = useCallback(() => {
             setIsLoading(true);
-            // 模拟从服务器加载数据
-            setTimeout(() => {
-                setSuspiciousTransactions(transactions);
-                setIsLoading(false);
-            }, 1000);
-        }, [transactions]);
+            // 从 sessionStorage 获取交易
+            const storedTransactions = JSON.parse(sessionStorage.getItem('suspiciousTransactions') || '[]');
+            setSuspiciousTransactions(storedTransactions);
+            setIsLoading(false);
+        }, []);
 
         useEffect(() => {
             loadTransactions();
         }, [loadTransactions]);
+
+        useEffect(() => {
+            // 当传入的 transactions 更新时，更新组件状态
+            setSuspiciousTransactions(transactions);
+        }, [transactions]);
 
         const handleReload = () => {
             loadTransactions();
