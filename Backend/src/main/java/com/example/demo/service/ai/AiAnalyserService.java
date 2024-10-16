@@ -36,7 +36,7 @@ public class AiAnalyserService {
         ---------------------
         {context}
         ---------------------
-        If you find any transaction suspicious of being a scam, start your reply with 'WARNING'. Keep your response under 50 words.
+        If no recent records are given, reply nothing. If you find any transaction suspicious of being a scam, start your reply with 'WARNING'. Keep your response under 50 words.
         """;
         try {
             Message userMessage = new UserMessage(currentRecord);
