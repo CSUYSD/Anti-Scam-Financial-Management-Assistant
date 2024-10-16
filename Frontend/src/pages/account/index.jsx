@@ -5,6 +5,7 @@ import { logoutAPI } from "@/api/user.jsx"
 import { removeToken } from "@/utils/index.jsx"
 import { X, Plus, LogOut, Trash2 } from 'lucide-react'
 import { getAllAccountsAPI, createAccountAPI, deleteAccountAPI, switchAccountAPI } from '@/api/account'
+import WebSocketService from "@/service/WebSocketService.js";
 
 // Define the handleApiError function
 const handleApiError = (error) => {
@@ -224,6 +225,7 @@ export default function Account() {
             localStorage.removeItem('chatSessions'); // Clear the chat sessions from local storage
             localStorage.removeItem('uploadedFiles'); // Clear the user profile from local storage
             removeToken()
+            WebSocketService.handleLogout()
             window.location.href = '/login'
         } catch (error) {
             console.error('Logout failed:', error)

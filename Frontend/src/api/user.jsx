@@ -33,7 +33,46 @@ export function logoutAPI(){
 
 export function getProfileAPI(){
     return  request({
-        url:'/user/profile',
+        url:'/users/info',
         method:'GET',
     })
+}
+
+export function updatePasswordAPI( oldPassword, newPassword) {
+    return request({
+        url: '/updatePwd',
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        data: {
+            oldPassword: oldPassword,
+            newPassword: newPassword
+        }
+    });
+}
+
+export function updateUserAPI(id, userDetails) {
+    return request({
+        url: `/users/update/${id}`,
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        data: userDetails
+    });
+}
+
+
+export function updateAvatarAPI(avatarUrl) {
+    return request({
+        url: '/users/updateAvatar',
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        data: {
+            avatar: avatarUrl
+        }
+    });
 }

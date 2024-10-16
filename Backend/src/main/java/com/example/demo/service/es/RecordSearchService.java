@@ -10,6 +10,8 @@ import org.springframework.data.elasticsearch.core.query.Criteria;
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class RecordSearchService {
 
@@ -23,15 +25,18 @@ public class RecordSearchService {
 
 
     // Search transactions by keyword
-    public Page<TransactionRecordES> searchRecords(String keyword, int page, int size) {
+    public List<TransactionRecordES> searchRecords(String keyword, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
+        Page<TransactionRecordES> searchResult;
 
         if (keyword != null && !keyword.isEmpty()) {
-            return recordESDao.findByTransactionDescriptionContainingOrCategoryContaining(
+            searchResult = recordESDao.findByTransactionDescriptionContainingOrCategoryContaining(
                     keyword, keyword, pageRequest);
         } else {
-            return recordESDao.findAll(pageRequest);
+            searchResult = recordESDao.findAll(pageRequest);
         }
+
+        return searchResult.getContent();
     }
 
     // Advanced search transactions by description, category, and amount range
