@@ -12,8 +12,12 @@ import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Transition } from '@headlessui/react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
-export default function EnhancedChatInterface() {
+export default function Component() {
   const {
     sessions,
     activeSession,
@@ -94,7 +98,6 @@ export default function EnhancedChatInterface() {
     }
   }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession, updateMessageInActiveSession]);
 
-
   const handleFileUpload = async (event) => {
     const selectedFile = event.target.files?.[0]
     if (selectedFile) {
@@ -106,7 +109,6 @@ export default function EnhancedChatInterface() {
       }
     }
   }
-
 
   const handleClearFiles = async () => {
     setIsLoading(true)
@@ -121,19 +123,16 @@ export default function EnhancedChatInterface() {
     }
   }
 
-
   const handleNewSessionConfirm = () => {
     addNewSession(newSessionName)
     setNewSessionDialogOpen(false)
     setNewSessionName('')
   }
 
-
   const startEditSession = (id) => {
     setEditSessionId(id)
     setNewSessionName(sessions.find(s => s.id === id)?.name || '')
   }
-
 
   const handleEditSessionConfirm = () => {
     if (editSessionId) {
@@ -143,29 +142,23 @@ export default function EnhancedChatInterface() {
     }
   }
 
-
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
   }
-
 
   const handleRetry = async () => {
     const currentSession = sessions.find(s => s.id === activeSession)
     if (!currentSession) return
 
-
     const lastUserMessage = [...currentSession.messages].reverse().find(m => m.sender === username)
     if (!lastUserMessage) return
-
 
     const updatedMessages = currentSession.messages.slice(0, -1)
     updateSessionName(activeSession, currentSession.name)
 
-
     setMessage(lastUserMessage.content)
     await handleSendMessage()
   }
-
 
   const handleCopy = (content) => {
     navigator.clipboard.writeText(content).then(() => {
@@ -174,7 +167,6 @@ export default function EnhancedChatInterface() {
       console.error('Could not copy text: ', err)
     })
   }
-
 
   const handleDownload = (content) => {
     const element = document.createElement("a")
@@ -186,18 +178,15 @@ export default function EnhancedChatInterface() {
     document.body.removeChild(element)
   }
 
-
   const handleExportConversation = () => {
     const currentSession = sessions.find(s => s.id === activeSession)
     if (!currentSession) return
-
 
     let exportContent = `Conversation Export - ${currentSession.name}\n\n`
     currentSession.messages.forEach((msg) => {
       const formattedTime = format(parseISO(msg.timestamp), 'yyyy-MM-dd HH:mm:ss')
       exportContent += `[${formattedTime}] ${msg.sender}:\n${msg.content}\n\n`
     })
-
 
     const element = document.createElement("a")
     const file = new Blob([exportContent], {type: 'text/plain'})
@@ -208,11 +197,9 @@ export default function EnhancedChatInterface() {
     document.body.removeChild(element)
   }
 
-
   const canSendMessage = message.trim() || (isRetrievalMode && files.length > 0)
   const currentSession = sessions.find(s => s.id === activeSession)
   const hasMessages = currentSession && currentSession.messages.length > 0
-
 
   return (
       <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -246,7 +233,6 @@ export default function EnhancedChatInterface() {
               </motion.div>
           )}
         </AnimatePresence>
-
 
         <div className="flex-grow flex flex-col h-full overflow-hidden bg-white">
           <header className="flex justify-between items-center p-4 border-b border-gray-200">
@@ -304,7 +290,6 @@ export default function EnhancedChatInterface() {
             </div>
           </header>
 
-
           <main className="flex-grow overflow-hidden flex flex-col">
             <div className="flex-grow overflow-y-auto p-4">
               <ChatMessages
@@ -319,20 +304,20 @@ export default function EnhancedChatInterface() {
             <div className="p-4 border-t border-gray-200">
               <div className="flex items-end space-x-2">
                 <div className="flex-grow">
-               <textarea
-                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-shadow duration-200"
-                   rows={1}
-                   placeholder="Type your message here"
-                   value={message}
-                   onChange={(e) => setMessage(e.target.value)}
-                   onKeyPress={(e) => {
-                     if (e.key === 'Enter' && !e.shiftKey) {
-                       e.preventDefault()
-                       handleSendMessage()
-                     }
-                   }}
-                   disabled={isLoading}
-               />
+                <textarea
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-shadow duration-200"
+                    rows={1}
+                    placeholder="Type your message here"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSendMessage()
+                      }
+                    }}
+                    disabled={isLoading}
+                />
                 </div>
                 {isRetrievalMode && (
                     <button
@@ -341,26 +326,25 @@ export default function EnhancedChatInterface() {
                         disabled={isLoading}
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}   d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586  6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                       </svg>
                     </button>
                 )}
-                <button
+                <Button
                     onClick={handleSendMessage}
                     disabled={isLoading || !canSendMessage}
                     className={`px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 ${
                         canSendMessage
-                            ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500'
+                            ? 'bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                 >
                   Send
-                </button>
+                </Button>
               </div>
             </div>
           </main>
         </div>
-
 
         <AnimatePresence>
           {newSessionDialogOpen && (
@@ -377,7 +361,7 @@ export default function EnhancedChatInterface() {
                     className="bg-white rounded-lg p-6 w-96 shadow-xl"
                 >
                   <h2 className="text-xl font-bold mb-4">Create New Chat Session</h2>
-                  <input
+                  <Input
                       type="text"
                       value={newSessionName}
                       onChange={(e) => setNewSessionName(e.target.value)}
@@ -385,18 +369,19 @@ export default function EnhancedChatInterface() {
                       className="w-full p-2 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200"
                   />
                   <div className="flex justify-end space-x-2">
-                    <button
+                    <Button
                         onClick={() => setNewSessionDialogOpen(false)}
+                        variant="outline"
                         className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={handleNewSessionConfirm}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-200"
                     >
                       Create
-                    </button>
+                    </Button>
                   </div>
                 </motion.div>
               </motion.div>
@@ -406,17 +391,16 @@ export default function EnhancedChatInterface() {
   )
 }
 
-
 function Sidebar({ sessions, activeSession, setActiveSession, addNewSession, deleteSession, startEditSession, editSessionId, newSessionName, setNewSessionName, handleEditSessionConfirm, isRetrievalMode, files, handleFileUpload, fileInputRef, isLoading, handleClearFiles }) {
   return (
       <div className="h-full flex flex-col">
         <div className="p-4 border-b border-gray-200">
-          <button
+          <Button
               onClick={addNewSession}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105"
+              className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105"
           >
             New Chat
-          </button>
+          </Button>
         </div>
         <div className="flex-grow overflow-y-auto">
           {sessions.map((session) => (
@@ -435,7 +419,7 @@ function Sidebar({ sessions, activeSession, setActiveSession, addNewSession, del
                     onClick={() => setActiveSession(session.id)}
                 >
                   {editSessionId === session.id ? (
-                      <input
+                      <Input
                           type="text"
                           value={newSessionName}
                           onChange={(e) => setNewSessionName(e.target.value)}
@@ -488,28 +472,25 @@ function Sidebar({ sessions, activeSession, setActiveSession, addNewSession, del
                   onChange={handleFileUpload}
                   className="hidden"
               />
-              <button
+              <Button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading}
                   className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
               >
                 Upload File
-              </button>
+              </Button>
             </div>
         )}
       </div>
   )
 }
 
-
 function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, handleDownload }) {
   const messagesEndRef = useRef(null)
-
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
 
   return (
       <div className="space-y-4">
@@ -528,7 +509,7 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
                     className="w-10 h-10 rounded-full"
                 />
                 <div className={`${message.sender === username ? 'text-right' : 'text-left'}`}>
-                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-900'}`}>
+                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-gray-200 text-gray-900'}`}>
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -594,4 +575,3 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
       </div>
   )
 }
-

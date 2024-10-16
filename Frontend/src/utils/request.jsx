@@ -33,6 +33,10 @@ request.interceptors.response.use((response)=> {
         removeToken();
         router.navigate('/login').then(r => console.log(r));
         window.location.reload();
+    } else if (error.response.status === 401 && error.response) {
+        removeToken();
+        router.navigate('/login').then(r => console.log(r));
+        window.location.reload();
     }
     return Promise.reject(error)
 })

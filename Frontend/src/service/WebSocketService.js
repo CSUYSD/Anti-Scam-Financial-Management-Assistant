@@ -5,14 +5,14 @@ import { getToken } from "@/utils/index.jsx";
 class WebSocketService {
   constructor() {
     this.stompClient = null;
-    this.messageHandlers = [];
+    this.messageHandlers = new Set();
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectInterval = 5000;
   }
 
   connect() {
-    if (this.stompClient && this.stompClient.connected) {
+    if (this.stompClient?.connected) {
       console.log('WebSocket already connected');
       return;
     }
@@ -22,25 +22,13 @@ class WebSocketService {
 
     this.stompClient = new Client({
       webSocketFactory: () => socket,
-      connectHeaders: {
-        Authorization: `Bearer ${token}`
-      },
-      debug: (str) => {
-        console.log('STOMP debug:', str);
-      },
+      connectHeaders: { Authorization: `Bearer ${token}` },
+      debug: (str) => console.log('STOMP debug:', str),
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-      onConnect: () => {
-        console.log('STOMP connection established');
-        localStorage.setItem('webSocketConnected', 'true');
-        this.reconnectAttempts = 0;
-        this.subscribeToTopics();
-      },
-      onDisconnect: () => {
-        console.log('STOMP connection closed');
-        this.handleDisconnect();
-      },
+      onConnect: this.handleConnect.bind(this),
+      onDisconnect: this.handleDisconnect.bind(this),
       onStompError: (frame) => {
         console.error('STOMP error:', frame);
         this.handleDisconnect();
@@ -50,44 +38,50 @@ class WebSocketService {
     this.stompClient.activate();
   }
 
+  handleConnect() {
+    console.log('STOMP connection established');
+    localStorage.setItem('webSocketConnected', 'true');
+    this.reconnectAttempts = 0;
+    this.subscribeToTopics();
+  }
+
   subscribeToTopics() {
-    this.stompClient.subscribe('/topic/analysis-result/*', (message) => {
-      console.log('Received message:', message);
-      try {
-        const content = message.body;
+    this.stompClient.subscribe('/topic/analysis-result/*', this.handleMessage.bind(this));
+  }
 
-        // 提取 textContent
-        const textContentMatch = content.match(/textContent=([^,]+)/);
-        if (textContentMatch) {
-          let description = textContentMatch[1].trim();
-          // 移除可能的引号
-          description = description.replace(/^["']|["']$/g, '');
+  handleMessage(message) {
+    console.log('Received message:', message);
+    try {
+      const content = message.body;
+      const textContentMatch = content.match(/textContent=([^.]+\.)/);
+      if (textContentMatch) {
+        let description = textContentMatch[1].trim();
+        // Remove leading/trailing quotes if present
+        description = description.replace(/^["']|["']$/g, '');
 
-          const risk = description.toLowerCase().includes('warning') ? 'high' : 'low';
+        const risk = description.toLowerCase().includes('warning') ? 'high' : 'low';
 
-          // 只处理风险级别为 "high" 的消息
-          if (risk === 'high') {
-            const payload = {
-              id: Date.now(),
-              description: description,
-              date: new Date().toISOString().split('T')[0],
-              risk: risk
-            };
+        if (risk === 'high') {
+          const payload = {
+            id: Date.now(),
+            description,
+            date: new Date().toISOString().split('T')[0],
+            risk
+          };
 
-            console.log('Processed high-risk payload:', payload);
-            this.updateSessionStorage(payload);
-            this.messageHandlers.forEach(handler => handler(payload));
-          } else {
-            console.log('Ignoring low-risk message:', description);
-          }
+          console.log('Processed high-risk payload:', payload);
+          this.updateSessionStorage(payload);
+          this.messageHandlers.forEach(handler => handler(payload));
         } else {
-          console.log('No valid content found in the message');
+          console.log('Ignoring low-risk message:', description);
         }
-      } catch (error) {
-        console.error('Error processing message:', error);
-        console.error('Original message:', message.body);
+      } else {
+        console.log('No valid content found in the message');
       }
-    });
+    } catch (error) {
+      console.error('Error processing message:', error);
+      console.error('Original message:', message.body);
+    }
   }
 
   updateSessionStorage(payload) {
@@ -97,6 +91,7 @@ class WebSocketService {
   }
 
   handleDisconnect() {
+    console.log('STOMP connection closed');
     localStorage.removeItem('webSocketConnected');
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
@@ -108,7 +103,7 @@ class WebSocketService {
   }
 
   isConnected() {
-    return this.stompClient && this.stompClient.connected;
+    return this.stompClient?.connected ?? false;
   }
 
   handleLogout() {
@@ -116,19 +111,17 @@ class WebSocketService {
   }
 
   disconnect() {
-    if (this.stompClient) {
-      this.stompClient.deactivate();
-    }
+    this.stompClient?.deactivate();
     localStorage.removeItem('webSocketConnected');
     this.reconnectAttempts = 0;
   }
 
   addMessageHandler(handler) {
-    this.messageHandlers.push(handler);
+    this.messageHandlers.add(handler);
   }
 
   removeMessageHandler(handler) {
-    this.messageHandlers = this.messageHandlers.filter(h => h !== handler);
+    this.messageHandlers.delete(handler);
   }
 }
 
