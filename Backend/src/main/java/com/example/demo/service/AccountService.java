@@ -7,7 +7,9 @@ import com.example.demo.model.Account;
 import com.example.demo.model.dto.AccountDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
+import com.example.demo.utility.GetCurrentUserInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.repository.AccountDao;
@@ -29,17 +31,29 @@ public class AccountService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final TransactionUserDao transactionUserDao;
     private final ObjectMapper objectMapper;
+    private final GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
-    public AccountService(AccountDao accountDao, RedisTemplate<String, Object> redisTemplate, TransactionUserDao transactionUserDao, ObjectMapper objectMapper) {
+    public AccountService(AccountDao accountDao, RedisTemplate<String, Object> redisTemplate, TransactionUserDao transactionUserDao, ObjectMapper objectMapper, GetCurrentUserInfo getCurrentUserInfo) {
         this.accountDao = accountDao;
         this.redisTemplate = redisTemplate;
         this.transactionUserDao = transactionUserDao;
         this.objectMapper = objectMapper;
+        this.getCurrentUserInfo = getCurrentUserInfo;
     }
 
-    public List<Account> getAllAccounts() {
-        return accountDao.findAll();
+    public List<Account> getAllAccountsByUserId(String token) throws UserNotFoundException, AccountNotFoundException {
+        Long userId = getCurrentUserInfo.getCurrentUserId(token);
+        TransactionUser currentUser = transactionUserDao.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("用户未找到"));
+
+        List<Account> accounts = currentUser.getAccounts();
+
+        if (accounts == null || accounts.isEmpty()) {
+            throw new AccountNotFoundException("用户没有关联的账户");
+        }
+
+        return accounts;
     }
 
     public Account getAccountByAccountId(Long id) throws AccountNotFoundException {
