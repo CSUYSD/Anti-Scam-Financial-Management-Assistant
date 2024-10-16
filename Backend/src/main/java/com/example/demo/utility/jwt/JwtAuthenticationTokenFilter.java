@@ -40,6 +40,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
                 || request.getRequestURI().equals("/signup")
                 || request.getRequestURI().equals("/login")
                 || request.getRequestURI().contains("/message")
+//               websocket的初次握手无法使用请求拦截器获取token
+                || request.getRequestURI().contains("/ws")
                 || request.getRequestURI().contains("/document")) {
             filterChain.doFilter(request, response);
             return;
