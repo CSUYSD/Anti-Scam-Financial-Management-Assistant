@@ -36,9 +36,4 @@ public class AiAnalyser {
         messagingTemplate.convertAndSend("/topic/analysis-result/" + accountId, result);
     }
 
-    @RabbitListener(queues = "new.record.to.ai.analyser")
-    public void String (String message) {
-        ;
-    }
-
 }
