@@ -6,6 +6,9 @@ class WebSocketService {
   constructor() {
     this.stompClient = null;
     this.messageHandlers = [];
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+    this.reconnectInterval = 5000; // 5 seconds
   }
 
   connect() {
@@ -25,51 +28,68 @@ class WebSocketService {
       debug: (str) => {
         console.log('STOMP debug:', str);
       },
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
       onConnect: () => {
         console.log('STOMP connection established');
         localStorage.setItem('webSocketConnected', 'true');
-        this.stompClient.subscribe('/topic/analysis-result/*', (message) => {
-          console.log('Received message:', message);
-          try {
-            const content = message.body;
-            const match = content.match(/textContent=([^,]+)/);
-            if (match) {
-              const textContent = match[1];
-              const dateMatch = textContent.match(/(\d{4}-\d{2}-\d{2})/);
-              const payload = {
-                description: textContent,
-                date: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
-                risk: textContent.toLowerCase().includes('warning') ? 'high' : 'low'
-              };
-              console.log('Processed payload:', payload);
-              this.messageHandlers.forEach(handler => handler(payload));
-            }
-          } catch (error) {
-            console.error('Error processing message:', error);
-          }
-        });
+        this.reconnectAttempts = 0;
+        this.subscribeToTopics();
       },
       onDisconnect: () => {
         console.log('STOMP connection closed');
-        localStorage.removeItem('webSocketConnected');
+        this.handleDisconnect();
       },
       onStompError: (frame) => {
         console.error('STOMP error:', frame);
-        localStorage.removeItem('webSocketConnected');
+        this.handleDisconnect();
       }
     });
 
     this.stompClient.activate();
   }
 
-  // In WebSocketService.js
+  subscribeToTopics() {
+    this.stompClient.subscribe('/topic/analysis-result/*', (message) => {
+      console.log('Received message:', message);
+      try {
+        const content = message.body;
+        const match = content.match(/textContent=([^,]+)/);
+        if (match) {
+          const textContent = match[1];
+          const dateMatch = textContent.match(/(\d{4}-\d{2}-\d{2})/);
+          const payload = {
+            description: textContent,
+            date: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
+            risk: textContent.toLowerCase().includes('warning') ? 'high' : 'low'
+          };
+          console.log('Processed payload:', payload);
+          this.messageHandlers.forEach(handler => handler(payload));
+        }
+      } catch (error) {
+        console.error('Error processing message:', error);
+      }
+    });
+  }
+
+  handleDisconnect() {
+    localStorage.removeItem('webSocketConnected');
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+      setTimeout(() => this.connect(), this.reconnectInterval);
+    } else {
+      console.error('Max reconnect attempts reached. Please refresh the page.');
+    }
+  }
+
   isConnected() {
     return this.stompClient && this.stompClient.connected;
   }
 
   handleLogout() {
     this.disconnect();
-    localStorage.removeItem('webSocketConnected');
   }
 
   disconnect() {
@@ -77,6 +97,7 @@ class WebSocketService {
       this.stompClient.deactivate();
     }
     localStorage.removeItem('webSocketConnected');
+    this.reconnectAttempts = 0;
   }
 
   addMessageHandler(handler) {
