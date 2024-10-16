@@ -5,14 +5,14 @@ import { getToken } from "@/utils/index.jsx";
 class WebSocketService {
   constructor() {
     this.stompClient = null;
-    this.messageHandlers = [];
+    this.messageHandlers = new Set();
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
-    this.reconnectInterval = 5000; // 5 seconds
+    this.reconnectInterval = 5000;
   }
 
   connect() {
-    if (this.stompClient && this.stompClient.connected) {
+    if (this.stompClient?.connected) {
       console.log('WebSocket already connected');
       return;
     }
@@ -22,25 +22,13 @@ class WebSocketService {
 
     this.stompClient = new Client({
       webSocketFactory: () => socket,
-      connectHeaders: {
-        Authorization: `Bearer ${token}`
-      },
-      debug: (str) => {
-        console.log('STOMP debug:', str);
-      },
+      connectHeaders: { Authorization: `Bearer ${token}` },
+      debug: (str) => console.log('STOMP debug:', str),
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-      onConnect: () => {
-        console.log('STOMP connection established');
-        localStorage.setItem('webSocketConnected', 'true');
-        this.reconnectAttempts = 0;
-        this.subscribeToTopics();
-      },
-      onDisconnect: () => {
-        console.log('STOMP connection closed');
-        this.handleDisconnect();
-      },
+      onConnect: this.handleConnect.bind(this),
+      onDisconnect: this.handleDisconnect.bind(this),
       onStompError: (frame) => {
         console.error('STOMP error:', frame);
         this.handleDisconnect();
@@ -50,30 +38,60 @@ class WebSocketService {
     this.stompClient.activate();
   }
 
+  handleConnect() {
+    console.log('STOMP connection established');
+    localStorage.setItem('webSocketConnected', 'true');
+    this.reconnectAttempts = 0;
+    this.subscribeToTopics();
+  }
+
   subscribeToTopics() {
-    this.stompClient.subscribe('/topic/analysis-result/*', (message) => {
-      console.log('Received message:', message);
-      try {
-        const content = message.body;
-        const match = content.match(/textContent=([^,]+)/);
-        if (match) {
-          const textContent = match[1];
-          const dateMatch = textContent.match(/(\d{4}-\d{2}-\d{2})/);
+    this.stompClient.subscribe('/topic/analysis-result/*', this.handleMessage.bind(this));
+  }
+
+  handleMessage(message) {
+    console.log('Received message:', message);
+    try {
+      const content = message.body;
+      const textContentMatch = content.match(/textContent=([^.]+\.)/);
+      if (textContentMatch) {
+        let description = textContentMatch[1].trim();
+        // Remove leading/trailing quotes if present
+        description = description.replace(/^["']|["']$/g, '');
+
+        const risk = description.toLowerCase().includes('warning') ? 'high' : 'low';
+
+        if (risk === 'high') {
           const payload = {
-            description: textContent,
-            date: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
-            risk: textContent.toLowerCase().includes('warning') ? 'high' : 'low'
+            id: Date.now(),
+            description,
+            date: new Date().toISOString().split('T')[0],
+            risk
           };
-          console.log('Processed payload:', payload);
+
+          console.log('Processed high-risk payload:', payload);
+          this.updateSessionStorage(payload);
           this.messageHandlers.forEach(handler => handler(payload));
+        } else {
+          console.log('Ignoring low-risk message:', description);
         }
-      } catch (error) {
-        console.error('Error processing message:', error);
+      } else {
+        console.log('No valid content found in the message');
       }
-    });
+    } catch (error) {
+      console.error('Error processing message:', error);
+      console.error('Original message:', message.body);
+    }
+  }
+
+  updateSessionStorage(payload) {
+    const storedTransactions = JSON.parse(sessionStorage.getItem('suspiciousTransactions') || '[]');
+    const updatedTransactions = [payload, ...storedTransactions].slice(0, 5);
+    sessionStorage.setItem('suspiciousTransactions', JSON.stringify(updatedTransactions));
   }
 
   handleDisconnect() {
+    console.log('STOMP connection closed');
     localStorage.removeItem('webSocketConnected');
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
@@ -85,7 +103,7 @@ class WebSocketService {
   }
 
   isConnected() {
-    return this.stompClient && this.stompClient.connected;
+    return this.stompClient?.connected ?? false;
   }
 
   handleLogout() {
@@ -93,19 +111,17 @@ class WebSocketService {
   }
 
   disconnect() {
-    if (this.stompClient) {
-      this.stompClient.deactivate();
-    }
+    this.stompClient?.deactivate();
     localStorage.removeItem('webSocketConnected');
     this.reconnectAttempts = 0;
   }
 
   addMessageHandler(handler) {
-    this.messageHandlers.push(handler);
+    this.messageHandlers.add(handler);
   }
 
   removeMessageHandler(handler) {
-    this.messageHandlers = this.messageHandlers.filter(h => h !== handler);
+    this.messageHandlers.delete(handler);
   }
 }
 

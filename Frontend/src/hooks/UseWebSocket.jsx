@@ -4,38 +4,31 @@ import WebSocketService from '@/service/WebSocketService';
 const useWebSocket = () => {
   const [message, setMessage] = useState(null);
 
-  const messageHandler = useCallback((payload) => {
-    console.log('WebSocket message received in hook:', payload);
-    setMessage(payload);
+  const cleanMessage = useCallback((msg) => {
+    if (typeof msg === 'string') {
+      return msg.replace(/\\"/g, '"').replace(/^"|"$/g, '');
+    }
+    if (msg && typeof msg === 'object') {
+      return {
+        ...msg,
+        description: msg.description ? cleanMessage(msg.description) : msg.description
+      };
+    }
+    return msg;
   }, []);
 
+  const messageHandler = useCallback((payload) => {
+    console.log('WebSocket message received in hook:', payload);
+    const cleanedPayload = cleanMessage(payload);
+    setMessage(cleanedPayload);
+  }, [cleanMessage]);
+
   useEffect(() => {
-    const connectWebSocket = () => {
-      if (!WebSocketService.isConnected()) {
-        console.log('Connecting WebSocket...');
-        WebSocketService.connect();
-      }
-    };
-
-    // 初始连接
-    connectWebSocket();
-
-    // 添加消息处理器
+    WebSocketService.connect();
     WebSocketService.addMessageHandler(messageHandler);
 
-    // 处理页面可见性变化
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        connectWebSocket();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // 清理函数
     return () => {
       WebSocketService.removeMessageHandler(messageHandler);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [messageHandler]);
 

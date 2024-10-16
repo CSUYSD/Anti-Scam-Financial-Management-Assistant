@@ -22,6 +22,7 @@ import {
     Paper,
     Tooltip,
     Link as MuiLink,
+    Avatar,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -39,12 +40,15 @@ import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-rout
 import { mainListItems, secondaryListItems } from './ListItems';
 import { logoutAPI } from '@/api/user';
 import { removeToken } from "@/utils/index";
+// @ts-ignore
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { FluxMessageWithHistoryAPI } from '@/api/ai';
 import { formatMessageContent } from '@/utils/messageFormatter';
 import WebSocketService from "@/service/WebSocketService.js";
 
+
 const drawerWidth = 240;
+
 
 const AppBar = styled(MuiAppBar, {
     shouldForwardProp: (prop) => prop !== 'open',
@@ -54,6 +58,8 @@ const AppBar = styled(MuiAppBar, {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
     }),
+    background: 'linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)',
+    boxShadow: 'none',
     ...(open && {
         marginLeft: drawerWidth,
         width: `calc(100% - ${drawerWidth}px)`,
@@ -63,6 +69,7 @@ const AppBar = styled(MuiAppBar, {
         }),
     }),
 }));
+
 
 const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
     ({ theme, open }) => ({
@@ -90,12 +97,14 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
     }),
 );
 
+
 const ChatButton = styled(motion.div)(({ theme }) => ({
     position: 'fixed',
     bottom: theme.spacing(4),
     right: theme.spacing(4),
     zIndex: 1000,
 }));
+
 
 const ChatWindow = styled(motion.div)(({ theme }) => ({
     position: 'fixed',
@@ -111,21 +120,9 @@ const ChatWindow = styled(motion.div)(({ theme }) => ({
     boxShadow: theme.shadows[10],
 }));
 
-function Copyright(props) {
-    return (
-        <Typography variant="body2" color="text.secondary" align="center" {...props}>
-            {'Copyright © '}
-            <MuiLink component={RouterLink} color="inherit" to="/">
-                Your Website
-            </MuiLink>{' '}
-            {new Date().getFullYear()}
-            {'.'}
-        </Typography>
-    );
-}
 
 
-export default function Layout() {
+export default function Component() {
     const [open, setOpen] = useState(true);
     const [mode, setMode] = useState('light');
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
@@ -143,6 +140,7 @@ export default function Layout() {
     const [isTyping, setIsTyping] = useState(false);
     const [username, setUsername] = useState(() => localStorage.getItem('username') || 'User');
 
+
     const theme = useMemo(
         () =>
             createTheme({
@@ -151,7 +149,8 @@ export default function Layout() {
                     ...(mode === 'light'
                         ? {
                             primary: {
-                                main: '#3a7bd5',
+                                main: '#1976D2',
+                                light: '#42A5F5',
                             },
                             background: {
                                 default: '#f5f7fa',
@@ -160,7 +159,8 @@ export default function Layout() {
                         }
                         : {
                             primary: {
-                                main: '#90caf9',
+                                main: '#90CAF9',
+                                light: '#BBDEFB',
                             },
                             background: {
                                 default: '#121212',
@@ -187,7 +187,7 @@ export default function Layout() {
                     MuiListItemIcon: {
                         styleOverrides: {
                             root: {
-                                color: mode === 'dark' ? '#90caf9' : '#3a7bd5',
+                                color: mode === 'dark' ? '#90CAF9' : '#1976D2',
                             },
                         },
                     },
@@ -196,9 +196,11 @@ export default function Layout() {
         [mode],
     );
 
+
     const toggleDrawer = () => {
-        setOpen((prevOpen) => !prevOpen);
+        setOpen(!open);
     };
+
 
     const getPageTitle = (path) => {
         if (path === "/") {
@@ -207,13 +209,16 @@ export default function Layout() {
         return path.substring(1).charAt(0).toUpperCase() + path.slice(2);
     };
 
+
     const toggleColorMode = () => {
         setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
     };
 
+
     const handleLogout = () => {
         setLogoutDialogOpen(true);
     };
+
 
     const handleLogoutConfirm = async () => {
         setLogoutDialogOpen(false);
@@ -230,32 +235,40 @@ export default function Layout() {
         }
     };
 
+
     const handleLogoutCancel = () => {
         setLogoutDialogOpen(false);
     };
+
 
     const handleAccountClick = () => {
         navigate('/account');
     };
 
+
     const handleUserProfileClick = () => {
         navigate('/userprofile');
     };
 
+
     const toggleChat = () => {
-        setChatOpen((prev) => !prev);
+        setChatOpen(!chatOpen);
     };
+
 
     const handleSendMessage = useCallback(async () => {
         if (message.trim()) {
             const decodedMessage = decodeURIComponent(message.trim());
             console.log("User input:", decodedMessage);
 
+
             addMessageToActiveSession({ sender: username, content: decodedMessage });
+
 
             setMessage('');
             setIsLoading(true);
             setIsTyping(true);
+
 
             try {
                 const params = {
@@ -264,11 +277,14 @@ export default function Layout() {
                 };
                 const response = await FluxMessageWithHistoryAPI(params);
 
+
                 const sseData = response.data;
                 const lines = sseData.split('\n');
                 let aiResponse = '';
 
+
                 const messageId = addMessageToActiveSession({ sender: 'AI', content: '' });
+
 
                 for (const line of lines) {
                     if (line.startsWith('data:')) {
@@ -290,9 +306,10 @@ export default function Layout() {
         }
     }, [message, activeSession, username, addMessageToActiveSession, updateMessageInActiveSession]);
 
+
     return (
         <ThemeProvider theme={theme}>
-            <Box sx={{ display: 'flex' }}>
+            <Box sx={{ display: 'flex', minHeight: '100vh' }}>
                 <CssBaseline />
                 <AppBar position="absolute" open={open}>
                     <Toolbar sx={{ pr: '24px' }}>
@@ -308,7 +325,7 @@ export default function Layout() {
                         >
                             <MenuIcon />
                         </IconButton>
-                        <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1 }}>
+                        <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1, fontWeight: 600 }}>
                             {getPageTitle(location.pathname)}
                         </Typography>
                         <IconButton color="inherit" onClick={toggleColorMode}>
@@ -318,9 +335,9 @@ export default function Layout() {
                             <SettingsIcon />
                         </IconButton>
                         <IconButton color="inherit" onClick={handleUserProfileClick} aria-label="user profile">
-                            <Badge color="secondary">
-                                <AccountCircleIcon />
-                            </Badge>
+                            <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.secondary.main }}>
+                                {username.charAt(0).toUpperCase()}
+                            </Avatar>
                         </IconButton>
                     </Toolbar>
                 </AppBar>
@@ -331,6 +348,7 @@ export default function Layout() {
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             px: [1],
+                            background: 'linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)',
                         }}
                     >
                         {open && (
@@ -338,7 +356,7 @@ export default function Layout() {
                                 <img src="/public/logo.png" alt="Logo" style={{ height: '40px' }} />
                             </Box>
                         )}
-                        <IconButton onClick={toggleDrawer}>
+                        <IconButton onClick={toggleDrawer} sx={{ color: 'white' }}>
                             <ChevronLeftIcon />
                         </IconButton>
                     </Toolbar>
@@ -380,11 +398,15 @@ export default function Layout() {
                                 : theme.palette.grey[900],
                         flexGrow: 1,
                         height: '100vh',
-                        overflow: 'auto',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
                     }}
                 >
                     <Toolbar />
-                    <Outlet />
+                    <Box sx={{ flexGrow: 1, overflow: 'auto', p: 0 }}>
+                        <Outlet />
+                    </Box>
                 </Box>
             </Box>
             <Dialog
@@ -417,7 +439,7 @@ export default function Layout() {
                         backgroundColor: theme.palette.background.paper,
                         boxShadow: theme.shadows[4],
                         '&:hover': {
-                            backgroundColor: theme.palette.background.paper,
+                            backgroundColor:  theme.palette.background.paper,
                         },
                     }}
                 >
@@ -432,12 +454,11 @@ export default function Layout() {
                         exit={{ opacity: 0, y: 50, scale: 0.3 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                     >
-                        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.paper' }}>
+                        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems:  'center', bgcolor: 'background.paper' }}>
                             <Typography variant="h6" sx={{ fontWeight: 600 }}>AI Assistant</Typography>
                             <IconButton onClick={toggleChat} size="small">
                                 <CloseIcon />
                             </IconButton>
-
                         </Box>
                         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, bgcolor: 'background.default' }}>
                             {sessions.find(s => s.id === activeSession)?.messages.map((message, index) => (
@@ -483,7 +504,7 @@ export default function Layout() {
                                     '& .MuiOutlinedInput-root': {
                                         borderRadius: 4,
                                         '&.Mui-focused': {
-                                            boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
+                                            boxShadow: `0 0 0 2px ${theme.palette.primary.main}`, 
                                         },
                                     },
                                 }}
@@ -495,3 +516,6 @@ export default function Layout() {
         </ThemeProvider>
     );
 }
+
+
+

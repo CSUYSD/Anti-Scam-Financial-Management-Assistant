@@ -6,7 +6,7 @@ import router from "@/router";
 
 const request = axios.create({
     baseURL: "http://localhost:8080",
-    timeout: 10000,
+    timeout: 100000,
 });
 
 
@@ -29,7 +29,11 @@ request.interceptors.response.use((response)=> {
     // 超出 2xx 范围的状态码都会触发该函数。
 
     console.log(error);
-    if (error.response && error.response.status === 401) {
+    if (error.response.status === 403 && error.response) {
+        removeToken();
+        router.navigate('/login').then(r => console.log(r));
+        window.location.reload();
+    } else if (error.response.status === 401 && error.response) {
         removeToken();
         router.navigate('/login').then(r => console.log(r));
         window.location.reload();
