@@ -35,14 +35,13 @@ public class AiAnalyser {
         String currentRecord = request.getContent();
         long accountId = request.getAccountId();
         log.debug("Processing current record: {}", currentRecord);
-
         log.info("Fetching recent records for accountId: {}", accountId);
         String recentRecords = PromptParser.parseLatestTransactionRecordsToPrompt(transactionRecordService.getCertainDaysRecords(accountId, 10));
-        log.debug("Recent records parsed: {}", recentRecords);
+        log.info("Recent records parsed: {}", recentRecords);
 
         log.info("Analyzing current record with AI service");
         String result = aiAnalyserService.analyseCurrentRecord(currentRecord, recentRecords);
-        log.debug("Analysis result: {}", result);
+        log.info("Analysis result: {}", result);
 
         String destination = "/topic/analysis-result/" + accountId;
         log.info("Sending analysis result to WebSocket destination: {}", destination);

@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 import com.example.demo.model.ai.AnalyseRequest;
@@ -9,18 +10,16 @@ import com.example.demo.model.Account;
 import com.example.demo.model.dto.TransactionRecordDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
-import com.example.demo.service.ai.AiAnalyserService;
 import com.example.demo.service.es.RecordSyncService;
 import com.example.demo.utility.jwt.JwtUtil;
 import com.example.demo.utility.parser.DtoParser;
 import com.example.demo.utility.parser.PromptParser;
 import com.example.demo.utility.GetCurrentUserInfo;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
+import com.example.demo.utility.parser.DtoParser;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -64,6 +63,7 @@ public class TransactionRecordService {
         return transactionRecordDao.findAllByAccountId(accountId);
     }
 
+    @Transactional
     public void addTransactionRecord(@RequestHeader String token, TransactionRecordDTO transactionRecordDTO) {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
@@ -88,7 +88,7 @@ public class TransactionRecordService {
         // save to elastic search
         recordSyncService.syncToElasticsearch(transactionRecord);
         // send to AI analyser
-        String currentRecord = PromptParser.parseLatestTransactionRecordsToPrompt(List.of(transactionRecord));
+        String currentRecord = PromptParser.parseLatestTransactionRecordsToPrompt(List.of(DtoParser.convertTransactionRecordToDTO(transactionRecord)));
         AnalyseRequest request = new AnalyseRequest(accountId, currentRecord);
         log.info("Sending AnalyseRequest to AI analyser for accountId: {}", accountId);
         try {
@@ -117,7 +117,6 @@ public class TransactionRecordService {
         } else if (newTransactionRecord.getType().equalsIgnoreCase("income")) {
             account.setTotalIncome(account.getTotalIncome() + newTransactionRecord.getAmount());
         }
-
         existingRecord.setAmount(newTransactionRecord.getAmount());
         existingRecord.setCategory(newTransactionRecord.getCategory());
         existingRecord.setType(newTransactionRecord.getType());
@@ -170,8 +169,12 @@ public class TransactionRecordService {
 
     }
 
-    public List<TransactionRecord> getCertainDaysRecords(Long accountId, Integer duration) {
-        return transactionRecordDao.findCertainDaysRecords(accountId, duration);
+    @Transactional(readOnly = true)
+    public List<TransactionRecordDTO> getCertainDaysRecords(Long accountId, Integer duration) {
+        List<TransactionRecord> records = transactionRecordDao.findCertainDaysRecords(accountId, duration);
+        return records.stream()
+                .map(DtoParser::convertTransactionRecordToDTO)
+                .collect(Collectors.toList());
     }
 
 
