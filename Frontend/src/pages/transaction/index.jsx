@@ -1,5 +1,6 @@
 "use client"
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronDown, ChevronUp, Edit, Trash2, Plus, X } from 'lucide-react';
@@ -8,6 +9,13 @@ import {
     getAllRecordsAPI, getRecordsByTypeAPI, createRecordAPI, updateRecordAPI, deleteRecordAPI, deleteRecordsInBatchAPI
 } from '@/api/record';
 import { searchAPI } from '@/api/search';
+
+
+const transactionTypes = ['Income', 'Expense'];
+const expenseCategories = ['Grocery', 'Electronic', 'Devices', 'Rent', 'Bills', 'Tuition Fees'];
+const incomeCategories = ['Salary', 'Investment', 'Gift', 'Other'];
+const transactionMethods = ['Credit Card', 'Cash', 'PayPal'];
+
 
 export default function EnhancedTransactionManagement() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -35,15 +43,32 @@ export default function EnhancedTransactionManagement() {
     const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
     const [isSearchActive, setIsSearchActive] = useState(false);
 
+
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+
     useEffect(() => {
         fetchAllRecords();
     }, []);
+
+
+    useEffect(() => {
+        if (transactionType !== 'All') {
+            const filteredTransactions = allTransactions.filter(t => t.type === transactionType);
+            setDisplayedTransactions(filteredTransactions);
+            setTotalPages(Math.ceil(filteredTransactions.length / 10));
+            setPage(1);
+        } else {
+            setDisplayedTransactions(allTransactions);
+            setTotalPages(Math.ceil(allTransactions.length / 10));
+            setPage(1);
+        }
+    }, [transactionType, allTransactions]);
+
 
     const fetchAllRecords = async () => {
         try {
@@ -64,6 +89,7 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
+
     const handleSearch = async () => {
         if (!searchTerm.trim()) {
             setIsSearchActive(false);
@@ -71,10 +97,12 @@ export default function EnhancedTransactionManagement() {
             return;
         }
 
+
         try {
             setLoading(true);
             const response = await searchAPI(searchTerm);
             const searchResults = response.data || [];
+
 
             setDisplayedTransactions(searchResults);
             setTotalPages(Math.ceil(searchResults.length / 10));
@@ -89,13 +117,15 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
+
     const handleAction = useCallback((action) => {
         setShowSuccess(true);
         setTimeout(() => {
             setShowSuccess(false);
-            fetchTransactions();
+            fetchAllRecords();
         }, 3000);
     }, []);
+
 
     const handleSelectTransaction = useCallback((id) => {
         setSelectedTransactions(prev =>
@@ -103,9 +133,11 @@ export default function EnhancedTransactionManagement() {
         );
     }, []);
 
+
     const handleSelectAll = useCallback((checked) => {
         setSelectedTransactions(checked ? displayedTransactions.map(t => t.id) : []);
     }, [displayedTransactions]);
+
 
     const handleBatchDelete = async () => {
         if (selectedTransactions.length === 0) {
@@ -113,12 +145,13 @@ export default function EnhancedTransactionManagement() {
             return;
         }
 
+
         try {
             setLoading(true);
             await deleteRecordsInBatchAPI(selectedTransactions);
             handleAction('Batch Delete');
             setSelectedTransactions([]);
-            await fetchTransactions();
+            await fetchAllRecords();
         } catch (error) {
             console.error('Batch delete error:', error);
             setError('Failed to delete selected transactions');
@@ -127,10 +160,12 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
+
     const formatDateTimeForBackend = (dateTimeString) => {
         const date = new Date(dateTimeString);
         return date.toISOString();
     };
+
 
     const validateForm = () => {
         const errors = {};
@@ -141,15 +176,18 @@ export default function EnhancedTransactionManagement() {
         if (!transactionForm.transactionTime) errors.transactionTime = 'Transaction time is required';
         if (!transactionForm.transactionDescription) errors.transactionDescription = 'Description is required';
 
+
         const currentDate = new Date();
         const selectedDate = new Date(transactionForm.transactionTime);
         if (selectedDate > currentDate) {
             errors.transactionTime = 'Cannot select a future date';
         }
 
+
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
+
 
     const handleAddTransaction = async () => {
         if (validateForm()) {
@@ -170,12 +208,13 @@ export default function EnhancedTransactionManagement() {
                     transactionTime: '',
                     transactionDescription: ''
                 });
-                await fetchTransactions();
+                await fetchAllRecords();
             } catch (error) {
                 setError('Failed to add transaction');
             }
         }
     };
+
 
     const handleEditTransaction = useCallback((transaction) => {
         setEditingTransaction(transaction.id);
@@ -185,6 +224,7 @@ export default function EnhancedTransactionManagement() {
         });
         setShowAddForm(true);
     }, []);
+
 
     const handleUpdateTransaction = async () => {
         if (validateForm() && editingTransaction !== null) {
@@ -206,22 +246,24 @@ export default function EnhancedTransactionManagement() {
                     transactionTime: '',
                     transactionDescription: ''
                 });
-                await fetchTransactions();
+                await fetchAllRecords();
             } catch (error) {
                 setError('Failed to update transaction');
             }
         }
     };
 
+
     const handleDeleteTransaction = async (id) => {
         try {
             await deleteRecordAPI(id);
             handleAction('Delete');
-            await fetchTransactions();
+            await fetchAllRecords();
         } catch (error) {
             setError('Failed to delete transaction');
         }
     };
+
 
     const fetchTransactions = async () => {
         try {
@@ -241,18 +283,21 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
+
     const paginatedTransactions = displayedTransactions.slice((page - 1) * 10, page * 10);
+
 
     const toggleTypeDropdown = () => {
         setTypeDropdownOpen(!typeDropdownOpen);
     };
 
+
     const handleTypeSelect = (type) => {
         setTransactionType(type);
         setTypeDropdownOpen(false);
         setIsSearchActive(false);
-        fetchAllRecords();
     };
+
 
     const handlePageChange = async (newPage) => {
         setPage(newPage);
@@ -291,6 +336,7 @@ export default function EnhancedTransactionManagement() {
         );
     }
 
+
     if (error) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -307,6 +353,7 @@ export default function EnhancedTransactionManagement() {
             </div>
         );
     }
+
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -334,6 +381,7 @@ export default function EnhancedTransactionManagement() {
                     </div>
                 </motion.div>
 
+
                 <motion.div
                     className="bg-white rounded-xl overflow-hidden shadow-lg mb-8"
                     initial={{ opacity: 0, y: 20 }}
@@ -360,9 +408,9 @@ export default function EnhancedTransactionManagement() {
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: -10 }}
                                                 transition={{ duration: 0.2 }}
-                                                className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg overflow-hidden z-20"
+                                                className="absolute top-full left-0 mt-1  bg-white rounded-lg shadow-lg overflow-hidden z-20"
                                             >
-                                                {['All', 'Income', 'Expense'].map((type) => (
+                                                {['All', ...transactionTypes].map((type) => (
                                                     <motion.button
                                                         key={type}
                                                         onClick={() => handleTypeSelect(type)}
@@ -388,6 +436,7 @@ export default function EnhancedTransactionManagement() {
                             </div>
                         </div>
 
+
                         <AnimatePresence>
                             {showAddForm && (
                                 <motion.div
@@ -401,26 +450,35 @@ export default function EnhancedTransactionManagement() {
                                         <h3 className="text-xl font-semibold mb-4">{editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label  className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                                                 <select
                                                     value={transactionForm.type}
-                                                    onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value })}
+                                                    onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value, category: '' })}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                 >
-                                                    <option value="Income">Income</option>
-                                                    <option value="Expense">Expense</option>
+                                                    {transactionTypes.map((type) => (
+                                                        <option key={type} value={type}>{type}</option>
+                                                    ))}
                                                 </select>
                                                 {formErrors.type && <p className="text-red-500 text-xs mt-1">{formErrors.type}</p>}
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                                <input
-                                                    type="text"
+                                                <select
                                                     value={transactionForm.category}
                                                     onChange={(e) => setTransactionForm({ ...transactionForm, category: e.target.value })}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    placeholder="Enter category"
-                                                />
+                                                >
+                                                    <option value="">Select a category</option>
+                                                    {transactionForm.type === 'Expense'
+                                                        ? expenseCategories.map((category) => (
+                                                            <option key={category} value={category}>{category}</option>
+                                                        ))
+                                                        : incomeCategories.map((category) => (
+                                                            <option key={category} value={category}>{category}</option>
+                                                        ))
+                                                    }
+                                                </select>
                                                 {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
                                             </div>
                                             <div>
@@ -436,13 +494,16 @@ export default function EnhancedTransactionManagement() {
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Method</label>
-                                                <input
-                                                    type="text"
+                                                <select
                                                     value={transactionForm.transactionMethod}
                                                     onChange={(e) => setTransactionForm({ ...transactionForm, transactionMethod: e.target.value })}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    placeholder="Enter transaction method"
-                                                />
+                                                >
+                                                    <option value="">Select a method</option>
+                                                    {transactionMethods.map((method) => (
+                                                        <option key={method} value={method}>{method}</option>
+                                                    ))}
+                                                </select>
                                                 {formErrors.transactionMethod && <p className="text-red-500 text-xs mt-1">{formErrors.transactionMethod}</p>}
                                             </div>
                                             <div>
@@ -479,6 +540,7 @@ export default function EnhancedTransactionManagement() {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+
 
                         <div className="overflow-x-auto">
                             <table className="w-full">
@@ -551,6 +613,7 @@ export default function EnhancedTransactionManagement() {
                             </table>
                         </div>
 
+
                         <div className="mt-6 flex justify-between items-center">
                             <motion.button
                                 onClick={handleBatchDelete}
@@ -588,6 +651,7 @@ export default function EnhancedTransactionManagement() {
                 </motion.div>
             </div>
 
+
             <motion.button
                 className="fixed bottom-8 right-8 p-4 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -599,6 +663,7 @@ export default function EnhancedTransactionManagement() {
             >
                 <ChevronUp className="h-6 w-6" />
             </motion.button>
+
 
             {showSuccess && (
                 <motion.div
@@ -614,3 +679,6 @@ export default function EnhancedTransactionManagement() {
         </div>
     );
 }
+
+
+

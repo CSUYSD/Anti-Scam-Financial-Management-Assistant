@@ -65,6 +65,7 @@ public class AccountService {
         String pattern = "login_user:" + userId + ":account*" ;
         // 获取redis用户信息
         Set<String> keys = redisTemplate.keys(pattern);
+        assert keys != null;
         if (keys.isEmpty()) {
             throw new RuntimeException("用户未登录或会话已过期");
         }
@@ -108,7 +109,7 @@ public class AccountService {
         List<Account> existingAccounts = accountDao.findByTransactionUser(user)
                 .stream()
                 .filter(account -> !account.getId().equals(id))  // 排除当前修改的账户
-                .collect(Collectors.toList());
+                .toList();
 
         for (Account account : existingAccounts) {
             if (account.getAccountName().equals(accountDTO.getName())) {

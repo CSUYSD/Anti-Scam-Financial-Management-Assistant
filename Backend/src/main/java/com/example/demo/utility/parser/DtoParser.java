@@ -1,8 +1,8 @@
-package com.example.demo.utility;
+package com.example.demo.utility.parser;
 
 import com.example.demo.model.Account;
-import com.example.demo.model.DTO.TransactionRecordDTO;
-import com.example.demo.model.DTO.TransactionUserDTO;
+import com.example.demo.model.dto.TransactionRecordDTO;
+import com.example.demo.model.dto.TransactionUserDTO;
 import com.example.demo.model.Redis.RedisUser;
 import com.example.demo.model.TransactionRecord;
 import com.example.demo.model.TransactionUser;

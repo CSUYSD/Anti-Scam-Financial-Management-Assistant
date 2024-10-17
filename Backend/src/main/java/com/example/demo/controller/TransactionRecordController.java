@@ -5,9 +5,9 @@ import java.util.List;
 
 
 import com.example.demo.exception.AccountNotFoundException;
-import com.example.demo.model.DTO.TransactionRecordDTO;
+import com.example.demo.model.dto.TransactionRecordDTO;
 import com.example.demo.service.AccountService;
-import com.example.demo.utility.JWT.JwtUtil;
+import com.example.demo.utility.jwt.JwtUtil;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;

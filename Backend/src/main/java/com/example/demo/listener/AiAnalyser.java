@@ -49,7 +49,6 @@ public class AiAnalyser {
         try {
             messagingTemplate.convertAndSend(destination, result);
             log.info("Analysis result sent successfully to accountId: {}", accountId);
-            log.info("=========================Analysis result: {}", result);
         } catch (Exception e) {
             log.error("Error sending analysis result to WebSocket for accountId: {}", accountId, e);
         }

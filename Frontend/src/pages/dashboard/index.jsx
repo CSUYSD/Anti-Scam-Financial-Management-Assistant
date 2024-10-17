@@ -7,7 +7,33 @@ import { getCurrentAccountAPI } from '@/api/account';
 import { format, subDays } from 'date-fns';
 import useWebSocket from '@/hooks/useWebSocket';
 
-const COLORS = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF8A80', '#B39DDB', '#81D4FA', '#A5D6A7'];
+
+const INCOME_COLORS = [
+    '#7986CB',
+    '#EF5350',
+    '#F06292',
+    '#FFF176',
+    '#D4E157',
+    '#FFD54F',
+    '#81C784',
+    '#AED581'
+];
+
+
+const EXPENSE_COLORS = [
+    '#9575CD',
+    '#7986CB',
+    '#FFF176',
+    '#D4E157',
+    '#FFD54F',
+    '#81C784',
+    '#EF5350',
+    '#F06292',
+    '#BA68C8'
+];
+
+
+
 
 export default function Dashboard() {
     const [accountData, setAccountData] = useState({ totalIncome: 0, totalExpense: 0, id: '' });
@@ -24,21 +50,26 @@ export default function Dashboard() {
     const [showInfoModal, setShowInfoModal] = useState(false);
     const webSocketMessage = useWebSocket();
 
+
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             const accountResponse = await getCurrentAccountAPI();
             setAccountData(accountResponse.data);
 
+
             const recentRecordsResponse = await getRecentRecordsAPI(30);
             setRecentRecords(recentRecordsResponse.data);
+
 
             const processedChartData = processChartData(recentRecordsResponse.data);
             setChartData(processedChartData);
 
+
             const allRecordsResponse = await getAllRecordsAPI();
             const processedTransactionTypes = processTransactionTypes(allRecordsResponse.data);
             setTransactionTypes(processedTransactionTypes);
+
 
             setLoading(false);
         } catch (error) {
@@ -48,41 +79,26 @@ export default function Dashboard() {
         }
     }, []);
 
+
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
+
     useEffect(() => {
         if (webSocketMessage) {
-            console.log('Received WebSocket message:', webSocketMessage);
-            try {
-                const newTransaction = {
-                    id: Date.now(),
-                    ...webSocketMessage
-                };
-
-                // 从 sessionStorage 获取现有的可疑交易
-                const existingTransactions = JSON.parse(sessionStorage.getItem('suspiciousTransactions') || '[]');
-
-                // 添加新交易并保持最多5个
-                const updatedTransactions = [newTransaction, ...existingTransactions].slice(0, 5);
-
-                // 更新 sessionStorage
-                sessionStorage.setItem('suspiciousTransactions', JSON.stringify(updatedTransactions));
-
-                // 更新状态
-                setSuspiciousTransactions(updatedTransactions);
-            } catch (error) {
-                console.error('Error processing WebSocket message:', error);
-            }
+            setSuspiciousTransactions(prevTransactions =>
+                [webSocketMessage, ...prevTransactions].slice(0, 5)
+            );
         }
     }, [webSocketMessage]);
 
-// 在组件挂载时从 sessionStorage 加载可疑交易
     useEffect(() => {
         const storedTransactions = JSON.parse(sessionStorage.getItem('suspiciousTransactions') || '[]');
         setSuspiciousTransactions(storedTransactions);
     }, []);
+
+
 
     const processChartData = useCallback((records) => {
         const dailyData = {};
@@ -90,10 +106,12 @@ export default function Dashboard() {
         const startDate = new Date(endDate);
         startDate.setDate(startDate.getDate() - 29);
 
+
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             const dateStr = d.toISOString().split('T')[0];
             dailyData[dateStr] = { date: dateStr, income: 0, expense: 0, balance: 0 };
         }
+
 
         let runningBalance = 0;
         records.forEach(record => {
@@ -110,12 +128,15 @@ export default function Dashboard() {
             }
         });
 
+
         return Object.values(dailyData).sort((a, b) => new Date(a.date) - new Date(b.date));
     }, []);
+
 
     const processTransactionTypes = useCallback((records, duration = 30) => {
         const categories = {};
         const startDate = subDays(new Date(), duration - 1);
+
 
         records.forEach(record => {
             const recordDate = new Date(record.transactionTime);
@@ -127,17 +148,21 @@ export default function Dashboard() {
             }
         });
 
+
         return Object.values(categories);
     }, []);
+
 
     const handleDurationChange = useCallback((newDuration) => {
         setChartDuration(newDuration);
         setTransactionTypes(processTransactionTypes(recentRecords, newDuration));
     }, [recentRecords, processTransactionTypes]);
 
+
     const handleSavingsGoalChange = useCallback((newGoal) => {
         setSavingsGoal(newGoal);
     }, []);
+
 
     const BalanceCard = useMemo(() => ({balance, income, expense}) => {
         const controls = useAnimation();
@@ -147,6 +172,7 @@ export default function Dashboard() {
                 transition: { duration: 0.5 },
             });
         }, [balance, controls]);
+
 
         return (
             <motion.div
@@ -209,24 +235,35 @@ export default function Dashboard() {
         );
     }, []);
 
+
+
+
     const WeeklyChart = React.memo(({ data, duration, onDurationChange }) => {
         const [hoveredData, setHoveredData] = useState(null);
+
 
         const CustomTooltip = ({ active, payload, label }) => {
             if (active && payload && payload.length) {
                 return (
-                    <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.5, ease: "easeInOut" }}
+                        className="bg-white p-4 rounded-lg shadow-lg border border-gray-200"
+                    >
                         <p className="font-semibold text-gray-800">{format(new Date(label), 'MMM d, yyyy')}</p>
                         {payload.map((entry, index) => (
                             <p key={index} className={`text-sm ${entry.name === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                                 {entry.name.charAt(0).toUpperCase() + entry.name.slice(1)}: ${entry.value.toLocaleString()}
                             </p>
                         ))}
-                    </div>
+                    </motion.div>
                 );
             }
             return null;
         };
+
 
         return (
             <motion.div
@@ -275,46 +312,89 @@ export default function Dashboard() {
                         />
                         <YAxis />
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend />
                         <Area type="monotone" dataKey="income" stroke="#10B981" fillOpacity={1} fill="url(#colorIncome)" />
                         <Area type="monotone" dataKey="expense" stroke="#EF4444" fillOpacity={1} fill="url(#colorExpense)" />
                     </AreaChart>
                 </ResponsiveContainer>
-                {hoveredData && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-4 p-4 bg-gray-100 rounded-lg"
-                    >
-                        <p className="font-semibold">Date: {format(new Date(hoveredData.date), 'MMMM d, yyyy')}</p>
-                        <p className="text-green-600">Income: ${hoveredData.income.toLocaleString()}</p>
-                        <p className="text-red-600">Expense: ${hoveredData.expense.toLocaleString()}</p>
-                        <p className="font-semibold mt-2">Balance: ${(hoveredData.income - hoveredData.expense).toLocaleString()}</p>
-                    </motion.div>
-                )}
+                <AnimatePresence>
+                    {hoveredData && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.8, ease: "easeInOut" }}
+                            className="mt-4 bg-gray-100 rounded-lg overflow-hidden"
+                        >
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5, delay: 0.3 }}
+                                className="p-4"
+                            >
+                                <motion.p
+                                    initial={{ y: 10, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ duration: 0.5, delay: 0.4 }}
+                                    className="font-semibold"
+                                >
+                                    Date: {format(new Date(hoveredData.date), 'MMMM d, yyyy')}
+                                </motion.p>
+                                <motion.p
+                                    initial={{ y: 10, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ duration: 0.5, delay: 0.5 }}
+                                    className="text-green-600"
+                                >
+                                    Income: ${hoveredData.income.toLocaleString()}
+                                </motion.p>
+                                <motion.p
+                                    initial={{ y: 10, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ duration: 0.5, delay: 0.6 }}
+                                    className="text-red-600"
+                                >
+                                    Expense: ${hoveredData.expense.toLocaleString()}
+                                </motion.p>
+                                <motion.p
+                                    initial={{ y: 10, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ duration: 0.5, delay: 0.7 }}
+                                    className="font-semibold mt-2"
+                                >
+                                    Balance: ${(hoveredData.income - hoveredData.expense).toLocaleString()}
+                                </motion.p>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </motion.div>
         );
     });
+
+
+
 
     const TransactionTypesPieChart = ({ data }) => {
         const [activeIndex, setActiveIndex] = useState(0);
         const [activeType, setActiveType] = useState('expense');
 
+
         const onPieEnter = useCallback((_, index) => {
             setActiveIndex(index);
         }, []);
 
+
         const processedData = useMemo(() => {
             const incomeData = data.filter(item => item.type === 'Income');
-
             const expenseData = data.filter(item => item.type === 'Expense');
             return { income: incomeData, expense: expenseData };
         }, [data]);
 
+
         const renderActiveShape = (props) => {
             const RADIAN = Math.PI / 180;
-            const { cx, cy, midAngle, innerRadius,
-                outerRadius, startAngle, endAngle,
+            const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle,
                 fill, payload, percent, value } = props;
             const sin = Math.sin(-RADIAN * midAngle);
             const cos = Math.cos(-RADIAN * midAngle);
@@ -325,6 +405,7 @@ export default function Dashboard() {
             const ex = mx + (cos >= 0 ? 1 : -1) * 22;
             const ey = my;
             const textAnchor = cos >= 0 ? 'start' : 'end';
+
 
             return (
                 <g>
@@ -358,6 +439,7 @@ export default function Dashboard() {
                 </g>
             );
         };
+
 
         return (
             <motion.div
@@ -402,7 +484,10 @@ export default function Dashboard() {
                             onMouseEnter={onPieEnter}
                         >
                             {processedData[activeType].map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={activeType === 'income' ? INCOME_COLORS[index % INCOME_COLORS.length] : EXPENSE_COLORS[index % EXPENSE_COLORS.length]}
+                                />
                             ))}
                         </Pie>
                     </PieChart>
@@ -410,7 +495,10 @@ export default function Dashboard() {
                 <div className="mt-4">
                     {processedData[activeType].map((entry, index) => (
                         <div key={`legend-${index}`} className="flex items-center mb-2">
-                            <div className="w-4 h-4 mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                            <div
+                                className="w-4 h-4 mr-2"
+                                style={{ backgroundColor: activeType === 'income' ? INCOME_COLORS[index % INCOME_COLORS.length] : EXPENSE_COLORS[index % EXPENSE_COLORS.length] }}
+                            ></div>
                             <span>{entry.name}: ${entry.value.toLocaleString()}</span>
                         </div>
                     ))}
@@ -418,6 +506,7 @@ export default function Dashboard() {
             </motion.div>
         );
     };
+
 
     const SavingsGoalWidget = useMemo(() => ({ records, goal, onGoalChange }) => {
         const [isEditing, setIsEditing] = useState(false);
@@ -427,11 +516,13 @@ export default function Dashboard() {
         const [notificationMessage, setNotificationMessage] = useState('');
         const [notificationColor, setNotificationColor] = useState('');
 
+
         useEffect(() => {
             const totalSavings = records.reduce((sum, record) => {
                 return record.type === 'Income' ? sum + record.amount : sum - record.amount;
             }, 0);
             const calculatedProgress = Math.min((totalSavings / goal) * 100, 100);
+
 
             setProgress(0);
             const interval = setInterval(() => {
@@ -457,6 +548,7 @@ export default function Dashboard() {
             return () => clearInterval(interval);
         }, [records, goal]);
 
+
         useEffect(() => {
             if (showNotification) {
                 const timer = setTimeout(() => {
@@ -466,10 +558,12 @@ export default function Dashboard() {
             }
         }, [showNotification]);
 
+
         const handleSave = () => {
             onGoalChange(newGoal);
             setIsEditing(false);
         };
+
 
         return (
             <motion.div
@@ -604,8 +698,10 @@ export default function Dashboard() {
         );
     }, []);
 
+
     const TransactionList = useMemo(() => ({ title, transactions, icon }) => {
         const [expandedTransaction, setExpandedTransaction] = useState(null);
+
 
         return (
             <motion.div
@@ -626,7 +722,7 @@ export default function Dashboard() {
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 20 }}
-                                transition={{ duration: 0.3, delay: index * 0.1 }}
+                                transition={{ duration: 0.8, delay: index * 0.1 }}
                                 className="bg-gray-50 p-3 rounded-lg"
                             >
                                 <div
@@ -669,10 +765,12 @@ export default function Dashboard() {
         );
     }, []);
 
+
     const SuspiciousTransactions = useMemo(() => ({ transactions }) => {
         console.log('Rendering SuspiciousTransactions with:', transactions);
         const [isLoading, setIsLoading] = useState(false);
         const [suspiciousTransactions, setSuspiciousTransactions] = useState([]);
+
 
         const loadTransactions = useCallback(() => {
             setIsLoading(true);
@@ -682,22 +780,27 @@ export default function Dashboard() {
             setIsLoading(false);
         }, []);
 
+
         useEffect(() => {
             loadTransactions();
         }, [loadTransactions]);
+
 
         useEffect(() => {
             // 当传入的 transactions 更新时，更新组件状态
             setSuspiciousTransactions(transactions);
         }, [transactions]);
 
+
         const handleReload = () => {
             loadTransactions();
         };
 
+
         const formatDescription = (description) => {
             return description.replace(/^WARNING:\s*/i, '').trim();
         };
+
 
         return (
             <motion.div
@@ -709,7 +812,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                         <Warning className="text-yellow-500 text-3xl mr-2" />
-                        <h3 className="text-2xl font-semibold text-gray-800">Scam Alert</h3>
+                        <h3 className="text-2xl font-semibold text-gray-800">Suspicious Transactions</h3>
                     </div>
                     <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -771,8 +874,10 @@ export default function Dashboard() {
         );
     }, []);
 
+
     const InfoModal = ({ isOpen, onClose, transaction }) => {
         if (!isOpen || !transaction) return null;
+
 
         return (
             <motion.div
@@ -812,6 +917,7 @@ export default function Dashboard() {
         );
     };
 
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -830,6 +936,7 @@ export default function Dashboard() {
         );
     }
 
+
     if (error) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -837,6 +944,7 @@ export default function Dashboard() {
             </div>
         );
     }
+
 
     return (
         <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -876,3 +984,4 @@ export default function Dashboard() {
         </div>
     );
 }
+
