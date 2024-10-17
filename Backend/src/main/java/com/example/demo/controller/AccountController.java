@@ -49,6 +49,7 @@ public class AccountController {
         }
     }
 
+
     @PostMapping("/create")
     public ResponseEntity<String> createAccount(@RequestHeader("Authorization") String token, @Valid @RequestBody AccountDTO account) {
         if (token == null || token.isEmpty()) {
