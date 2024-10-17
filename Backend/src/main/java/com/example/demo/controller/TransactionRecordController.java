@@ -47,7 +47,6 @@ public class TransactionRecordController {
         return ResponseEntity.ok(transactions);
     }
 
-    @Transactional
     @PostMapping("/create")
     public ResponseEntity<String> addTransactionRecord(@RequestHeader("Authorization") String token, @RequestBody TransactionRecordDTO transactionRecordDTO) {
         if (token == null || token.isEmpty()) {
@@ -106,7 +105,7 @@ public class TransactionRecordController {
     }
 
     @GetMapping("/recent")
-    public ResponseEntity<List<TransactionRecord>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
+    public ResponseEntity<List<TransactionRecordDTO>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
         if (duration < 1 || duration > 30) {
             return ResponseEntity.badRequest().build();
         }
@@ -114,7 +113,7 @@ public class TransactionRecordController {
             Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
             String pattern = "login_user:" + userId + ":current_account";
             String accountId = stringRedisTemplate.opsForValue().get(pattern);
-            List<TransactionRecord> records = recordService.getCertainDaysRecords(Long.valueOf(accountId), duration);
+            List<TransactionRecordDTO> records = recordService.getCertainDaysRecords(Long.valueOf(accountId), duration);
             return ResponseEntity.ok(records);
         } catch (IllegalArgumentException e) {
             System.out.println(e.getMessage());
