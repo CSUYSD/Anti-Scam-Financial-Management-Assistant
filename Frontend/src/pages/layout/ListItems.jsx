@@ -60,32 +60,5 @@ export const mainListItems = (
 
 export const secondaryListItems = (
     <React.Fragment>
-        <ListSubheader component="div" inset>
-            Additional Features
-        </ListSubheader>
-        {/*<ListItemButton component={NavLink} to="/current-month" sx={activeStyle}>*/}
-        {/*    <ListItemIcon>*/}
-        {/*        <AssignmentIcon />*/}
-        {/*    </ListItemIcon>*/}
-        {/*    <ListItemText primary="Current month" />*/}
-        {/*</ListItemButton>*/}
-        {/*<ListItemButton component={NavLink} to="/last-quarter" sx={activeStyle}>*/}
-        {/*    <ListItemIcon>*/}
-        {/*        <AssignmentIcon />*/}
-        {/*    </ListItemIcon>*/}
-        {/*    <ListItemText primary="Last quarter" />*/}
-        {/*</ListItemButton>*/}
-        {/*<ListItemButton component={NavLink} to="/year-end-sale" sx={activeStyle}>*/}
-        {/*    <ListItemIcon>*/}
-        {/*        <AssignmentIcon />*/}
-        {/*    </ListItemIcon>*/}
-        {/*    <ListItemText primary="Year-end sale" />*/}
-        {/*</ListItemButton>*/}
-        {/*<ListItemButton component={NavLink} to="/contact-us" sx={activeStyle}>*/}
-        {/*    <ListItemIcon>*/}
-        {/*        <ContactSupportIcon />*/}
-        {/*    </ListItemIcon>*/}
-        {/*    <ListItemText primary="Contact Us" />*/}
-        {/*</ListItemButton>*/}
     </React.Fragment>
 );

@@ -38,6 +38,7 @@ export default function Web3Chat() {
   } = useChatSessions()
   const { files, uploadFile, clearFiles } = useFileUpload()
 
+
   const [message, setMessage] = useState('')
   const [isRetrievalMode, setIsRetrievalMode] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -47,32 +48,40 @@ export default function Web3Chat() {
   const [newSessionName, setNewSessionName] = useState('')
   const fileInputRef = useRef(null)
 
+
   const handleSendMessage = useCallback(async () => {
     if (message.trim() || (isRetrievalMode && files.length > 0)) {
       const decodedMessage = decodeURIComponent(message.trim());
       console.log("User input:", decodedMessage);
 
+
       const timestamp = new Date().toISOString();
       addMessageToActiveSession({ sender: username, content: decodedMessage, timestamp });
+
 
       setMessage('');
       setIsLoading(true);
       setIsTyping(true);
 
+
       let messageId;
       try {
         messageId = addMessageToActiveSession({ sender: 'AI', content: '', timestamp: new Date().toISOString() });
+
 
         const params = {
           prompt: decodedMessage,
           sessionId: activeSession,
         };
 
+
         if (isRetrievalMode) {
           params.files = files.map(f => f.name).join(',');
         }
 
+
         const response = await (isRetrievalMode ? ChatWithFileAPI(params) : FluxMessageWithHistoryAPI(params));
+
 
         let aiResponse = '';
         const processChunk = (chunk) => {
@@ -88,9 +97,11 @@ export default function Web3Chat() {
           });
         };
 
+
         if (response.data) {
           processChunk(response.data);
         }
+
 
       } catch (error) {
         console.error('Error sending message:', error);
@@ -104,6 +115,7 @@ export default function Web3Chat() {
     }
   }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession, updateMessageInActiveSession]);
 
+
   const handleFileUpload = async (event) => {
     const selectedFile = event.target.files?.[0]
     if (selectedFile) {
@@ -115,6 +127,7 @@ export default function Web3Chat() {
       }
     }
   }
+
 
   const handleClearFiles = async () => {
     setIsLoading(true)
@@ -129,16 +142,20 @@ export default function Web3Chat() {
     }
   }
 
+
   const handleRetry = async () => {
     const currentSession = sessions.find(s => s.id === activeSession)
     if (!currentSession) return
 
+
     const lastUserMessage = [...currentSession.messages].reverse().find(m => m.sender === username)
     if (!lastUserMessage) return
+
 
     setMessage(lastUserMessage.content)
     await handleSendMessage()
   }
+
 
   const handleCopy = (content) => {
     navigator.clipboard.writeText(content).then(() => {
@@ -147,6 +164,7 @@ export default function Web3Chat() {
       console.error('Could not copy text: ', err)
     })
   }
+
 
   const handleDownload = (content) => {
     const element = document.createElement("a")
@@ -158,15 +176,18 @@ export default function Web3Chat() {
     document.body.removeChild(element)
   }
 
+
   const handleExportConversation = () => {
     const currentSession = sessions.find(s => s.id === activeSession)
     if (!currentSession) return
+
 
     let exportContent = `Conversation Export - ${currentSession.name}\n\n`
     currentSession.messages.forEach((msg) => {
       const formattedTime = format(parseISO(msg.timestamp), 'yyyy-MM-dd HH:mm:ss')
       exportContent += `[${formattedTime}] ${msg.sender}:\n${msg.content}\n\n`
     })
+
 
     const element = document.createElement("a")
     const file = new Blob([exportContent], {type: 'text/plain'})
@@ -177,10 +198,12 @@ export default function Web3Chat() {
     document.body.removeChild(element)
   }
 
+
   const startEditSession = (id) => {
     setEditSessionId(id)
     setNewSessionName(sessions.find(s => s.id === id)?.name || '')
   }
+
 
   const handleEditSessionConfirm = () => {
     if (editSessionId) {
@@ -190,15 +213,17 @@ export default function Web3Chat() {
     }
   }
 
+
   const canSendMessage = message.trim() || (isRetrievalMode && files.length > 0)
   const currentSession = sessions.find(s => s.id === activeSession)
   const hasMessages = currentSession && currentSession.messages.length > 0
 
+
   return (
-      <div className="flex flex-col h-full bg-background">
-        <header className="bg-card shadow-sm p-4">
+      <div className="flex flex-col h-screen bg-background">
+        <header className="bg-card shadow-sm p-4 flex-shrink-0">
           <div className="flex justify-between items-center">
-            <div className="ml-12"> {/* Increased left margin */}
+            <div className="ml-12">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="text-lg px-6 py-3">
@@ -249,18 +274,20 @@ export default function Web3Chat() {
         </header>
 
         <main className="flex-grow overflow-hidden flex flex-col">
-          <ScrollArea className="flex-grow p-4">
-            <ChatMessages
-                messages={currentSession?.messages || []}
-                username={username}
-                isTyping={isTyping}
-                handleRetry={handleRetry}
-                handleCopy={handleCopy}
-                handleDownload={handleDownload}
-            />
+          <ScrollArea className="flex-grow">
+            <div className="p-4">
+              <ChatMessages
+                  messages={currentSession?.messages || []}
+                  username={username}
+                  isTyping={isTyping}
+                  handleRetry={handleRetry}
+                  handleCopy={handleCopy}
+                  handleDownload={handleDownload}
+              />
+            </div>
           </ScrollArea>
-          <div className="p-4 border-t border-border">
-            <div className="flex items-center space-x-2"> {/* Changed to items-center */}
+          <div className="p-4 border-t border-border flex-shrink-0">
+            <div className="flex items-center space-x-2">
               <div className="flex-grow">
               <textarea
                   className="w-full p-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent resize-none transition-shadow duration-200"
@@ -369,7 +396,7 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
                     className="w-10 h-10 rounded-full"
                 />
                 <div className={`${message.sender === username ? 'text-right' : 'text-left'}`}>
-                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' :   'bg-secondary text-secondary-foreground'}`}>
+                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -431,3 +458,4 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
       </div>
   )
 }
+

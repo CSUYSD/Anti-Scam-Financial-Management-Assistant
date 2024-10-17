@@ -156,7 +156,9 @@ public class TransactionRecordService {
     }
 
     @Transactional
-    public void deleteTransactionRecordsInBatch(Long accountId, List<Long> recordIds) {
+    public void deleteTransactionRecordsInBatch(String token, List<Long> recordIds) {
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
         List<TransactionRecord> records = transactionRecordDao.findAllByIdInAndAccountId(recordIds, accountId);
         if (records.isEmpty()) {
             throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
