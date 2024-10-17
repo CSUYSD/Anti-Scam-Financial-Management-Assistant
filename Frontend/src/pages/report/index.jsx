@@ -1,5 +1,6 @@
 'use client'
 
+
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useChatSessions } from '@/hooks/useChatSessions'
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Paperclip, X, Send, Download, Copy, Edit, Trash, ChevronDown } from 'lucide-react'
 
+
 export default function Web3Chat() {
   const {
     sessions,
@@ -38,6 +40,7 @@ export default function Web3Chat() {
   } = useChatSessions()
   const { files, uploadFile, clearFiles } = useFileUpload()
 
+
   const [message, setMessage] = useState('')
   const [isRetrievalMode, setIsRetrievalMode] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -47,32 +50,40 @@ export default function Web3Chat() {
   const [newSessionName, setNewSessionName] = useState('')
   const fileInputRef = useRef(null)
 
+
   const handleSendMessage = useCallback(async () => {
     if (message.trim() || (isRetrievalMode && files.length > 0)) {
       const decodedMessage = decodeURIComponent(message.trim());
       console.log("User input:", decodedMessage);
 
+
       const timestamp = new Date().toISOString();
       addMessageToActiveSession({ sender: username, content: decodedMessage, timestamp });
+
 
       setMessage('');
       setIsLoading(true);
       setIsTyping(true);
 
+
       let messageId;
       try {
         messageId = addMessageToActiveSession({ sender: 'AI', content: '', timestamp: new Date().toISOString() });
+
 
         const params = {
           prompt: decodedMessage,
           sessionId: activeSession,
         };
 
+
         if (isRetrievalMode) {
           params.files = files.map(f => f.name).join(',');
         }
 
+
         const response = await (isRetrievalMode ? ChatWithFileAPI(params) : FluxMessageWithHistoryAPI(params));
+
 
         let aiResponse = '';
         const processChunk = (chunk) => {
@@ -88,9 +99,11 @@ export default function Web3Chat() {
           });
         };
 
+
         if (response.data) {
           processChunk(response.data);
         }
+
 
       } catch (error) {
         console.error('Error sending message:', error);
@@ -104,6 +117,7 @@ export default function Web3Chat() {
     }
   }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession, updateMessageInActiveSession]);
 
+
   const handleFileUpload = async (event) => {
     const selectedFile = event.target.files?.[0]
     if (selectedFile) {
@@ -115,6 +129,7 @@ export default function Web3Chat() {
       }
     }
   }
+
 
   const handleClearFiles = async () => {
     setIsLoading(true)
@@ -129,16 +144,20 @@ export default function Web3Chat() {
     }
   }
 
+
   const handleRetry = async () => {
     const currentSession = sessions.find(s => s.id === activeSession)
     if (!currentSession) return
 
+
     const lastUserMessage = [...currentSession.messages].reverse().find(m => m.sender === username)
     if (!lastUserMessage) return
+
 
     setMessage(lastUserMessage.content)
     await handleSendMessage()
   }
+
 
   const handleCopy = (content) => {
     navigator.clipboard.writeText(content).then(() => {
@@ -147,6 +166,7 @@ export default function Web3Chat() {
       console.error('Could not copy text: ', err)
     })
   }
+
 
   const handleDownload = (content) => {
     const element = document.createElement("a")
@@ -158,15 +178,18 @@ export default function Web3Chat() {
     document.body.removeChild(element)
   }
 
+
   const handleExportConversation = () => {
     const currentSession = sessions.find(s => s.id === activeSession)
     if (!currentSession) return
+
 
     let exportContent = `Conversation Export - ${currentSession.name}\n\n`
     currentSession.messages.forEach((msg) => {
       const formattedTime = format(parseISO(msg.timestamp), 'yyyy-MM-dd HH:mm:ss')
       exportContent += `[${formattedTime}] ${msg.sender}:\n${msg.content}\n\n`
     })
+
 
     const element = document.createElement("a")
     const file = new Blob([exportContent], {type: 'text/plain'})
@@ -177,10 +200,12 @@ export default function Web3Chat() {
     document.body.removeChild(element)
   }
 
+
   const startEditSession = (id) => {
     setEditSessionId(id)
     setNewSessionName(sessions.find(s => s.id === id)?.name || '')
   }
+
 
   const handleEditSessionConfirm = () => {
     if (editSessionId) {
@@ -190,9 +215,11 @@ export default function Web3Chat() {
     }
   }
 
+
   const canSendMessage = message.trim() || (isRetrievalMode && files.length > 0)
   const currentSession = sessions.find(s => s.id === activeSession)
   const hasMessages = currentSession && currentSession.messages.length > 0
+
 
   return (
       <div className="flex flex-col h-full bg-background">
@@ -248,6 +275,7 @@ export default function Web3Chat() {
           </div>
         </header>
 
+
         <main className="flex-grow overflow-hidden flex flex-col">
           <ScrollArea className="flex-grow p-4">
             <ChatMessages
@@ -262,20 +290,20 @@ export default function Web3Chat() {
           <div className="p-4 border-t border-border">
             <div className="flex items-center space-x-2"> {/* Changed to items-center */}
               <div className="flex-grow">
-              <textarea
-                  className="w-full p-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent resize-none transition-shadow duration-200"
-                  rows={1}
-                  placeholder="Type your message here"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSendMessage()
-                    }
-                  }}
-                  disabled={isLoading}
-              />
+             <textarea
+                 className="w-full p-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent resize-none transition-shadow duration-200"
+                 rows={1}
+                 placeholder="Type your message here"
+                 value={message}
+                 onChange={(e) => setMessage(e.target.value)}
+                 onKeyPress={(e) => {
+                   if (e.key === 'Enter' && !e.shiftKey) {
+                     e.preventDefault()
+                     handleSendMessage()
+                   }
+                 }}
+                 disabled={isLoading}
+             />
               </div>
               <div className="flex space-x-2">
                 {isRetrievalMode && (
@@ -322,6 +350,7 @@ export default function Web3Chat() {
           </div>
         </main>
 
+
         {editSessionId && (
             <div className="fixed inset-0 bg-background/80 flex items-center justify-center">
               <Card className="w-full max-w-sm">
@@ -345,12 +374,15 @@ export default function Web3Chat() {
   )
 }
 
+
 function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, handleDownload }) {
   const messagesEndRef = useRef(null)
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
 
   return (
       <div className="space-y-4">
@@ -431,3 +463,4 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
       </div>
   )
 }
+

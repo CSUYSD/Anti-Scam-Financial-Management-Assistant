@@ -81,9 +81,12 @@ public class TransactionRecordController {
     }
 
     @DeleteMapping("/batch")
-    public ResponseEntity<String> deleteRecordsInBatch(@RequestParam Long accountId, @RequestBody List<Long> recordIds) {
+    public ResponseEntity<String> deleteRecordsInBatch(@RequestHeader("Authorization") String token, @RequestBody List<Long> recordIds) {
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未提供令牌");
+        }
         try {
-            recordService.deleteTransactionRecordsInBatch(accountId, recordIds);
+            recordService.deleteTransactionRecordsInBatch(token, recordIds);
             return ResponseEntity.ok("Records deleted successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Failed to delete records: " + e.getMessage());
