@@ -283,9 +283,6 @@ export default function DashboardLayout() {
                         {open && (
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 <img src="/public/logo.png" alt="Logo" style={{ height: '40px', marginRight: theme.spacing(2) }} />
-                                <Typography variant="h6" noWrap>
-                                    {getPageTitle(location.pathname)}
-                                </Typography>
                             </Box>
                         )}
                         <IconButton onClick={toggleDrawer} sx={{ color: 'white' }}>
@@ -339,7 +336,7 @@ export default function DashboardLayout() {
                         flexDirection: 'column',
                     }}
                 >
-                    <Box sx={{ flexGrow: 1, overflow: 'auto', p: 3 }}>
+                    <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}

@@ -1,6 +1,5 @@
 'use client'
 
-
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useChatSessions } from '@/hooks/useChatSessions'
@@ -25,7 +24,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Paperclip, X, Send, Download, Copy, Edit, Trash, ChevronDown } from 'lucide-react'
-
 
 export default function Web3Chat() {
   const {
@@ -222,10 +220,10 @@ export default function Web3Chat() {
 
 
   return (
-      <div className="flex flex-col h-full bg-background">
-        <header className="bg-card shadow-sm p-4">
+      <div className="flex flex-col h-screen bg-background">
+        <header className="bg-card shadow-sm p-4 flex-shrink-0">
           <div className="flex justify-between items-center">
-            <div className="ml-12"> {/* Increased left margin */}
+            <div className="ml-12">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="text-lg px-6 py-3">
@@ -275,35 +273,36 @@ export default function Web3Chat() {
           </div>
         </header>
 
-
         <main className="flex-grow overflow-hidden flex flex-col">
-          <ScrollArea className="flex-grow p-4">
-            <ChatMessages
-                messages={currentSession?.messages || []}
-                username={username}
-                isTyping={isTyping}
-                handleRetry={handleRetry}
-                handleCopy={handleCopy}
-                handleDownload={handleDownload}
-            />
+          <ScrollArea className="flex-grow">
+            <div className="p-4">
+              <ChatMessages
+                  messages={currentSession?.messages || []}
+                  username={username}
+                  isTyping={isTyping}
+                  handleRetry={handleRetry}
+                  handleCopy={handleCopy}
+                  handleDownload={handleDownload}
+              />
+            </div>
           </ScrollArea>
-          <div className="p-4 border-t border-border">
-            <div className="flex items-center space-x-2"> {/* Changed to items-center */}
+          <div className="p-4 border-t border-border flex-shrink-0">
+            <div className="flex items-center space-x-2">
               <div className="flex-grow">
-             <textarea
-                 className="w-full p-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent resize-none transition-shadow duration-200"
-                 rows={1}
-                 placeholder="Type your message here"
-                 value={message}
-                 onChange={(e) => setMessage(e.target.value)}
-                 onKeyPress={(e) => {
-                   if (e.key === 'Enter' && !e.shiftKey) {
-                     e.preventDefault()
-                     handleSendMessage()
-                   }
-                 }}
-                 disabled={isLoading}
-             />
+              <textarea
+                  className="w-full p-2 border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent resize-none transition-shadow duration-200"
+                  rows={1}
+                  placeholder="Type your message here"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendMessage()
+                    }
+                  }}
+                  disabled={isLoading}
+              />
               </div>
               <div className="flex space-x-2">
                 {isRetrievalMode && (
@@ -350,7 +349,6 @@ export default function Web3Chat() {
           </div>
         </main>
 
-
         {editSessionId && (
             <div className="fixed inset-0 bg-background/80 flex items-center justify-center">
               <Card className="w-full max-w-sm">
@@ -374,15 +372,12 @@ export default function Web3Chat() {
   )
 }
 
-
 function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, handleDownload }) {
   const messagesEndRef = useRef(null)
-
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
 
   return (
       <div className="space-y-4">
@@ -401,7 +396,7 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
                     className="w-10 h-10 rounded-full"
                 />
                 <div className={`${message.sender === username ? 'text-right' : 'text-left'}`}>
-                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' :   'bg-secondary text-secondary-foreground'}`}>
+                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
