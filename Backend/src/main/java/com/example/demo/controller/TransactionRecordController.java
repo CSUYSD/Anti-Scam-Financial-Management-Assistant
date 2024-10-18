@@ -61,9 +61,9 @@ public class TransactionRecordController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<String> updateTransactionRecord(@PathVariable Long id, @RequestBody TransactionRecord transactionRecord) {
+    public ResponseEntity<String> updateTransactionRecord(@PathVariable Long id, @RequestBody TransactionRecordDTO transactionRecordDTO) {
         try {
-            recordService.updateTransactionRecord(id, transactionRecord);
+            recordService.updateTransactionRecord(id, transactionRecordDTO);
             return ResponseEntity.ok("Transaction record updated successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error updating transaction record: " + e.getMessage());
