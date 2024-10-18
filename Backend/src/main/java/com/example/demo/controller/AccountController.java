@@ -89,8 +89,6 @@ public class AccountController {
         }
     }
 
-
-
     @PutMapping("/update/{id}")
     public ResponseEntity<Object> updateAccount(@PathVariable Long id, @RequestBody @Valid AccountDTO accountDetails) {
 

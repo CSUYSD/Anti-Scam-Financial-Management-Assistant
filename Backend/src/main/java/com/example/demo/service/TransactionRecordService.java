@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 import com.example.demo.model.ai.AnalyseRequest;
@@ -15,10 +16,10 @@ import com.example.demo.utility.jwt.JwtUtil;
 import com.example.demo.utility.parser.DtoParser;
 import com.example.demo.utility.parser.PromptParser;
 import com.example.demo.utility.GetCurrentUserInfo;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
+import com.example.demo.utility.parser.DtoParser;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +65,7 @@ public class TransactionRecordService {
         return transactionRecordDao.findAllByAccountId(accountId);
     }
 
+    @Transactional
     public void addTransactionRecord(@RequestHeader String token, TransactionRecordDTO transactionRecordDTO) {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
@@ -88,7 +90,7 @@ public class TransactionRecordService {
         // save to elastic search
         recordSyncService.syncToElasticsearch(transactionRecord);
         // send to AI analyser
-        String currentRecord = PromptParser.parseLatestTransactionRecordsToPrompt(List.of(transactionRecord));
+        String currentRecord = PromptParser.parseLatestTransactionRecordsToPrompt(List.of(DtoParser.convertTransactionRecordToDTO(transactionRecord)));
         AnalyseRequest request = new AnalyseRequest(accountId, currentRecord);
         log.info("Sending AnalyseRequest to AI analyser for accountId: {}", accountId);
         try {
@@ -157,8 +159,20 @@ public class TransactionRecordService {
     }
 
     @Transactional
-    public void deleteTransactionRecordsInBatch(Long accountId, List<Long> recordIds) {
+    public void deleteTransactionRecordsInBatch(String token, List<Long> recordIds) {
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
         Account account = findAccountById(accountId); // 使用传入的 accountId 查找账户
+        List<TransactionRecord> records = transactionRecordDao.findAllByIdInAndAccountId(recordIds, accountId);
+        if (records.isEmpty()) {
+            throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
+        }
+
+
+        transactionRecordDao.deleteAll(records);
+
+//      delete batch of records from elastic search
+        recordSyncService.deleteFromElasticsearchInBatch(recordIds);
 
         // 计算并更新账户的总收入和总支出
         for (Long recordId : recordIds) {
@@ -169,25 +183,15 @@ public class TransactionRecordService {
                 account.setTotalIncome(account.getTotalIncome() - transactionRecord.getAmount());
             }
         }
-
-        // 删除记录
-        List<TransactionRecord> transactionRecords = transactionRecordDao.findAllByIdInAndAccountId(recordIds, account.getId());
-        if (transactionRecords.isEmpty()) {
-            throw new RuntimeException("No records found for provided IDs and accountId: " + account.getId());
-        }
-
-        for (TransactionRecord recordToDelete : transactionRecords) {
-            transactionRecordDao.delete(recordToDelete);
-        }
-
-        // 从 Elasticsearch 中删除批量记录
-        recordSyncService.deleteFromElasticsearchInBatch(recordIds);
-
         updateRedisAccount(account);
     }
 
-    public List<TransactionRecord> getCertainDaysRecords(Long accountId, Integer duration) {
-        return transactionRecordDao.findCertainDaysRecords(accountId, duration);
+    @Transactional(readOnly = true)
+    public List<TransactionRecordDTO> getCertainDaysRecords(Long accountId, Integer duration) {
+        List<TransactionRecord> records = transactionRecordDao.findCertainDaysRecords(accountId, duration);
+        return records.stream()
+                .map(DtoParser::convertTransactionRecordToDTO)
+                .collect(Collectors.toList());
     }
 
 

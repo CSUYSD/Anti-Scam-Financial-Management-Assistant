@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PropTypes from 'prop-types'
-import { logoutAPI } from "@/api/user.jsx"
-import { removeToken } from "@/utils/index.jsx"
+import { logoutAPI } from "@/api/user"
+import { removeToken } from "@/utils/index"
 import { X, Plus, LogOut, Trash2 } from 'lucide-react'
 import { getAllAccountsAPI, createAccountAPI, deleteAccountAPI, switchAccountAPI } from '@/api/account'
-import WebSocketService from "@/service/WebSocketService.js";
+import WebSocketService from "@/service/WebSocketService.js"
 
 // Define the handleApiError function
 const handleApiError = (error) => {
     if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
+        // Don't return an error message for 404 status
+        if (error.response.status === 404) {
+            return null
+        }
         return error.response.data.message || 'An error occurred with the server response.'
     } else if (error.request) {
-        // The request was made but no response was received
         return 'No response received from the server. Please check your internet connection.'
     } else {
-        // Something happened in setting up the request that triggered an Error
         return 'An error occurred while setting up the request.'
     }
 }
@@ -48,8 +48,8 @@ const AccountCard = ({ account, onSelect, onDelete }) => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.5 }}
                         onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(account);
+                            e.stopPropagation()
+                            onDelete(account)
                         }}
                     >
                         <Trash2 className="h-5 w-5" />
@@ -164,7 +164,10 @@ export default function Account() {
             setAccounts(response.data)
         } catch (error) {
             const errorMessage = handleApiError(error)
-            setError(errorMessage)
+            if (errorMessage) {
+                setError(errorMessage)
+            }
+            // If it's a 404, we don't set an error, we just leave the accounts empty
         }
     }
 
@@ -183,7 +186,9 @@ export default function Account() {
                 window.location.reload()
             } catch (error) {
                 const errorMessage = handleApiError(error)
-                setError(errorMessage)
+                if (errorMessage) {
+                    setError(errorMessage)
+                }
             }
         }
     }
@@ -195,7 +200,9 @@ export default function Account() {
             window.location.href = '/'
         } catch (error) {
             const errorMessage = handleApiError(error)
-            setError(errorMessage)
+            if (errorMessage) {
+                setError(errorMessage)
+            }
         }
     }
 
@@ -213,7 +220,9 @@ export default function Account() {
                 setAccountToDelete(null)
             } catch (error) {
                 const errorMessage = handleApiError(error)
-                setError(errorMessage)
+                if (errorMessage) {
+                    setError(errorMessage)
+                }
             }
         }
     }
@@ -222,15 +231,17 @@ export default function Account() {
         try {
             await logoutAPI()
             localStorage.removeItem('username')
-            localStorage.removeItem('chatSessions'); // Clear the chat sessions from local storage
-            localStorage.removeItem('uploadedFiles'); // Clear the user profile from local storage
+            localStorage.removeItem('chatSessions')
+            localStorage.removeItem('uploadedFiles')
             removeToken()
             WebSocketService.handleLogout()
             window.location.href = '/login'
         } catch (error) {
             console.error('Logout failed:', error)
             const errorMessage = handleApiError(error)
-            setError(errorMessage)
+            if (errorMessage) {
+                setError(errorMessage)
+            }
         }
     }
 

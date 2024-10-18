@@ -5,6 +5,7 @@ import { AccountBalance, TrendingUp, TrendingDown, Warning, Savings, List, Arrow
 import { getRecentRecordsAPI, getAllRecordsAPI } from '@/api/record';
 import { getCurrentAccountAPI } from '@/api/account';
 import { format, subDays } from 'date-fns';
+// @ts-ignore
 import useWebSocket from '@/hooks/useWebSocket';
 
 

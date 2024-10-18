@@ -47,7 +47,6 @@ public class TransactionRecordController {
         return ResponseEntity.ok(transactions);
     }
 
-    @Transactional
     @PostMapping("/create")
     public ResponseEntity<String> addTransactionRecord(@RequestHeader("Authorization") String token, @RequestBody TransactionRecordDTO transactionRecordDTO) {
         if (token == null || token.isEmpty()) {
@@ -82,9 +81,12 @@ public class TransactionRecordController {
     }
 
     @DeleteMapping("/batch")
-    public ResponseEntity<String> deleteRecordsInBatch(@RequestParam Long accountId, @RequestBody List<Long> recordIds) {
+    public ResponseEntity<String> deleteRecordsInBatch(@RequestHeader("Authorization") String token, @RequestBody List<Long> recordIds) {
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未提供令牌");
+        }
         try {
-            recordService.deleteTransactionRecordsInBatch(accountId, recordIds);
+            recordService.deleteTransactionRecordsInBatch(token, recordIds);
             return ResponseEntity.ok("Records deleted successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete records: " + e.getMessage());
@@ -106,7 +108,7 @@ public class TransactionRecordController {
     }
 
     @GetMapping("/recent")
-    public ResponseEntity<List<TransactionRecord>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
+    public ResponseEntity<List<TransactionRecordDTO>> getCertainDaysRecord(@RequestHeader("Authorization") String token, @RequestParam int duration) {
         if (duration < 1 || duration > 30) {
             return ResponseEntity.badRequest().build();
         }
@@ -114,7 +116,7 @@ public class TransactionRecordController {
             Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
             String pattern = "login_user:" + userId + ":current_account";
             String accountId = stringRedisTemplate.opsForValue().get(pattern);
-            List<TransactionRecord> records = recordService.getCertainDaysRecords(Long.valueOf(accountId), duration);
+            List<TransactionRecordDTO> records = recordService.getCertainDaysRecords(Long.valueOf(accountId), duration);
             return ResponseEntity.ok(records);
         } catch (IllegalArgumentException e) {
             System.out.println(e.getMessage());
