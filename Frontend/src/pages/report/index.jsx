@@ -23,9 +23,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Paperclip, X, Send, Download, Copy, Edit, Trash, ChevronDown } from 'lucide-react'
+import { Paperclip, X, Send, Download, Copy, Edit, Trash, ChevronDown, File } from 'lucide-react'
 
-export default function Web3Chat() {
+export default function Report() {
   const {
     sessions,
     activeSession,
@@ -38,7 +38,6 @@ export default function Web3Chat() {
   } = useChatSessions()
   const { files, uploadFile, clearFiles } = useFileUpload()
 
-
   const [message, setMessage] = useState('')
   const [isRetrievalMode, setIsRetrievalMode] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -48,40 +47,44 @@ export default function Web3Chat() {
   const [newSessionName, setNewSessionName] = useState('')
   const fileInputRef = useRef(null)
 
-
   const handleSendMessage = useCallback(async () => {
     if (message.trim() || (isRetrievalMode && files.length > 0)) {
       const decodedMessage = decodeURIComponent(message.trim());
       console.log("User input:", decodedMessage);
 
-
       const timestamp = new Date().toISOString();
       addMessageToActiveSession({ sender: username, content: decodedMessage, timestamp });
-
 
       setMessage('');
       setIsLoading(true);
       setIsTyping(true);
 
-
       let messageId;
       try {
         messageId = addMessageToActiveSession({ sender: 'AI', content: '', timestamp: new Date().toISOString() });
 
-
-        const params = {
-          prompt: decodedMessage,
-          sessionId: activeSession,
+        let params;
+        let headers = {
+          'Content-Type': 'application/json'
         };
 
-
         if (isRetrievalMode) {
-          params.files = files.map(f => f.name).join(',');
+          params = new FormData();
+          params.append('prompt', decodedMessage);
+          params.append('sessionId', activeSession);
+          files.forEach((file) => {
+            params.append('files', file);
+          });
+
+          headers['Content-Type'] = 'multipart/form-data';
+        } else {
+          params = {
+            prompt: decodedMessage,
+            sessionId: activeSession,
+          };
         }
 
-
         const response = await (isRetrievalMode ? ChatWithFileAPI(params) : FluxMessageWithHistoryAPI(params));
-
 
         let aiResponse = '';
         const processChunk = (chunk) => {
@@ -97,11 +100,9 @@ export default function Web3Chat() {
           });
         };
 
-
         if (response.data) {
           processChunk(response.data);
         }
-
 
       } catch (error) {
         console.error('Error sending message:', error);
@@ -115,7 +116,6 @@ export default function Web3Chat() {
     }
   }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession, updateMessageInActiveSession]);
 
-
   const handleFileUpload = async (event) => {
     const selectedFile = event.target.files?.[0]
     if (selectedFile) {
@@ -128,34 +128,37 @@ export default function Web3Chat() {
     }
   }
 
-
   const handleClearFiles = async () => {
     setIsLoading(true)
     try {
-      await ClearFileAPI()
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      await ClearFileAPI({}, { headers })
       clearFiles()
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (error) {
       console.error('Error clearing files:', error)
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
-
   const handleRetry = async () => {
     const currentSession = sessions.find(s => s.id === activeSession)
     if (!currentSession) return
 
-
     const lastUserMessage = [...currentSession.messages].reverse().find(m => m.sender === username)
     if (!lastUserMessage) return
-
 
     setMessage(lastUserMessage.content)
     await handleSendMessage()
   }
-
 
   const handleCopy = (content) => {
     navigator.clipboard.writeText(content).then(() => {
@@ -164,7 +167,6 @@ export default function Web3Chat() {
       console.error('Could not copy text: ', err)
     })
   }
-
 
   const handleDownload = (content) => {
     const element = document.createElement("a")
@@ -176,18 +178,15 @@ export default function Web3Chat() {
     document.body.removeChild(element)
   }
 
-
   const handleExportConversation = () => {
     const currentSession = sessions.find(s => s.id === activeSession)
     if (!currentSession) return
-
 
     let exportContent = `Conversation Export - ${currentSession.name}\n\n`
     currentSession.messages.forEach((msg) => {
       const formattedTime = format(parseISO(msg.timestamp), 'yyyy-MM-dd HH:mm:ss')
       exportContent += `[${formattedTime}] ${msg.sender}:\n${msg.content}\n\n`
     })
-
 
     const element = document.createElement("a")
     const file = new Blob([exportContent], {type: 'text/plain'})
@@ -198,12 +197,10 @@ export default function Web3Chat() {
     document.body.removeChild(element)
   }
 
-
   const startEditSession = (id) => {
     setEditSessionId(id)
     setNewSessionName(sessions.find(s => s.id === id)?.name || '')
   }
-
 
   const handleEditSessionConfirm = () => {
     if (editSessionId) {
@@ -213,11 +210,9 @@ export default function Web3Chat() {
     }
   }
 
-
   const canSendMessage = message.trim() || (isRetrievalMode && files.length > 0)
   const currentSession = sessions.find(s => s.id === activeSession)
   const hasMessages = currentSession && currentSession.messages.length > 0
-
 
   return (
       <div className="flex flex-col h-screen bg-background">
@@ -286,6 +281,19 @@ export default function Web3Chat() {
               />
             </div>
           </ScrollArea>
+          {isRetrievalMode && files.length > 0 && (
+              <div className="p-4 border-t border-border">
+                <h3 className="text-sm font-semibold mb-2">Uploaded Files:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {files.map((file, index) => (
+                      <div key={index} className="flex items-center bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm">
+                        <File className="w-4 h-4 mr-2" />
+                        {file.name}
+                      </div>
+                  ))}
+                </div>
+              </div>
+          )}
           <div className="p-4 border-t border-border flex-shrink-0">
             <div className="flex items-center space-x-2">
               <div className="flex-grow">
@@ -361,7 +369,7 @@ export default function Web3Chat() {
                       className="mb-4"
                   />
                   <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setEditSessionId(null)}>Cancel</Button>
+                    <Button  variant="outline" onClick={() => setEditSessionId(null)}>Cancel</Button>
                     <Button onClick={handleEditSessionConfirm}>Save</Button>
                   </div>
                 </CardContent>
@@ -447,9 +455,9 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
             >
               <div className="bg-secondary rounded-lg p-3">
                 <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                 </div>
               </div>
             </motion.div>
@@ -458,4 +466,3 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
       </div>
   )
 }
-

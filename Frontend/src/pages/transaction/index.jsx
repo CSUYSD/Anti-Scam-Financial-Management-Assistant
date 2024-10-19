@@ -1,5 +1,4 @@
-"use client"
-
+'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,12 +9,10 @@ import {
 } from '@/api/record';
 import { searchAPI } from '@/api/search';
 
-
 const transactionTypes = ['Income', 'Expense'];
 const expenseCategories = ['Grocery', 'Electronic', 'Devices', 'Rent', 'Bills', 'Tuition Fees'];
 const incomeCategories = ['Salary', 'Investment', 'Gift', 'Other'];
 const transactionMethods = ['Credit Card', 'Cash', 'PayPal'];
-
 
 export default function EnhancedTransactionManagement() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -43,18 +40,15 @@ export default function EnhancedTransactionManagement() {
     const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
     const [isSearchActive, setIsSearchActive] = useState(false);
 
-
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-
     useEffect(() => {
         fetchAllRecords();
     }, []);
-
 
     useEffect(() => {
         if (transactionType !== 'All') {
@@ -69,11 +63,10 @@ export default function EnhancedTransactionManagement() {
         }
     }, [transactionType, allTransactions]);
 
-
     const fetchAllRecords = async () => {
         try {
             setLoading(true);
-            const response = await getAllRecordsAPI(0, 10); // Fetch first page of records
+            const response = await getAllRecordsAPI(0, 10);
             const transactions = response.data || [];
             setAllTransactions(transactions);
             setDisplayedTransactions(transactions);
@@ -89,7 +82,6 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
-
     const handleSearch = async () => {
         if (!searchTerm.trim()) {
             setIsSearchActive(false);
@@ -97,12 +89,10 @@ export default function EnhancedTransactionManagement() {
             return;
         }
 
-
         try {
             setLoading(true);
             const response = await searchAPI(searchTerm);
             const searchResults = response.data || [];
-
 
             setDisplayedTransactions(searchResults);
             setTotalPages(Math.ceil(searchResults.length / 10));
@@ -117,7 +107,6 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
-
     const handleAction = useCallback((action) => {
         setShowSuccess(true);
         setTimeout(() => {
@@ -126,25 +115,21 @@ export default function EnhancedTransactionManagement() {
         }, 3000);
     }, []);
 
-
     const handleSelectTransaction = useCallback((id) => {
         setSelectedTransactions(prev =>
             prev.includes(id) ? prev.filter(transId => transId !== id) : [...prev, id]
         );
     }, []);
 
-
     const handleSelectAll = useCallback((checked) => {
         setSelectedTransactions(checked ? displayedTransactions.map(t => t.id) : []);
     }, [displayedTransactions]);
-
 
     const handleBatchDelete = async () => {
         if (selectedTransactions.length === 0) {
             setError('No transactions selected for deletion');
             return;
         }
-
 
         try {
             setLoading(true);
@@ -160,12 +145,10 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
-
     const formatDateTimeForBackend = (dateTimeString) => {
         const date = new Date(dateTimeString);
         return date.toISOString();
     };
-
 
     const validateForm = () => {
         const errors = {};
@@ -176,18 +159,15 @@ export default function EnhancedTransactionManagement() {
         if (!transactionForm.transactionTime) errors.transactionTime = 'Transaction time is required';
         if (!transactionForm.transactionDescription) errors.transactionDescription = 'Description is required';
 
-
         const currentDate = new Date();
         const selectedDate = new Date(transactionForm.transactionTime);
         if (selectedDate > currentDate) {
             errors.transactionTime = 'Cannot select a future date';
         }
 
-
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
-
 
     const handleAddTransaction = async () => {
         if (validateForm()) {
@@ -215,7 +195,6 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
-
     const handleEditTransaction = useCallback((transaction) => {
         setEditingTransaction(transaction.id);
         setTransactionForm({
@@ -224,7 +203,6 @@ export default function EnhancedTransactionManagement() {
         });
         setShowAddForm(true);
     }, []);
-
 
     const handleUpdateTransaction = async () => {
         if (validateForm() && editingTransaction !== null) {
@@ -253,7 +231,6 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
-
     const handleDeleteTransaction = async (id) => {
         try {
             await deleteRecordAPI(id);
@@ -263,7 +240,6 @@ export default function EnhancedTransactionManagement() {
             setError('Failed to delete transaction');
         }
     };
-
 
     const fetchTransactions = async () => {
         try {
@@ -283,14 +259,11 @@ export default function EnhancedTransactionManagement() {
         }
     };
 
-
     const paginatedTransactions = displayedTransactions.slice((page - 1) * 10, page * 10);
-
 
     const toggleTypeDropdown = () => {
         setTypeDropdownOpen(!typeDropdownOpen);
     };
-
 
     const handleTypeSelect = (type) => {
         setTransactionType(type);
@@ -298,12 +271,11 @@ export default function EnhancedTransactionManagement() {
         setIsSearchActive(false);
     };
 
-
     const handlePageChange = async (newPage) => {
         setPage(newPage);
         try {
             setLoading(true);
-            const response = await getAllRecordsAPI(newPage - 1, 10); // Assuming 0-based page index and 10 items per page
+            const response = await getAllRecordsAPI(newPage - 1, 10);
             const transactions = response.data || [];
             setDisplayedTransactions(transactions);
             setTotalPages(Math.ceil(transactions.length / 10));
@@ -314,7 +286,6 @@ export default function EnhancedTransactionManagement() {
             setLoading(false);
         }
     };
-
 
     if (loading) {
         return (
@@ -336,7 +307,6 @@ export default function EnhancedTransactionManagement() {
         );
     }
 
-
     if (error) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -353,7 +323,6 @@ export default function EnhancedTransactionManagement() {
             </div>
         );
     }
-
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -381,7 +350,6 @@ export default function EnhancedTransactionManagement() {
                     </div>
                 </motion.div>
 
-
                 <motion.div
                     className="bg-white rounded-xl overflow-hidden shadow-lg mb-8"
                     initial={{ opacity: 0, y: 20 }}
@@ -408,7 +376,8 @@ export default function EnhancedTransactionManagement() {
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: -10 }}
                                                 transition={{ duration: 0.2 }}
-                                                className="absolute top-full left-0 mt-1  bg-white rounded-lg shadow-lg overflow-hidden z-20"
+                                                className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg overflow-hidden z-20"
+
                                             >
                                                 {['All', ...transactionTypes].map((type) => (
                                                     <motion.button
@@ -426,7 +395,7 @@ export default function EnhancedTransactionManagement() {
                                 </div>
                                 <motion.button
                                     onClick={() => setShowAddForm(!showAddForm)}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all duration-300"
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-semibold hover:bg-blue-600 transition-all duration-300"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
@@ -435,7 +404,6 @@ export default function EnhancedTransactionManagement() {
                                 </motion.button>
                             </div>
                         </div>
-
 
                         <AnimatePresence>
                             {showAddForm && (
@@ -530,7 +498,7 @@ export default function EnhancedTransactionManagement() {
                                         </div>
                                         <motion.button
                                             onClick={editingTransaction ? handleUpdateTransaction : handleAddTransaction}
-                                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all duration-300"
+                                            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-semibold hover:bg-blue-600 transition-all duration-300"
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                         >
@@ -540,7 +508,6 @@ export default function EnhancedTransactionManagement() {
                                 </motion.div>
                             )}
                         </AnimatePresence>
-
 
                         <div className="overflow-x-auto">
                             <table className="w-full">
@@ -591,7 +558,7 @@ export default function EnhancedTransactionManagement() {
                                             <td className="p-3">
                                                 <motion.button
                                                     onClick={() => handleEditTransaction(transaction)}
-                                                    className="mr-2 text-blue-600 hover:text-blue-800"
+                                                    className="mr-2 text-blue-500 hover:text-blue-600"
                                                     whileHover={{ scale: 1.1 }}
                                                     whileTap={{ scale: 0.9 }}
                                                 >
@@ -599,7 +566,7 @@ export default function EnhancedTransactionManagement() {
                                                 </motion.button>
                                                 <motion.button
                                                     onClick={() => handleDeleteTransaction(transaction.id)}
-                                                    className="text-red-600 hover:text-red-800"
+                                                    className="text-red-500 hover:text-red-600"
                                                     whileHover={{ scale: 1.1 }}
                                                     whileTap={{ scale: 0.9 }}
                                                 >
@@ -613,13 +580,12 @@ export default function EnhancedTransactionManagement() {
                             </table>
                         </div>
 
-
                         <div className="mt-6 flex justify-between items-center">
                             <motion.button
                                 onClick={handleBatchDelete}
                                 className={`px-4 py-2 rounded-full text-sm font-semibold ${
                                     selectedTransactions.length > 0
-                                        ? 'bg-red-600 text-white hover:bg-red-700'
+                                        ? 'bg-red-500 text-white hover:bg-red-600'
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 } transition-all duration-300`}
                                 whileHover={selectedTransactions.length > 0 ? { scale: 1.05 } : {}}
@@ -636,7 +602,7 @@ export default function EnhancedTransactionManagement() {
                                         onClick={() => handlePageChange(pageNum)}
                                         className={`px-3 py-1 rounded-full text-sm font-semibold ${
                                             page === pageNum
-                                                ? 'bg-blue-600 text-white'
+                                                ? 'bg-blue-500 text-white'
                                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                         } transition-all duration-300`}
                                         whileHover={{ scale: 1.05 }}
@@ -651,9 +617,8 @@ export default function EnhancedTransactionManagement() {
                 </motion.div>
             </div>
 
-
             <motion.button
-                className="fixed bottom-8 right-8 p-4 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300"
+                className="fixed bottom-8 right-8 p-4 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-all duration-300"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: scrollY > 100 ? 1 : 0, y: scrollY > 100 ? 0 : 20 }}
@@ -663,7 +628,6 @@ export default function EnhancedTransactionManagement() {
             >
                 <ChevronUp className="h-6 w-6" />
             </motion.button>
-
 
             {showSuccess && (
                 <motion.div
@@ -679,6 +643,3 @@ export default function EnhancedTransactionManagement() {
         </div>
     );
 }
-
-
-
