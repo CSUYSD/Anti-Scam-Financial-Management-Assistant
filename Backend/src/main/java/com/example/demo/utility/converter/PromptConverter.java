@@ -1,18 +1,16 @@
-package com.example.demo.utility.parser;
+package com.example.demo.utility.converter;
 
-import com.example.demo.model.TransactionRecord;
 import com.example.demo.model.dto.TransactionRecordDTO;
 
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PromptParser {
+public class PromptConverter {
     private static final int MAX_RECORDS = 10;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
 
-    public static String parseLatestTransactionRecordsToPrompt(List<TransactionRecordDTO> records) {
+    public static String parseRecentTransactionRecordsToPrompt(List<TransactionRecordDTO> records) {
         List<TransactionRecordDTO> processedRecords = new ArrayList<>(records);
         if (!processedRecords.isEmpty()) {
             processedRecords.remove(0);
@@ -29,6 +27,12 @@ public class PromptParser {
                 });
 
         return sb.toString();
+    }
+    public static String parseLatestHealthRecordToPrompt(TransactionRecordDTO record) {
+        if (record == null) {
+            return "No records found.";
+        }
+        return "latest record:" + parseTransactionRecordToString(record);
     }
 
     private static String parseTransactionRecordToString(TransactionRecordDTO record) {

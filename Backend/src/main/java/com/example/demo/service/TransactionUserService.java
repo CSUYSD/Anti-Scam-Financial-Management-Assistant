@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.example.demo.model.Redis.RedisAccount;
-import com.example.demo.utility.parser.DtoParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,15 +37,13 @@ public class TransactionUserService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private final PasswordEncoder passwordEncoder;
-    private final DtoParser dtoParser;
 
     @Autowired
-    public TransactionUserService(TransactionUserDao transactionUserDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder, DtoParser dtoParser) {
+    public TransactionUserService(TransactionUserDao transactionUserDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder) {
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
-        this.dtoParser = dtoParser;
     }
 
     public List<TransactionUser> findAll() {
@@ -125,13 +122,14 @@ public class TransactionUserService {
         if (redisUser != null) {
             return Optional.of(getUserInfoFromRedis(redisUser, userId));
         } else {
+            // 如果 Redis 中没有用户信息，从数据库中获取
             return transactionUserDao.findById(userId)
-                    .map(this.dtoParser::convertTransactionUserToDTO); // 修改了方法名
+                    .map(this::convertToDTO);
         }
     }
 
     private TransactionUserDTO getUserInfoFromRedis(RedisUser redisUser, Long userId) {
-        TransactionUserDTO userDTO = dtoParser.setTransactionUserDTO(redisUser);
+        TransactionUserDTO userDTO = setTransactionUserDTO(redisUser);
 
         List<String> accountNames = new ArrayList<>();
         String keyPattern = "login_user:" + userId + ":account*";
@@ -145,6 +143,36 @@ public class TransactionUserService {
         }
         userDTO.setAccountName(accountNames);
         return userDTO;
+    }
+
+    private TransactionUserDTO convertToDTO(TransactionUser user) {
+        TransactionUserDTO userDTO = setTransactionUserDTO(user);
+        List<Account> accounts = user.getAccounts();
+        for (Account account : accounts) {
+            userDTO.getAccountName().add(account.getAccountName());
+        }
+        return userDTO;
+    }
+
+    private TransactionUserDTO setTransactionUserDTO(Object user) {
+        TransactionUserDTO userDTO = new TransactionUserDTO();
+
+        if (user instanceof TransactionUser transactionUser) {
+            populateUserDTO(userDTO, transactionUser.getUsername(), transactionUser.getEmail(), transactionUser.getPhone(), transactionUser.getAvatar());
+        } else if (user instanceof RedisUser redisUser) {
+            populateUserDTO(userDTO, redisUser.getUsername(), redisUser.getEmail(), redisUser.getPhone(), redisUser.getAvatar());
+        } else {
+            throw new IllegalArgumentException("Unsupported user type: " + user.getClass().getName());
+        }
+
+        return userDTO;
+    }
+
+    private void populateUserDTO(TransactionUserDTO userDTO, String username, String email, String phone, String avatar) {
+        userDTO.setUsername(username);
+        userDTO.setEmail(email);
+        userDTO.setPhone(phone);
+        userDTO.setAvatar(avatar);
     }
 
 }

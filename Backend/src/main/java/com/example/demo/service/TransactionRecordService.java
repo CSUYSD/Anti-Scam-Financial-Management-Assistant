@@ -10,18 +10,16 @@ import com.example.demo.model.Account;
 import com.example.demo.model.dto.TransactionRecordDTO;
 import com.example.demo.model.Redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
-import com.example.demo.service.ai.AiAnalyserService;
 import com.example.demo.service.es.RecordSyncService;
+import com.example.demo.service.rabbitmq.RabbitMQService;
 import com.example.demo.utility.jwt.JwtUtil;
-import com.example.demo.utility.parser.DtoParser;
-import com.example.demo.utility.parser.PromptParser;
+import com.example.demo.utility.converter.TransactionRecordConverter;
+import com.example.demo.utility.converter.PromptConverter;
 import com.example.demo.utility.GetCurrentUserInfo;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import com.example.demo.utility.parser.DtoParser;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -42,13 +40,14 @@ public class TransactionRecordService {
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
     private final GetCurrentUserInfo getCurrentUserInfo;
+    private final RabbitMQService rabbitMQService;
 
     @Autowired private StringRedisTemplate stringRedisTemplate;
 
     private final RabbitTemplate rabbitTemplate;
 
     @Autowired
-    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService, GetCurrentUserInfo getCurrentUserInfo, RabbitTemplate rabbitTemplate) {
+    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService, GetCurrentUserInfo getCurrentUserInfo, RabbitMQService rabbitMQService, RabbitTemplate rabbitTemplate) {
         this.transactionRecordDao = transactionRecordDao;
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
@@ -56,6 +55,7 @@ public class TransactionRecordService {
         this.accountDao = accountDao;
         this.recordSyncService = recordSyncService;
         this.getCurrentUserInfo = getCurrentUserInfo;
+        this.rabbitMQService = rabbitMQService;
         this.rabbitTemplate = rabbitTemplate;
     }
 
@@ -69,12 +69,7 @@ public class TransactionRecordService {
     public void addTransactionRecord(@RequestHeader String token, TransactionRecordDTO transactionRecordDTO) {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
-        System.out.printf("===============================accountId: %s===============================", accountId);
-
-        Account account = findAccountById(Long.valueOf(accountId));
-
-        TransactionUser user = findTransactionUserById(userId);
-
+        Account account = findAccountById(accountId);
 
         if (transactionRecordDTO.getType().equalsIgnoreCase("expense")) {
             account.setTotalExpense(account.getTotalExpense() + transactionRecordDTO.getAmount());
@@ -82,7 +77,7 @@ public class TransactionRecordService {
         if (transactionRecordDTO.getType().equalsIgnoreCase("income")) {
             account.setTotalIncome(account.getTotalIncome() + transactionRecordDTO.getAmount());
         }
-        TransactionRecord transactionRecord = DtoParser.toTransactionRecord(transactionRecordDTO);
+        TransactionRecord transactionRecord = TransactionRecordConverter.toTransactionRecord(transactionRecordDTO);
         transactionRecord.setAccount(account);
         transactionRecord.setUserId(userId);
         // save DB
@@ -90,19 +85,14 @@ public class TransactionRecordService {
         // save to elastic search
         recordSyncService.syncToElasticsearch(transactionRecord);
         // send to AI analyser
-        String currentRecord = PromptParser.parseLatestTransactionRecordsToPrompt(List.of(DtoParser.convertTransactionRecordToDTO(transactionRecord)));
+        String currentRecord = PromptConverter.parseLatestHealthRecordToPrompt(transactionRecordDTO);
         AnalyseRequest request = new AnalyseRequest(accountId, currentRecord);
         log.info("Sending AnalyseRequest to AI analyser for accountId: {}", accountId);
-        try {
-            rabbitTemplate.convertAndSend("new.record.to.ai.analyser", request);
-            log.info("AnalyseRequest sent successfully to AI analyser for accountId: {}", accountId);
-        } catch (Exception e) {
-            throw new RuntimeException("Error sending AnalyseRequest to AI analyser: " + e.getMessage());
-        }
+        rabbitMQService.sendAnalyseRequestToAIAnalyser(request);
     }
 
     @Transactional
-    public void updateTransactionRecord(Long id, TransactionRecord newTransactionRecord){
+    public void updateTransactionRecord(Long id, TransactionRecordDTO newTransactionRecordDTO){
         TransactionRecord existingRecord = findTransactionRecordById(id);
         Account account = findAccountById(existingRecord.getAccount().getId());
 
@@ -114,20 +104,12 @@ public class TransactionRecordService {
         }
 
         // Update the amount of the account according to income and expense
-        if (newTransactionRecord.getType().equalsIgnoreCase("expense")) {
-            account.setTotalExpense(account.getTotalExpense() + newTransactionRecord.getAmount());
-        } else if (newTransactionRecord.getType().equalsIgnoreCase("income")) {
-            account.setTotalIncome(account.getTotalIncome() + newTransactionRecord.getAmount());
+        if (newTransactionRecordDTO.getType().equalsIgnoreCase("expense")) {
+            account.setTotalExpense(account.getTotalExpense() + newTransactionRecordDTO.getAmount());
+        } else if (newTransactionRecordDTO.getType().equalsIgnoreCase("income")) {
+            account.setTotalIncome(account.getTotalIncome() + newTransactionRecordDTO.getAmount());
         }
-
-        existingRecord.setAmount(newTransactionRecord.getAmount());
-        existingRecord.setCategory(newTransactionRecord.getCategory());
-        existingRecord.setType(newTransactionRecord.getType());
-        existingRecord.setTransactionTime(newTransactionRecord.getTransactionTime());
-        existingRecord.setTransactionDescription(newTransactionRecord.getTransactionDescription());
-        existingRecord.setTransactionMethod(newTransactionRecord.getTransactionMethod());
-
-
+        TransactionRecordConverter.updateTransactionRecordFromDTO(existingRecord, newTransactionRecordDTO);
         transactionRecordDao.save(existingRecord);
 //      update record in the elastic search
         recordSyncService.updateInElasticsearch(existingRecord);
@@ -167,8 +149,6 @@ public class TransactionRecordService {
         if (records.isEmpty()) {
             throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
         }
-
-
         transactionRecordDao.deleteAll(records);
 
 //      delete batch of records from elastic search
@@ -190,7 +170,7 @@ public class TransactionRecordService {
     public List<TransactionRecordDTO> getCertainDaysRecords(Long accountId, Integer duration) {
         List<TransactionRecord> records = transactionRecordDao.findCertainDaysRecords(accountId, duration);
         return records.stream()
-                .map(DtoParser::convertTransactionRecordToDTO)
+                .map(TransactionRecordConverter::convertTransactionRecordToDTO)
                 .collect(Collectors.toList());
     }
 
