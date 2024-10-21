@@ -36,3 +36,56 @@
     transform: rotate(360deg);
   }
 }
+
+@layer components {
+  .custom-toolbar {
+    @apply bg-gradient-to-br from-white via-gray-100 to-gray-200;
+    @apply shadow-lg;
+    @apply min-h-[64px];
+    @apply relative overflow-hidden;
+  }
+
+  .custom-toolbar::before {
+    @apply content-[''] absolute -top-1/2 -left-1/2 w-[200%] h-[200%];
+    @apply bg-radial-gradient;
+    @apply animate-spin-slow;
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@layer components {
+  .custom-toolbar {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 50%, #e6e6e6 100%);
+    box-shadow:
+            inset 5px 5px 10px #ffffff,
+            inset -5px -5px 10px #cccccc,
+            10px 10px 20px rgba(0,0,0,0.05);
+    min-height: 64px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .custom-toolbar::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
+    animation: lightEffect 15s infinite linear;
+  }
+}
+
+@keyframes lightEffect {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
