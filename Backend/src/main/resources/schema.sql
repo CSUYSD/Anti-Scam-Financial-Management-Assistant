@@ -60,8 +60,14 @@ CREATE TABLE transaction_record (
             user_id BIGINT,
             FOREIGN KEY (user_id) REFERENCES transaction_users(id) ON DELETE CASCADE,
             FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
-
 );
+
+CREATE TABLE financial_report (
+           id BIGINT PRIMARY KEY AUTO_INCREMENT,
+           user_id BIGINT,
+           content CLOB,
+           FOREIGN KEY (user_id) REFERENCES transaction_users(id) ON DELETE CASCADE
+)
 
 
 

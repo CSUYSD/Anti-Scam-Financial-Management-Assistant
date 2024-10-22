@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-import com.example.demo.model.ai.AnalyseRequest;
+import com.example.demo.model.message.AnalyseRequest;
 import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.TransactionRecordDTO;
-import com.example.demo.model.Redis.RedisAccount;
+import com.example.demo.model.redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.service.es.RecordSyncService;
 import com.example.demo.service.rabbitmq.RabbitMQService;
@@ -85,7 +85,7 @@ public class TransactionRecordService {
         // save to elastic search
         recordSyncService.syncToElasticsearch(transactionRecord);
         // send to AI analyser
-        String currentRecord = PromptConverter.parseLatestHealthRecordToPrompt(transactionRecordDTO);
+        String currentRecord = PromptConverter.parseLatestTransactionRecordToPrompt(transactionRecordDTO);
         AnalyseRequest request = new AnalyseRequest(accountId, currentRecord);
         log.info("Sending AnalyseRequest to AI analyser for accountId: {}", accountId);
         rabbitMQService.sendAnalyseRequestToAIAnalyser(request);

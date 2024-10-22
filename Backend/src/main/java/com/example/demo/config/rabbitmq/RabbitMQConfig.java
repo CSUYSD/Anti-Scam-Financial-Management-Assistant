@@ -17,4 +17,8 @@ public class RabbitMQConfig {
         return new Jackson2JsonMessageConverter();
     }
 
+    @Bean
+    public Queue financialReportToChatbotQueue() {return new Queue("financial.report.to.chatbot", true); }
+
+
 }

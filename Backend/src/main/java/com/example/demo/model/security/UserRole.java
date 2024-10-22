@@ -1,5 +1,4 @@
-package com.example.demo.model;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+package com.example.demo.model.security;
 import jakarta.persistence.*;
 import lombok.Data;
 

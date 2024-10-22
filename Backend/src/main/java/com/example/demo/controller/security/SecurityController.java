@@ -1,4 +1,4 @@
-package com.example.demo.controller.Security;
+package com.example.demo.controller.security;
 
 import java.util.Map;
 
@@ -50,7 +50,7 @@ public class SecurityController {
     public ResponseEntity<String> createUser(@Valid @RequestBody TransactionUserDTO userDTO) {
         try {
             securityService.saveUser(userDTO);
-            return ResponseEntity.status(HttpStatus.CREATED).body("用户已成功保存");
+            return ResponseEntity.status(HttpStatus.CREATED).body("User created successfully");
         } catch (UserAlreadyExistsException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         } catch (Exception e) {
@@ -71,5 +71,4 @@ public class SecurityController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
-
 }

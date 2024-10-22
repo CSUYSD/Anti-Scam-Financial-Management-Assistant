@@ -28,7 +28,7 @@ public class PromptConverter {
 
         return sb.toString();
     }
-    public static String parseLatestHealthRecordToPrompt(TransactionRecordDTO record) {
+    public static String parseLatestTransactionRecordToPrompt(TransactionRecordDTO record) {
         if (record == null) {
             return "No records found.";
         }
@@ -36,7 +36,7 @@ public class PromptConverter {
     }
 
     private static String parseTransactionRecordToString(TransactionRecordDTO record) {
-        return String.format("{Type: %s} {Amount: %.2f} {Date: %s} {Category: %s} {Transaction Method: %s} {Description: %s}",
+        return String.format("Type: %s; Amount: %.2f; Date: %s; Category: %s; Transaction Method: %s; Description: %s",
                 record.getType(),
                 record.getAmount(),
                 record.getTransactionTime().format(DATE_FORMATTER),
@@ -44,4 +44,5 @@ public class PromptConverter {
                 record.getTransactionMethod(),
                 record.getTransactionDescription());
     }
+
 }

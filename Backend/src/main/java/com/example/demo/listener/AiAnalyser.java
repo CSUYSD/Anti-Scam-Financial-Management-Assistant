@@ -1,6 +1,6 @@
 package com.example.demo.listener;
 
-import com.example.demo.model.ai.AnalyseRequest;
+import com.example.demo.model.message.AnalyseRequest;
 import com.example.demo.service.ai.AiAnalyserService;
 import com.example.demo.service.TransactionRecordService;
 import com.example.demo.utility.converter.PromptConverter;
