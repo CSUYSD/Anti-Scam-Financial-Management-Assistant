@@ -1,6 +1,6 @@
 package com.example.demo.service.es;
 
-import com.example.demo.repository.ESDao.RecordESDao;
+import com.example.demo.repository.es.RecordESDao;
 import com.example.demo.model.TransactionRecordES;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

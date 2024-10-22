@@ -12,7 +12,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.model.security.UserDetail;
-import com.example.demo.model.UserRole;
+import com.example.demo.model.security.UserRole;
 
 import java.util.Collection;
 import java.util.Collections;
