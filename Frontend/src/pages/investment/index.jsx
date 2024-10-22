@@ -1,10 +1,8 @@
 'use client'
 
-
 import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PlayCircle, Globe, Star, ArrowUpRight, Search, Bookmark, BookmarkPlus, Filter, ChevronDown, ChevronUp, BarChart2, Youtube } from 'lucide-react'
-
 
 export default function EnhancedInvestmentResources() {
     const [activeView, setActiveView] = useState('channels')
@@ -16,13 +14,11 @@ export default function EnhancedInvestmentResources() {
     const [scrollY, setScrollY] = useState(0)
     const [showFilters, setShowFilters] = useState(false)
 
-
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY)
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
-
 
     const channelsData = [
         {
@@ -61,44 +57,7 @@ export default function EnhancedInvestmentResources() {
             views: 980000,
             likes: 76000,
         },
-        {
-            id: 4,
-            title: "Compound Interest Explained",
-            rating: 4.9,
-            thumbnail: "https://img.youtube.com/vi/59F4DiFquz0/mqdefault.jpg",
-            videoUrl: "https://www.youtube.com/embed/59F4DiFquz0?autoplay=1",
-            youtubeUrl: "https://www.youtube.com/watch?v=59F4DiFquz0",
-            description: "Understand the power of compound interest and how it grows your wealth.",
-            category: "Investing",
-            views: 2200000,
-            likes: 150000,
-        },
-        {
-            id: 5,
-            title: "Stock Market Fundamentals",
-            rating: 4.6,
-            thumbnail: "https://img.youtube.com/vi/8Ij7A1VCB7I/mqdefault.jpg",
-            videoUrl: "https://www.youtube.com/embed/8Ij7A1VCB7I?autoplay=1",
-            youtubeUrl: "https://www.youtube.com/watch?v=8Ij7A1VCB7I",
-            description: "Learn the basics of stock market investing and analysis techniques.",
-            category: "Investing",
-            views: 1800000,
-            likes: 120000,
-        },
-        {
-            id: 6,
-            title: "Risk Management in Investing",
-            rating: 4.7,
-            thumbnail: "https://img.youtube.com/vi/lNdOtlpmH5U/mqdefault.jpg",
-            videoUrl: "https://www.youtube.com/embed/lNdOtlpmH5U?autoplay=1",
-            youtubeUrl: "https://www.youtube.com/watch?v=lNdOtlpmH5U",
-            description: "Understand and mitigate investment risks for better returns.",
-            category: "Investing",
-            views: 950000,
-            likes: 72000,
-        }
     ]
-
 
     const websitesData = [
         {
@@ -130,15 +89,13 @@ export default function EnhancedInvestmentResources() {
             image: "https://assets.bwbx.io/s3/javelin/public/javelin/images/bloomberg-logo-7146bb67c18ef8e7c83f.png",
             category: "News",
             monthlyVisits: 50000000,
-        }
+        },
     ]
-
 
     const categories = useMemo(() => {
         const allCategories = [...new Set([...channelsData, ...websitesData].map(item => item.category))]
         return ['All', ...allCategories]
     }, [])
-
 
     const sortOptions = useMemo(() => {
         if (activeView === 'channels') {
@@ -152,21 +109,17 @@ export default function EnhancedInvestmentResources() {
         }
     }, [activeView])
 
-
     const filteredAndSortedItems = useMemo(() => {
         let items = activeView === 'channels' ? channelsData : websitesData
-
 
         items = items.filter(item =>
             (item.title || item.name).toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.description.toLowerCase().includes(searchTerm.toLowerCase())
         )
 
-
         if (selectedCategory !== 'All') {
             items = items.filter(item => item.category === selectedCategory)
         }
-
 
         items.sort((a, b) => {
             if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0)
@@ -176,10 +129,8 @@ export default function EnhancedInvestmentResources() {
             return 0
         })
 
-
         return items
     }, [activeView, searchTerm, selectedCategory, sortBy])
-
 
     const handleViewChange = (view) => {
         setActiveView(view)
@@ -187,16 +138,13 @@ export default function EnhancedInvestmentResources() {
         setSortBy(view === 'channels' ? 'rating' : 'monthlyVisits')
     }
 
-
     const handleOpenItem = (item) => {
         setOpenItem(item)
     }
 
-
     const handleCloseItem = () => {
         setOpenItem(null)
     }
-
 
     const handleBookmark = (item) => {
         setBookmarkedItems(prev =>
@@ -206,9 +154,8 @@ export default function EnhancedInvestmentResources() {
         )
     }
 
-
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 py-8">
                 <motion.div
                     className="flex flex-col items-center mb-8 space-y-6"
@@ -221,7 +168,7 @@ export default function EnhancedInvestmentResources() {
                             onClick={() => handleViewChange('channels')}
                             className={`px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${
                                 activeView === 'channels'
-                                    ? 'bg-blue-600 text-white'
+                                    ? 'bg-blue-500 text-white'
                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                             }`}
                         >
@@ -232,7 +179,7 @@ export default function EnhancedInvestmentResources() {
                             onClick={() => handleViewChange('websites')}
                             className={`px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${
                                 activeView === 'websites'
-                                    ? 'bg-blue-600 text-white'
+                                    ? 'bg-blue-500 text-white'
                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                             }`}
                         >
@@ -241,12 +188,11 @@ export default function EnhancedInvestmentResources() {
                         </button>
                     </div>
 
-
                     <div className="w-full max-w-4xl relative">
                         <div className="flex items-center bg-white rounded-full shadow-md">
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
-                                className="p-3 text-gray-500 hover:text-blue-500 transition-all duration-300"
+                                className="p-3 text-gray-500 hover:text-blue-700 transition-all duration-300"
                             >
                                 <Filter className="h-5 w-5" />
                             </button>
@@ -258,14 +204,13 @@ export default function EnhancedInvestmentResources() {
                                 className="w-full px-4 py-3 rounded-full bg-transparent text-gray-900 placeholder-gray-500 focus:outline-none"
                             />
                             <button
-                                className="p-3 text-gray-500 hover:text-blue-500 transition-all duration-300"
+                                className="p-3 text-gray-500 hover:text-blue-700 transition-all duration-300"
                             >
                                 <Search className="h-5 w-5" />
                             </button>
                         </div>
                     </div>
                 </motion.div>
-
 
                 <AnimatePresence>
                     {showFilters && (
@@ -289,7 +234,7 @@ export default function EnhancedInvestmentResources() {
                                             id="category"
                                             value={selectedCategory}
                                             onChange={(e) => setSelectedCategory(e.target.value)}
-                                            className="w-full px-3 py-2 rounded-md bg-gray-100 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+                                            className="w-full px-3 py-2 rounded-md bg-gray-100 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-700 transition-all duration-300"
                                         >
                                             {categories.map((category) => (
                                                 <option key={category} value={category}>
@@ -304,21 +249,19 @@ export default function EnhancedInvestmentResources() {
                                             id="sortBy"
                                             value={sortBy}
                                             onChange={(e) => setSortBy(e.target.value)}
-                                            className="w-full px-3 py-2 rounded-md bg-gray-100 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+                                            className="w-full px-3 py-2 rounded-md bg-gray-100 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-700 transition-all duration-300"
                                         >
                                             {sortOptions.map((option) => (
                                                 <option key={option.value} value={option.value}>
                                                     {option.label}
                                                 </option>
-
-
                                             ))}
                                         </select>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setShowFilters(false)}
-                                    className="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all duration-300"
+                                    className="mt-6 w-full px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-semibold hover:bg-blue-600 transition-all duration-300"
                                 >
                                     Apply Filters
                                 </button>
@@ -326,7 +269,6 @@ export default function EnhancedInvestmentResources() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-
 
                 <motion.div
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
@@ -359,11 +301,12 @@ export default function EnhancedInvestmentResources() {
                                             <div className="flex items-center mr-4">
                                                 <Star className="h-5 w-5 text-yellow-500 mr-1" aria-hidden="true" />
                                                 <span>{item.rating}</span>
+
                                             </div>
                                         )}
                                         {item.monthlyVisits && (
                                             <div className="flex items-center">
-                                                <BarChart2 className="h-5 w-5 text-blue-500 mr-1" aria-hidden="true" />
+                                                <BarChart2 className="h-5 w-5 text-blue-600 mr-1" aria-hidden="true" />
                                                 <span>{(item.monthlyVisits / 1000000).toFixed(1)}M visits/month</span>
                                             </div>
                                         )}
@@ -372,7 +315,7 @@ export default function EnhancedInvestmentResources() {
                                         {activeView === 'channels' ? (
                                             <button
                                                 onClick={() => handleOpenItem(item)}
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all duration-300"
+                                                className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-semibold hover:bg-blue-600 transition-all duration-300"
                                             >
                                                 <PlayCircle className="inline-block mr-2 h-5 w-5" aria-hidden="true" />
                                                 Watch Now
@@ -382,7 +325,7 @@ export default function EnhancedInvestmentResources() {
                                                 href={item.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-all duration-300"
+                                                className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-semibold hover:bg-blue-600 transition-all duration-300"
                                             >
                                                 <ArrowUpRight className="inline-block mr-2 h-5 w-5" aria-hidden="true" />
                                                 Visit Site
@@ -390,7 +333,7 @@ export default function EnhancedInvestmentResources() {
                                         )}
                                         <button
                                             onClick={() => handleBookmark(item)}
-                                            className="p-2 text-gray-500 hover:text-blue-500 transition-all duration-300"
+                                            className="p-2 text-gray-500 hover:text-blue-700 transition-all duration-300"
                                             aria-label={bookmarkedItems.some(bookmarked => bookmarked.id === item.id) ? "Remove bookmark" : "Add bookmark"}
                                         >
                                             {bookmarkedItems.some(bookmarked => bookmarked.id === item.id) ?
@@ -405,7 +348,6 @@ export default function EnhancedInvestmentResources() {
                     ))}
                 </motion.div>
             </div>
-
 
             <AnimatePresence>
                 {openItem && activeView === 'channels' && (
@@ -456,9 +398,8 @@ export default function EnhancedInvestmentResources() {
                 )}
             </AnimatePresence>
 
-
             <motion.button
-                className="fixed bottom-8 right-8 p-4 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300"
+                className="fixed bottom-8 right-8 p-4 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-all duration-300"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: scrollY > 100 ? 1 : 0, y: scrollY > 100 ? 0 : 20 }}
@@ -470,4 +411,3 @@ export default function EnhancedInvestmentResources() {
         </div>
     )
 }
-

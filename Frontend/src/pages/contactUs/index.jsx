@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
     Typography,
     Container,
@@ -17,13 +17,12 @@ import {
     Phone as PhoneIcon,
     LocationOn as LocationIcon
 } from '@mui/icons-material';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api';
 import { gapi } from 'gapi-script';
 
-// Define libraries as a constant outside the component
 const libraries = ["places"];
 
-const ContactUs = () => {
+export default function ContactUs() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [formData, setFormData] = useState({
@@ -47,6 +46,8 @@ const ContactUs = () => {
         lat: -33.8882,
         lng: 151.1871
     };
+
+    const mapRef = useRef(null);
 
     const handleInputChange = (event) => {
         const { name, value } = event.target;
@@ -93,13 +94,14 @@ const ContactUs = () => {
                             scope: SCOPES,
                         });
 
+
                         const authInstance = gapi.auth2.getAuthInstance();
                         if (!authInstance.isSignedIn.get()) {
                             await authInstance.signIn();
                         }
 
                         const message = `From: ${data.name} <${data.email}>\r\n` +
-                            `To: recipient@example.com\r\n` +
+                            `To: cv2000zone@gmail.com\r\n` +
                             `Subject: ${data.subject}\r\n\r\n` +
                             `${data.message}`;
 
@@ -126,6 +128,10 @@ const ContactUs = () => {
             throw error;
         }
     }, []);
+
+    const handleMarkerClick = () => {
+        console.log('Marker clicked at position:', center);
+    };
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -253,7 +259,7 @@ const ContactUs = () => {
                             Find Us
                         </Typography>
                         <LoadScript
-                            googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                            googleMapsApiKey={import.meta.env.VITE_GOOGLE_API_KEY}
                             libraries={libraries}
                         >
                             <GoogleMap
@@ -267,8 +273,12 @@ const ContactUs = () => {
                                         { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
                                     ] : [],
                                 }}
+                                onLoad={(map) => mapRef.current = map}
                             >
-                                <Marker position={center} />
+                                <Marker
+                                    position={center}
+                                    onClick={handleMarkerClick}
+                                />
                             </GoogleMap>
                         </LoadScript>
                     </Paper>
@@ -285,6 +295,4 @@ const ContactUs = () => {
             </Snackbar>
         </Container>
     );
-};
-
-export default ContactUs;
+}

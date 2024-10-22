@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PropTypes from 'prop-types'
@@ -7,18 +9,26 @@ import { X, Plus, LogOut, Trash2 } from 'lucide-react'
 import { getAllAccountsAPI, createAccountAPI, deleteAccountAPI, switchAccountAPI } from '@/api/account'
 import WebSocketService from "@/service/WebSocketService.js"
 
-// Define the handleApiError function
 const handleApiError = (error) => {
     if (error.response) {
-        // Don't return an error message for 404 status
-        if (error.response.status === 404) {
-            return null
+        switch (error.response.status) {
+            case 400:
+                return 'Invalid request. Please check your input.'
+            case 401:
+                return 'Unauthorized. Please log in again.'
+            case 403:
+                return 'You do not have permission to perform this action.'
+            case 409:
+                return 'Account name already exists. Please choose a different name.'
+            case 500:
+                return 'Server error. Please try again later.'
+            default:
+                return error.response.data.message || 'An unknown error occurred.'
         }
-        return error.response.data.message || 'An error occurred with the server response.'
     } else if (error.request) {
-        return 'No response received from the server. Please check your internet connection.'
+        return 'Unable to connect to the server. Please check your network connection.'
     } else {
-        return 'An error occurred while setting up the request.'
+        return 'An error occurred. Please try again later.'
     }
 }
 
@@ -163,11 +173,13 @@ export default function Account() {
             const response = await getAllAccountsAPI()
             setAccounts(response.data)
         } catch (error) {
-            const errorMessage = handleApiError(error)
-            if (errorMessage) {
+            if (error.response && error.response.status === 404) {
+                // No accounts found, but we don't treat this as an error
+                setAccounts([])
+            } else {
+                const errorMessage = handleApiError(error)
                 setError(errorMessage)
             }
-            // If it's a 404, we don't set an error, we just leave the accounts empty
         }
     }
 
@@ -186,9 +198,7 @@ export default function Account() {
                 window.location.reload()
             } catch (error) {
                 const errorMessage = handleApiError(error)
-                if (errorMessage) {
-                    setError(errorMessage)
-                }
+                setError(errorMessage)
             }
         }
     }
@@ -200,9 +210,7 @@ export default function Account() {
             window.location.href = '/'
         } catch (error) {
             const errorMessage = handleApiError(error)
-            if (errorMessage) {
-                setError(errorMessage)
-            }
+            setError(errorMessage)
         }
     }
 
@@ -220,9 +228,7 @@ export default function Account() {
                 setAccountToDelete(null)
             } catch (error) {
                 const errorMessage = handleApiError(error)
-                if (errorMessage) {
-                    setError(errorMessage)
-                }
+                setError(errorMessage)
             }
         }
     }
@@ -239,9 +245,7 @@ export default function Account() {
         } catch (error) {
             console.error('Logout failed:', error)
             const errorMessage = handleApiError(error)
-            if (errorMessage) {
-                setError(errorMessage)
-            }
+            setError(errorMessage)
         }
     }
 
@@ -289,21 +293,33 @@ export default function Account() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-                <motion.div
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    {accounts.map((account) => (
-                        <AccountCard
-                            key={account.id}
-                            account={account}
-                            onSelect={handleSelectAccount}
-                            onDelete={handleDeleteAccount}
-                        />
-                    ))}
-                </motion.div>
+                {accounts.length > 0 ? (
+                    <motion.div
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        {accounts.map((account) => (
+                            <AccountCard
+                                key={account.id}
+                                account={account}
+                                onSelect={handleSelectAccount}
+                                onDelete={handleDeleteAccount}
+                            />
+                        ))}
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        className="text-center py-8"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <p className="text-xl text-gray-600 mb-4">You don't have any accounts yet.</p>
+                        <p className="text-lg text-gray-500">Create your first account to get started!</p>
+                    </motion.div>
+                )}
                 <motion.button
                     className="mt-8 w-full bg-purple-600 text-white py-3 rounded-full text-lg font-semibold flex items-center justify-center"
                     onClick={addNewAccount}
