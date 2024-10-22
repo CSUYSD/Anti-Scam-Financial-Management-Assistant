@@ -6,7 +6,7 @@ import { getRecentRecordsAPI, getAllRecordsAPI } from '@/api/record';
 import { getCurrentAccountAPI } from '@/api/account';
 import { format, subDays } from 'date-fns';
 // @ts-ignore
-import useWebSocket from '@/hooks/useWebSocket';
+import webSocket from '@/hooks/WebSocket.jsx';
 
 
 const INCOME_COLORS = [
@@ -49,7 +49,7 @@ export default function Dashboard() {
     const [isSearching, setIsSearching] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [showInfoModal, setShowInfoModal] = useState(false);
-    const webSocketMessage = useWebSocket();
+    const webSocketMessage = webSocket();
 
 
     const fetchData = useCallback(async () => {

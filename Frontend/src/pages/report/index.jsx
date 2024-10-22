@@ -2,9 +2,9 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useChatSessions } from '@/hooks/useChatSessions'
-import { useFileUpload } from '@/hooks/useFileUpload'
-import { FluxMessageWithHistoryAPI, ChatWithFileAPI, ClearFileAPI } from '@/api/ai'
+import { chatSessions } from '@/hooks/ChatSessions.jsx'
+import { fileUpload } from '@/hooks/FileUpload.jsx'
+import { FluxMessageWithHistoryAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileNameAPI, GenerateReport, UploadFileAPI } from '@/api/ai'
 import { formatMessageContent } from '@/utils/messageFormatter'
 import { format, parseISO } from 'date-fns'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -35,8 +35,8 @@ export default function Report() {
     updateSessionName,
     addMessageToActiveSession,
     updateMessageInActiveSession,
-  } = useChatSessions()
-  const { files, uploadFile, clearFiles } = useFileUpload()
+  } = chatSessions()
+  const { files, uploadFile, clearFiles } = fileUpload()
 
   const [message, setMessage] = useState('')
   const [isRetrievalMode, setIsRetrievalMode] = useState(false)
@@ -49,11 +49,8 @@ export default function Report() {
 
   const handleSendMessage = useCallback(async () => {
     if (message.trim() || (isRetrievalMode && files.length > 0)) {
-      const decodedMessage = decodeURIComponent(message.trim());
-      console.log("User input:", decodedMessage);
-
       const timestamp = new Date().toISOString();
-      addMessageToActiveSession({ sender: username, content: decodedMessage, timestamp });
+      addMessageToActiveSession({ sender: username, content: message.trim(), timestamp });
 
       setMessage('');
       setIsLoading(true);
@@ -63,28 +60,27 @@ export default function Report() {
       try {
         messageId = addMessageToActiveSession({ sender: 'AI', content: '', timestamp: new Date().toISOString() });
 
-        let params;
-        let headers = {
-          'Content-Type': 'application/json'
-        };
+        let response;
 
         if (isRetrievalMode) {
-          params = new FormData();
-          params.append('prompt', decodedMessage);
-          params.append('sessionId', activeSession);
+          const formData = new FormData();
+          formData.append('prompt', message.trim());
+          formData.append('conversationId', activeSession);
           files.forEach((file) => {
-            params.append('files', file);
+            formData.append('files', file);
           });
 
-          headers['Content-Type'] = 'multipart/form-data';
+          response = await ChatWithFileAPI({
+            prompt: message.trim(),
+            conversationId: activeSession,
+            files: formData
+          });
         } else {
-          params = {
-            prompt: decodedMessage,
+          response = await FluxMessageWithHistoryAPI({
+            prompt: message.trim(),
             sessionId: activeSession,
-          };
+          });
         }
-
-        const response = await (isRetrievalMode ? ChatWithFileAPI(params) : FluxMessageWithHistoryAPI(params));
 
         let aiResponse = '';
         const processChunk = (chunk) => {
@@ -121,7 +117,12 @@ export default function Report() {
     if (selectedFile) {
       setIsLoading(true)
       try {
-        await uploadFile(selectedFile)
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        await UploadFileAPI(formData);
+        await uploadFile(selectedFile);
+      } catch (error) {
+        console.error('Error uploading file:', error);
       } finally {
         setIsLoading(false)
       }
@@ -131,19 +132,11 @@ export default function Report() {
   const handleClearFiles = async () => {
     setIsLoading(true)
     try {
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      await ClearFileAPI({}, { headers })
+      await ClearFileAPI()
       clearFiles()
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (error) {
       console.error('Error clearing files:', error)
-      if (error.response) {
-        console.error('Response data:', error.response.data);
-        console.error('Response status:', error.response.status);
-        console.error('Response headers:', error.response.headers);
-      }
     } finally {
       setIsLoading(false)
     }
@@ -210,6 +203,31 @@ export default function Report() {
     }
   }
 
+  const handleGenerateReport = async () => {
+    setIsLoading(true)
+    try {
+      const response = await GenerateReport()
+      const messageId = addMessageToActiveSession({ sender: 'AI', content: response.data, timestamp: new Date().toISOString() })
+    } catch (error) {
+      console.error('Error generating report:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleteFile = async (fileName) => {
+    setIsLoading(true)
+    try {
+      await ClearFileByFileNameAPI(fileName)
+      clearFiles()
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    } catch (error) {
+      console.error('Error deleting file:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const canSendMessage = message.trim() || (isRetrievalMode && files.length > 0)
   const currentSession = sessions.find(s => s.id === activeSession)
   const hasMessages = currentSession && currentSession.messages.length > 0
@@ -248,6 +266,9 @@ export default function Report() {
               </DropdownMenu>
             </div>
             <div className="flex items-center space-x-4">
+              <Button onClick={handleGenerateReport} disabled={isLoading}>
+                Generate AI Report
+              </Button>
               <div className="flex items-center space-x-2">
                 <Switch
                     id="retrieval-mode"
@@ -289,6 +310,13 @@ export default function Report() {
                       <div key={index} className="flex items-center bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm">
                         <File className="w-4 h-4 mr-2" />
                         {file.name}
+                        <button
+                            onClick={() => handleDeleteFile(file.name)}
+                            className="ml-2 text-muted-foreground hover:text-foreground transition-colors duration-200"
+                            aria-label={`Delete ${file.name}`}
+                        >
+                          <X className="w-4 w-4" />
+                        </button>
                       </div>
                   ))}
                 </div>
@@ -358,7 +386,7 @@ export default function Report() {
         </main>
 
         {editSessionId && (
-            <div className="fixed inset-0 bg-background/80 flex items-center justify-center">
+            <div  className="fixed inset-0 bg-background/80 flex items-center justify-center">
               <Card className="w-full max-w-sm">
                 <CardContent className="pt-6">
                   <h2 className="text-lg font-semibold mb-4">Rename Session</h2>
@@ -369,7 +397,7 @@ export default function Report() {
                       className="mb-4"
                   />
                   <div className="flex justify-end space-x-2">
-                    <Button  variant="outline" onClick={() => setEditSessionId(null)}>Cancel</Button>
+                    <Button variant="outline" onClick={() => setEditSessionId(null)}>Cancel</Button>
                     <Button onClick={handleEditSessionConfirm}>Save</Button>
                   </div>
                 </CardContent>
