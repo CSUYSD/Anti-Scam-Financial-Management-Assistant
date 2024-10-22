@@ -1,13 +1,17 @@
-'use client'
-
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import PropTypes from 'prop-types'
+import { X, Plus, LogOut, Trash2 } from 'lucide-react'
 import { logoutAPI } from "@/api/user"
 import { removeToken } from "@/utils/index"
-import { X, Plus, LogOut, Trash2 } from 'lucide-react'
 import { getAllAccountsAPI, createAccountAPI, deleteAccountAPI, switchAccountAPI } from '@/api/account'
-import WebSocketService from "@/service/WebSocketService.js"
+import WebSocketService from "@/services/WebSocketService.js"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { toast } from "@/hooks/use-toast"
 
 const handleApiError = (error) => {
     if (error.response) {
@@ -42,7 +46,7 @@ const AccountCard = ({ account, onSelect, onDelete }) => {
 
     return (
         <motion.div
-            className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow-md p-6 hover:shadow-lg transition-all relative"
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all relative"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
@@ -66,88 +70,22 @@ const AccountCard = ({ account, onSelect, onDelete }) => {
                     </motion.button>
                 )}
             </AnimatePresence>
-            <h2 className="text-xl font-semibold text-purple-700 mb-4">{account.accountName}</h2>
-            <p className="text-2xl font-bold text-purple-900 mb-4">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">{account.accountName}</h2>
+            <p className="text-2xl font-bold text-gray-900 mb-4">
                 ${formatBalance(account.totalIncome, account.totalExpense)}
             </p>
             <div className="text-sm text-gray-600 mb-4">
                 <p>Total Income: ${account.totalIncome.toFixed(2)}</p>
                 <p>Total Expense: ${account.totalExpense.toFixed(2)}</p>
             </div>
-            <motion.button
-                className="w-full bg-purple-600 text-white py-2 rounded-full font-semibold"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+            <Button
+                className="w-full"
                 onClick={() => onSelect(account)}
             >
                 Select
-            </motion.button>
+            </Button>
         </motion.div>
     )
-}
-
-AccountCard.propTypes = {
-    account: PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        accountName: PropTypes.string.isRequired,
-        totalIncome: PropTypes.number.isRequired,
-        totalExpense: PropTypes.number.isRequired,
-        transactionRecords: PropTypes.array,
-    }).isRequired,
-    onSelect: PropTypes.func.isRequired,
-    onDelete: PropTypes.func.isRequired,
-}
-
-const Modal = ({ isOpen, onClose, onSubmit, children, title, submitText }) => {
-    if (!isOpen) return null
-
-    return (
-        <AnimatePresence>
-            <motion.div
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-            >
-                <motion.div
-                    className="bg-white rounded-lg p-8 w-96"
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                >
-                    <h2 className="text-2xl font-bold text-purple-700 mb-4">{title}</h2>
-                    {children}
-                    <div className="flex justify-end space-x-4 mt-6">
-                        <motion.button
-                            onClick={onClose}
-                            className="px-4 py-2 text-purple-600 hover:text-purple-800 transition-colors"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            Cancel
-                        </motion.button>
-                        <motion.button
-                            onClick={onSubmit}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-full font-semibold"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            {submitText}
-                        </motion.button>
-                    </div>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
-    )
-}
-
-Modal.propTypes = {
-    isOpen: PropTypes.bool.isRequired,
-    onClose: PropTypes.func.isRequired,
-    onSubmit: PropTypes.func.isRequired,
-    children: PropTypes.node.isRequired,
-    title: PropTypes.string.isRequired,
-    submitText: PropTypes.string.isRequired,
 }
 
 export default function Account() {
@@ -174,17 +112,12 @@ export default function Account() {
             setAccounts(response.data)
         } catch (error) {
             if (error.response && error.response.status === 404) {
-                // No accounts found, but we don't treat this as an error
                 setAccounts([])
             } else {
                 const errorMessage = handleApiError(error)
                 setError(errorMessage)
             }
         }
-    }
-
-    const addNewAccount = () => {
-        setIsModalOpen(true)
     }
 
     const handleCreateAccount = async () => {
@@ -195,22 +128,35 @@ export default function Account() {
                 setAccounts([...accounts, newAccount])
                 setNewAccountName('')
                 setIsModalOpen(false)
+                toast({
+                    title: "Account Created",
+                    description: `Account "${newAccountName}" has been created successfully.`,
+                })
                 window.location.reload()
             } catch (error) {
                 const errorMessage = handleApiError(error)
                 setError(errorMessage)
+                toast({
+                    title: "Error",
+                    description: errorMessage,
+                    variant: "destructive",
+                })
             }
         }
     }
 
     const handleSelectAccount = async (account) => {
         try {
-            console.log('Switching account:', account.id)
             await switchAccountAPI(account.id)
             window.location.href = '/'
         } catch (error) {
             const errorMessage = handleApiError(error)
             setError(errorMessage)
+            toast({
+                title: "Error",
+                description: errorMessage,
+                variant: "destructive",
+            })
         }
     }
 
@@ -226,9 +172,18 @@ export default function Account() {
                 setAccounts(accounts.filter(account => account.id !== accountToDelete.id))
                 setIsDeleteModalOpen(false)
                 setAccountToDelete(null)
+                toast({
+                    title: "Account Deleted",
+                    description: `Account "${accountToDelete.accountName}" has been deleted successfully.`,
+                })
             } catch (error) {
                 const errorMessage = handleApiError(error)
                 setError(errorMessage)
+                toast({
+                    title: "Error",
+                    description: errorMessage,
+                    variant: "destructive",
+                })
             }
         }
     }
@@ -246,129 +201,135 @@ export default function Account() {
             console.error('Logout failed:', error)
             const errorMessage = handleApiError(error)
             setError(errorMessage)
+            toast({
+                title: "Logout Failed",
+                description: errorMessage,
+                variant: "destructive",
+            })
         }
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-400 to-indigo-600 p-8">
-            <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
-                <div className="flex justify-between items-center mb-8">
-                    <motion.h1
-                        className="text-4xl font-bold text-purple-700"
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        Select an Account
-                    </motion.h1>
-                    <motion.button
-                        className="text-purple-600 hover:text-purple-800 transition-colors flex items-center"
-                        onClick={() => setIsLogoutModalOpen(true)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <LogOut className="mr-2" />
-                        Log Out
-                    </motion.button>
-                </div>
-                <motion.p
-                    className="text-xl text-purple-600 mb-8"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                >
-                    Welcome back, {username}
-                </motion.p>
-                <AnimatePresence>
-                    {error && (
-                        <motion.div
-                            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4"
-                            role="alert"
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                        >
-                            <strong className="font-bold">Error: </strong>
-                            <span className="block sm:inline">{error}</span>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-                {accounts.length > 0 ? (
-                    <motion.div
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        {accounts.map((account) => (
-                            <AccountCard
-                                key={account.id}
-                                account={account}
-                                onSelect={handleSelectAccount}
-                                onDelete={handleDeleteAccount}
-                            />
-                        ))}
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        className="text-center py-8"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <p className="text-xl text-gray-600 mb-4">You don't have any accounts yet.</p>
-                        <p className="text-lg text-gray-500">Create your first account to get started!</p>
-                    </motion.div>
-                )}
-                <motion.button
-                    className="mt-8 w-full bg-purple-600 text-white py-3 rounded-full text-lg font-semibold flex items-center justify-center"
-                    onClick={addNewAccount}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                >
-                    <Plus className="mr-2" />
-                    Add New Account
-                </motion.button>
-            </div>
-
-            <Modal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={handleCreateAccount}
-                title="Create New Account"
-                submitText="Create"
+        <div className="min-h-screen bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full max-w-4xl"
             >
-                <input
-                    type="text"
-                    value={newAccountName}
-                    onChange={(e) => setNewAccountName(e.target.value)}
-                    placeholder="Enter account name"
-                    className="w-full p-2 border border-purple-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-            </Modal>
+                <Card className="bg-white">
+                    <CardHeader className="pb-8">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <CardTitle className="text-4xl font-bold text-gray-800 mb-2">Select an Account</CardTitle>
+                                <CardDescription className="text-xl text-gray-600">Welcome back, {username}</CardDescription>
+                            </div>
+                            <Button variant="outline" onClick={() => setIsLogoutModalOpen(true)}>
+                                <LogOut className="mr-2 h-4 w-4" /> Log Out
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <AnimatePresence>
+                            {error && (
+                                <motion.div
+                                    className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+                                    role="alert"
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                >
+                                    <strong className="font-bold">Error: </strong>
+                                    <span className="block sm:inline">{error}</span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        {accounts.length > 0 ? (
+                            <motion.div
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                {accounts.map((account) => (
+                                    <AccountCard
+                                        key={account.id}
+                                        account={account}
+                                        onSelect={handleSelectAccount}
+                                        onDelete={handleDeleteAccount}
+                                    />
+                                ))}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                className="text-center py-8"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                <p className="text-xl text-gray-600 mb-4">You don't have any accounts yet.</p>
+                                <p className="text-lg text-gray-500">Create your first account to get started!</p>
+                            </motion.div>
+                        )}
+                    </CardContent>
+                    <CardFooter>
+                        <Button className="w-full" onClick={() => setIsModalOpen(true)}>
+                            <Plus className="mr-2 h-4 w-4" /> Add New Account
+                        </Button>
+                    </CardFooter>
+                </Card>
+            </motion.div>
 
-            <Modal
-                isOpen={isLogoutModalOpen}
-                onClose={() => setIsLogoutModalOpen(false)}
-                onSubmit={handleLogout}
-                title="Confirm Logout"
-                submitText="Logout"
-            >
-                <p className="text-lg text-gray-700">Are you sure you want to log out?</p>
-            </Modal>
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create New Account</DialogTitle>
+                        <DialogDescription>
+                            Enter a name for your new account.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Input
+                        value={newAccountName}
+                        onChange={(e) => setNewAccountName(e.target.value)}
+                        placeholder="Enter account name"
+                    />
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateAccount}>Create</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-            <Modal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onSubmit={confirmDeleteAccount}
-                title="Confirm Delete Account"
-                submitText="Delete"
-            >
-                <p className="text-lg text-gray-700">
-                    Are you sure you want to delete the account "{accountToDelete?.accountName}"?
-                    This action cannot be undone.
-                </p>
-            </Modal>
+            <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Logout</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to log out?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsLogoutModalOpen(false)}>Cancel</Button>
+                        <Button onClick={handleLogout}>Logout</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Delete Account</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete the account "{accountToDelete?.accountName}"?
+                            This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
+                        <Button variant="destructive" onClick={confirmDeleteAccount}>Delete</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

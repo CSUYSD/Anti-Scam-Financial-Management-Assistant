@@ -14,7 +14,9 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping("/ai/chat")
@@ -34,7 +36,7 @@ public class AiChatController {
 
     @SneakyThrows
     @GetMapping(value = "/rag", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public String chatStreamWithVectorDB(@RequestParam String prompt, @RequestParam String conversationId) {
+    public Flux<ServerSentEvent<String>> chatStreamWithVectorDB(@RequestParam String prompt, @RequestParam String conversationId) {
         // 1. 定义提示词模板，question_answer_context会被替换成向量数据库中查询到的文档。
         String promptWithContext = """
                 Below is the context information:
@@ -49,19 +51,34 @@ public class AiChatController {
                 // 2. QuestionAnswerAdvisor会在运行时替换模板中的占位符`question_answer_context`，替换成向量数据库中查询到的文档。此时的query=用户的提问+替换完的提示词模板;
                 .advisors(new QuestionAnswerAdvisor(chromaVectorStore, SearchRequest.defaults(), promptWithContext))
                 .advisors(new MessageChatMemoryAdvisor(chatMemory, conversationId, 10))
-                .call()
+                .stream()
                 // 3. query发送给大模型得到答案
-                .content();
+                .content()
+                .map(chatResponse -> ServerSentEvent.builder(chatResponse)
+                        .event("message")
+                        .build());
     }
 
     //streaming chat with memory use SSE pipeline.
     @GetMapping(value = "/general", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public String chatStream(@RequestParam String prompt, @RequestParam String sessionId) {
+    public Flux<ServerSentEvent<String>> chatStream(@RequestParam String prompt, @RequestParam String sessionId) {
         MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
         return ChatClient.create(openAiChatModel).prompt()
                 .user(prompt)
                 .advisors(messageChatMemoryAdvisor)
-                .call() //流式返回
+                .stream() //流式返回
+                .content().map(chatResponse -> ServerSentEvent.builder(chatResponse)
+                        .event("message")
+                        .build());
+    }
+
+    //normal chat
+    @GetMapping("/chatWithoutMemory")
+    public String chat(@RequestParam String prompt) {
+        ChatClient chatClient = ChatClient.create(openAiChatModel);
+        return chatClient.prompt()
+                .user(prompt)
+                .call()
                 .content();
     }
 

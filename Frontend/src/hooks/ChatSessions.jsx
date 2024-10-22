@@ -1,7 +1,7 @@
 import { useState, useEffect,useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-export function useChatSessions() {
+export function chatSessions() {
     const [sessions, setSessions] = useState(() => {
         try {
             const savedSessions = localStorage.getItem('chatSessions');
