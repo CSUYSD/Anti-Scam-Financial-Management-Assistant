@@ -38,7 +38,7 @@ const staticResources = [
     },
     {
         id: 5,
-        title: "Stock Market Fundamentals",
+        title: "stockMarket Market Fundamentals",
         thumbnail: "https://img.youtube.com/vi/8Ij7A1VCB7I/mqdefault.jpg",
         videoUrl: "https://www.youtube.com/embed/8Ij7A1VCB7I?autoplay=1",
         youtubeUrl: "https://www.youtube.com/watch?v=8Ij7A1VCB7I",
@@ -374,7 +374,7 @@ class WiseflowService {
 const wiseflowService = new WiseflowService({
     baseUrl: 'http://127.0.0.1:8090',
     adminEmail: 'songguocheng348@gmail.com',
-    adminPassword: 'Ericsgc@119742',
+    adminPassword: '',
     fetchInterval: 3600000 // 1 hour
 });
 

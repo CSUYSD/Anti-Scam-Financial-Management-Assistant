@@ -71,7 +71,7 @@ const MainListItems = ({ collapsed }) => (
             {!collapsed && "Investment"}
         </NavItem>
         <NavItem icon={TrendingUp} to="/stock-market">
-            {!collapsed && "Stock Market"}
+            {!collapsed && "stockMarket Market"}
         </NavItem>
         <NavItem icon={HelpCircle} to="/contact-us">
             {!collapsed && "Contact Us"}
