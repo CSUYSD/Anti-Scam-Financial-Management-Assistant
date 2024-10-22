@@ -5,19 +5,16 @@ import com.example.demo.exception.AccountAlreadyExistException;
 import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.AccountDTO;
-import com.example.demo.model.Redis.RedisAccount;
+import com.example.demo.model.redis.RedisAccount;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.utility.GetCurrentUserInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.repository.AccountDao;
 
 import java.util.List;
 import java.util.Set;
-
-import java.util.stream.Collectors;
 
 
 import org.springframework.data.redis.core.RedisTemplate;

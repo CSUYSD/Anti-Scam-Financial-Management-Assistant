@@ -1,6 +1,5 @@
-package com.example.demo.controller.EScontroller;
+package com.example.demo.controller.ed;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

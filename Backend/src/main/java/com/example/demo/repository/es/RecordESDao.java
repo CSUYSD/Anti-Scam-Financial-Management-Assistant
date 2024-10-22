@@ -1,4 +1,4 @@
- package com.example.demo.repository.ESDao;
+ package com.example.demo.repository.es;
 
  import org.springframework.data.domain.Page;
  import org.springframework.data.domain.Pageable;

@@ -28,11 +28,11 @@ import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.TransactionUserDTO;
-import com.example.demo.model.Redis.RedisAccount;
-import com.example.demo.model.Redis.RedisUser;
+import com.example.demo.model.redis.RedisAccount;
+import com.example.demo.model.redis.RedisUser;
 import com.example.demo.model.security.UserDetail;
 import com.example.demo.model.TransactionUser;
-import com.example.demo.model.UserRole;
+import com.example.demo.model.security.UserRole;
 import com.example.demo.utility.jwt.JwtUtil;
 import com.example.demo.model.security.LoginVo;
 

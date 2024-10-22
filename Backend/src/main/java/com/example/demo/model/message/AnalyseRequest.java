@@ -1,4 +1,4 @@
-package com.example.demo.model.ai;
+package com.example.demo.model.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
