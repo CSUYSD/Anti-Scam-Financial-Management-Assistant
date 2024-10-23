@@ -1,6 +1,8 @@
 package com.example.demo.controller.ai;
 
 
+import com.example.demo.service.aws.S3Service;
+import com.example.demo.utility.GetCurrentUserInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.SneakyThrows;
@@ -30,10 +32,14 @@ public class VectorDBController {
 
     private final Map<String, List<String>> fileDocumentIdsMap = new HashMap<>();
     private final ChromaVectorStore chromaVectorStore;
+    private final S3Service s3Service;
+    private final GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
-    public VectorDBController(ChromaVectorStore chromaVectorStore) {
+    public VectorDBController(ChromaVectorStore chromaVectorStore, S3Service s3Service, GetCurrentUserInfo getCurrentUserInfo) {
         this.chromaVectorStore = chromaVectorStore;
+        this.s3Service = s3Service;
+        this.getCurrentUserInfo = getCurrentUserInfo;
     }
 
     @SneakyThrows
@@ -49,7 +55,7 @@ public class VectorDBController {
 
     @SneakyThrows
     @PostMapping("etl/read/multipart")
-    public void saveVectorDB(@RequestParam MultipartFile file) {
+    public void UploadToVectorDB(@RequestParam MultipartFile file, @RequestHeader("Authorization") String token) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Uploaded file is empty");
         }
@@ -66,8 +72,14 @@ public class VectorDBController {
         }
         // 保存文件名和对应的文档ID列表
         fileDocumentIdsMap.put(fileName, documentIds);
-
         chromaVectorStore.doAdd(splitDocuments);
+
+        try {
+            Long userId = getCurrentUserInfo.getCurrentUserId(token);
+            s3Service.uploadFile(userId, file.getInputStream(), file.getSize(), file.getContentType(), fileName);
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Failed to upload file to S3", e);
+        }
     }
 
     //根据文件名进行单个文件的删除
