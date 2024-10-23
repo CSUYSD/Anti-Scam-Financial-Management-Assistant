@@ -13,3 +13,20 @@ export function searchAPI(keyword){
         throw error;
     });
 }
+
+// elastic search advanced search
+export function advancedSearchAPI({ description, type, minAmount, maxAmount }) {
+    return request({
+        url: `/records-search/advanced-search`,
+        method: 'GET',
+        params: {
+            description,
+            type,
+            minAmount,
+            maxAmount
+        }
+    }).catch(error => {
+        console.error('API Error:', error);
+        throw error;
+    });
+}
