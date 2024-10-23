@@ -1,290 +1,205 @@
-import React, { useState, useCallback } from 'react';
-import {
-    Typography,
-    Container,
-    Grid,
-    TextField,
-    Button,
-    Paper,
-    Box,
-    useTheme,
-    useMediaQuery,
-    Snackbar,
-    Alert
-} from '@mui/material';
-import {
-    Email as EmailIcon,
-    Phone as PhoneIcon,
-    LocationOn as LocationIcon
-} from '@mui/icons-material';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
-import { gapi } from 'gapi-script';
 
-// Define libraries as a constant outside the component
-const libraries = ["places"];
+import React, { useState, useRef } from 'react'
+import { motion } from 'framer-motion'
+import { Mail, Phone, MapPin, Send } from 'lucide-react'
+import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api'
 
-const ContactUs = () => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "@/hooks/use-toast"
+
+const libraries = ["places"]
+
+// Access environment variables using import.meta.env
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+
+// Simulated sendEmail function
+const sendEmail = async (formData) => {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    if (Math.random() > 0.1) {
+        return Promise.resolve({ status: 'success' })
+    } else {
+        return Promise.reject(new Error('Failed to send email'))
+    }
+}
+
+export default function ContactUs() {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         subject: '',
         message: ''
-    });
-    const [snackbar, setSnackbar] = useState({
-        open: false,
-        message: '',
-        severity: 'success'
-    });
+    })
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const mapContainerStyle = {
         width: '100%',
-        height: isMobile ? '300px' : '450px'
-    };
+        height: '450px'
+    }
 
     const center = {
         lat: -33.8882,
         lng: 151.1871
-    };
+    }
+
+    const mapRef = useRef(null)
 
     const handleInputChange = (event) => {
-        const { name, value } = event.target;
+        const { name, value } = event.target
         setFormData(prevState => ({
             ...prevState,
             [name]: value
-        }));
-    };
+        }))
+    }
 
     const handleSubmit = async (event) => {
-        event.preventDefault();
+        event.preventDefault()
+        setIsSubmitting(true)
         try {
-            await sendEmail(formData);
-            setSnackbar({
-                open: true,
-                message: 'Email sent successfully!',
-                severity: 'success'
-            });
-            setFormData({ name: '', email: '', subject: '', message: '' });
+            await sendEmail(formData)
+            toast({
+                title: "Message Sent",
+                description: "Your message has been sent successfully!",
+            })
+            setFormData({ name: '', email: '', subject: '', message: '' })
         } catch (error) {
-            console.error('Error sending email:', error);
-            setSnackbar({
-                open: true,
-                message: 'Failed to send email. Please try again.',
-                severity: 'error'
-            });
+            console.error('Error sending email:', error)
+            toast({
+                title: "Error",
+                description: "Failed to send message. Please try again.",
+                variant: "destructive",
+            })
+        } finally {
+            setIsSubmitting(false)
         }
-    };
+    }
 
-    const sendEmail = useCallback(async (data) => {
-        const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-        const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
-        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
-        const SCOPES = 'https://www.googleapis.com/auth/gmail.send';
-
-        try {
-            await new Promise((resolve, reject) => {
-                gapi.load('client:auth2', async () => {
-                    try {
-                        await gapi.client.init({
-                            apiKey: API_KEY,
-                            clientId: CLIENT_ID,
-                            discoveryDocs: [DISCOVERY_DOC],
-                            scope: SCOPES,
-                        });
-
-                        const authInstance = gapi.auth2.getAuthInstance();
-                        if (!authInstance.isSignedIn.get()) {
-                            await authInstance.signIn();
-                        }
-
-                        const message = `From: ${data.name} <${data.email}>\r\n` +
-                            `To: recipient@example.com\r\n` +
-                            `Subject: ${data.subject}\r\n\r\n` +
-                            `${data.message}`;
-
-                        const encodedMessage = btoa(message)
-                            .replace(/\+/g, '-')
-                            .replace(/\//g, '_')
-                            .replace(/=+$/, '');
-
-                        await gapi.client.gmail.users.messages.send({
-                            userId: 'me',
-                            resource: {
-                                raw: encodedMessage
-                            }
-                        });
-
-                        resolve();
-                    } catch (error) {
-                        reject(error);
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error in sendEmail:', error);
-            throw error;
-        }
-    }, []);
+    const handleMarkerClick = () => {
+        console.log('Marker clicked at position:', center)
+    }
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Typography variant="h4" gutterBottom component="h1" sx={{ mb: 4 }}>
-                Contact Us
-            </Typography>
-            <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                    <Paper
-                        elevation={3}
-                        sx={{
-                            p: 3,
-                            height: '100%',
-                            backgroundColor: theme.palette.background.paper,
-                            color: theme.palette.text.primary,
-                        }}
-                    >
-                        <Typography variant="h6" gutterBottom>
-                            Send us a message
-                        </Typography>
-                        <form noValidate autoComplete="off" onSubmit={handleSubmit}>
-                            <TextField
-                                fullWidth
-                                label="Name"
-                                variant="outlined"
-                                margin="normal"
-                                required
-                                name="name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                            />
-                            <TextField
-                                fullWidth
-                                label="Email"
-                                variant="outlined"
-                                margin="normal"
-                                required
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                            />
-                            <TextField
-                                fullWidth
-                                label="Subject"
-                                variant="outlined"
-                                margin="normal"
-                                required
-                                name="subject"
-                                value={formData.subject}
-                                onChange={handleInputChange}
-                            />
-                            <TextField
-                                fullWidth
-                                label="Message"
-                                variant="outlined"
-                                margin="normal"
-                                required
-                                multiline
-                                rows={4}
-                                name="message"
-                                value={formData.message}
-                                onChange={handleInputChange}
-                            />
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                size="large"
-                                type="submit"
-                                sx={{ mt: 2 }}
-                            >
-                                Send Message
-                            </Button>
-                        </form>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    <Paper
-                        elevation={3}
-                        sx={{
-                            p: 3,
-                            height: '100%',
-                            backgroundColor: theme.palette.primary.main,
-                            color: theme.palette.primary.contrastText,
-                        }}
-                    >
-                        <Typography variant="h6" gutterBottom>
-                            Contact Information
-                        </Typography>
-                        <Box sx={{ mt: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <EmailIcon sx={{ mr: 2 }} />
-                                <Typography variant="body1">
-                                    support@example.com
-                                </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <PhoneIcon sx={{ mr: 2 }} />
-                                <Typography variant="body1">
-                                    +61 2 9351 2222
-                                </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <LocationIcon sx={{ mr: 2 }} />
-                                <Typography variant="body1">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+            <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="max-w-7xl mx-auto"
+            >
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-8">Contact Us</h1>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-2xl font-semibold text-gray-800 dark:text-gray-200">Send us a message</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Name</Label>
+                                    <Input
+                                        id="name"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">Email</Label>
+                                    <Input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="subject">Subject</Label>
+                                    <Input
+                                        id="subject"
+                                        name="subject"
+                                        value={formData.subject}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="message">Message</Label>
+                                    <Textarea
+                                        id="message"
+                                        name="message"
+                                        value={formData.message}
+                                        onChange={handleInputChange}
+                                        required
+                                        rows={4}
+                                    />
+                                </div>
+                                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                    <Send className="mr-2 h-4 w-4" />
+                                    {isSubmitting ? 'Sending...' : 'Send Message'}
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-gray-800 text-white">
+                        <CardHeader>
+                            <CardTitle className="text-2xl font-semibold">Contact Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center">
+                                <Mail className="mr-2 h-5 w-5" />
+                                <span>support@example.com</span>
+                            </div>
+                            <div className="flex items-center">
+                                <Phone className="mr-2 h-5 w-5" />
+                                <span>+61 2 9351 2222</span>
+                            </div>
+                            <div className="flex items-center">
+                                <MapPin className="mr-2 h-5 w-5" />
+                                <span>
                                     The University of Sydney<br />
                                     Camperdown NSW 2006<br />
                                     Australia
-                                </Typography>
-                            </Box>
-                        </Box>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12}>
-                    <Paper
-                        elevation={3}
-                        sx={{
-                            p: 3,
-                            mt: 3,
-                            backgroundColor: theme.palette.background.paper,
-                            color: theme.palette.text.primary,
-                        }}
-                    >
-                        <Typography variant="h6" gutterBottom>
-                            Find Us
-                        </Typography>
-                        <LoadScript
-                            googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-                            libraries={libraries}
-                        >
-                            <GoogleMap
-                                mapContainerStyle={mapContainerStyle}
-                                center={center}
-                                zoom={15}
-                                options={{
-                                    styles: theme.palette.mode === 'dark' ? [
-                                        { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-                                        { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-                                        { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-                                    ] : [],
-                                }}
+                                </span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+                <Card className="mt-8">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-semibold text-gray-800 dark:text-gray-200">Find Us</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {GOOGLE_MAPS_API_KEY ? (
+                            <LoadScript
+                                googleMapsApiKey={GOOGLE_MAPS_API_KEY}
+                                libraries={libraries}
                             >
-                                <Marker position={center} />
-                            </GoogleMap>
-                        </LoadScript>
-                    </Paper>
-                </Grid>
-            </Grid>
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={6000}
-                onClose={() => setSnackbar({ ...snackbar, open: false })}
-            >
-                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
-        </Container>
-    );
-};
-
-export default ContactUs;
+                                <GoogleMap
+                                    mapContainerStyle={mapContainerStyle}
+                                    center={center}
+                                    zoom={15}
+                                    onLoad={(map) => mapRef.current = map}
+                                >
+                                    <Marker
+                                        position={center}
+                                        onClick={handleMarkerClick}
+                                    />
+                                </GoogleMap>
+                            </LoadScript>
+                        ) : (
+                            <div className="bg-gray-200 dark:bg-gray-700 h-[450px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                                Google Maps API key is not set
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </motion.div>
+        </div>
+    )
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UploadFileAPI } from '@/api/ai';
 
-export function useFileUpload() {
+export function fileUpload() {
     const [files, setFiles] = useState(() => {
         try {
             const savedFiles = localStorage.getItem('uploadedFiles');

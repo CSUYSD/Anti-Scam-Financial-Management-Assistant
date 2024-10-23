@@ -11,6 +11,7 @@ import UserProfile from "@/pages/userProfile/index.jsx";
 import Account from "@/pages/account/index.jsx";
 import ContactUs from "@/pages/contactUs/index.jsx";
 import Investment from "@/pages/investment/index.jsx";
+import StockMarketDashboard from "@/pages/stockMarket/index.jsx";
 
 
 const router = createBrowserRouter([
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
                 path:'investment',
                 element: <Investment/>
             },
+            {
+                path: 'stock-market',
+                element: <StockMarketDashboard/>
+            }
         ]
     },
     {

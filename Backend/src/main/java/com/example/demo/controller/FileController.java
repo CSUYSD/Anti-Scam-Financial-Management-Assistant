@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.exception.S3DownloadException;
+import com.example.demo.model.aws.S3FileMetadata;
 import com.example.demo.service.aws.S3Service;
 import com.example.demo.utility.GetCurrentUserInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.List;
 
 @RestController
 @RequestMapping("/file")
@@ -40,11 +42,11 @@ public class FileController {
         }
     }
 
-    @GetMapping("/get-all-name")
-    public ResponseEntity<String[]> getAllFileNames(@RequestHeader("Authorization") String token) {
+    @GetMapping("/get-all")
+    public ResponseEntity<List<S3FileMetadata>> getAllFileNames(@RequestHeader("Authorization") String token) {
         try{
             Long userId = getCurrentUserInfo.getCurrentUserId(token);
-            String[] fileNames = s3Service.getAllFileNames(userId);
+            List<S3FileMetadata> fileNames = s3Service.getAllFileNames(userId);
             return ResponseEntity.ok(fileNames);
         } catch (Exception e) {
             log.error("Failed to get all file names", e);

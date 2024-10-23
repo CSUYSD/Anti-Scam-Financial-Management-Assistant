@@ -1,521 +1,318 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useCallback, useEffect } from 'react'
+import { NavLink, useLocation, Outlet, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { format } from 'date-fns'
 import {
-    AppBar as MuiAppBar,
-    Drawer as MuiDrawer,
-    Box,
-    CssBaseline,
-    Toolbar,
-    IconButton,
-    Typography,
-    Divider,
-    List,
-    Badge,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    TextField,
-    Paper,
-    Tooltip,
-    Link as MuiLink,
-    Avatar,
-} from '@mui/material';
-import {
-    Menu as MenuIcon,
-    ChevronLeft as ChevronLeftIcon,
-    AccountCircle as AccountCircleIcon,
-    Settings as SettingsIcon,
-    Brightness4 as Brightness4Icon,
-    Brightness7 as Brightness7Icon,
-    Logout as LogoutIcon,
-    Chat as ChatIcon,
-    Send as SendIcon,
-    Close as CloseIcon,
-} from '@mui/icons-material';
-import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { mainListItems, secondaryListItems } from './ListItems';
-import { logoutAPI } from '@/api/user';
-import { removeToken } from "@/utils/index";
-// @ts-ignore
-import { useChatSessions } from '@/hooks/useChatSessions';
-import { FluxMessageWithHistoryAPI } from '@/api/ai';
-import { formatMessageContent } from '@/utils/messageFormatter';
-import WebSocketService from "@/service/WebSocketService.js";
+    LayoutDashboard,
+    DollarSign,
+    BarChart,
+    Briefcase,
+    TrendingUp,
+    HelpCircle,
+    ChevronLeft,
+    ChevronRight,
+    Settings,
+    LogOut,
+    MessageCircle,
+    Send,
+    X,
+} from 'lucide-react'
 
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { toast } from "@/hooks/use-toast"
+import { Card, CardContent } from "@/components/ui/card"
 
-const drawerWidth = 240;
+import { logoutAPI } from '@/api/user'
+import { removeToken } from "@/utils/index"
+import { chatSessions } from '@/hooks/ChatSessions.jsx'
+import { ChatAPI } from '@/api/ai'
+import WebSocketService from "@/services/WebSocketService.js"
 
+const NavItem = React.forwardRef(({ icon: Icon, children, to, onClick, collapsed, ...props }, ref) => {
+    const location = useLocation()
+    const isActive = location.pathname === to
 
-const AppBar = styled(MuiAppBar, {
-    shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
-    zIndex: theme.zIndex.drawer + 1,
-    transition: theme.transitions.create(['width', 'margin'], {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-    }),
-    background: 'linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)',
-    boxShadow: 'none',
-    ...(open && {
-        marginLeft: drawerWidth,
-        width: `calc(100% - ${drawerWidth}px)`,
-        transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-        }),
-    }),
-}));
+    return (
+        <NavLink
+            ref={ref}
+            to={to}
+            onClick={onClick}
+            {...props}
+            className={cn(
+                "flex items-center py-2 px-4 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 ease-in-out",
+                isActive ? "bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400" : "text-gray-900 dark:text-gray-100",
+                collapsed ? "justify-center" : "justify-start"
+            )}
+        >
+            <Icon className={cn("w-5 h-5", collapsed ? "" : "mr-3")} />
+            {!collapsed && <span>{children}</span>}
+        </NavLink>
+    )
+})
 
+const MainListItems = ({ collapsed }) => (
+    <>
+        <NavItem icon={LayoutDashboard} to="/" collapsed={collapsed}>
+            Dashboard
+        </NavItem>
+        <NavItem icon={DollarSign} to="/transaction" collapsed={collapsed}>
+            Transaction
+        </NavItem>
+        <NavItem icon={BarChart} to="/report" collapsed={collapsed}>
+            Reports
+        </NavItem>
+        <NavItem icon={Briefcase} to="/investment" collapsed={collapsed}>
+            Investment
+        </NavItem>
+        <NavItem icon={TrendingUp} to="/stock-market" collapsed={collapsed}>
+            Stock Market
+        </NavItem>
+        <NavItem icon={HelpCircle} to="/contact-us" collapsed={collapsed}>
+            Contact Us
+        </NavItem>
+    </>
+)
 
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
-    ({ theme, open }) => ({
-        '& .MuiDrawer-paper': {
-            position: 'relative',
-            whiteSpace: 'nowrap',
-            width: drawerWidth,
-            transition: theme.transitions.create('width', {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-            }),
-            boxSizing: 'border-box',
-            ...(!open && {
-                overflowX: 'hidden',
-                transition: theme.transitions.create('width', {
-                    easing: theme.transitions.easing.sharp,
-                    duration: theme.transitions.duration.leavingScreen,
-                }),
-                width: theme.spacing(7),
-                [theme.breakpoints.up('sm')]: {
-                    width: theme.spacing(9),
-                },
-            }),
-        },
-    }),
-);
+const SecondaryListItems = ({ collapsed, onLogout }) => (
+    <>
+        <NavItem icon={Settings} to="/account" collapsed={collapsed}>
+            Account Settings
+        </NavItem>
+        <NavItem icon={LogOut} to="#" onClick={onLogout} collapsed={collapsed}>
+            Logout
+        </NavItem>
+    </>
+)
 
-
-const ChatButton = styled(motion.div)(({ theme }) => ({
-    position: 'fixed',
-    bottom: theme.spacing(4),
-    right: theme.spacing(4),
-    zIndex: 1000,
-}));
-
-
-const ChatWindow = styled(motion.div)(({ theme }) => ({
-    position: 'fixed',
-    bottom: theme.spacing(12),
-    right: theme.spacing(4),
-    width: 350,
-    height: 500,
-    zIndex: 1000,
-    display: 'flex',
-    flexDirection: 'column',
-    borderRadius: theme.shape.borderRadius * 2,
-    overflow: 'hidden',
-    boxShadow: theme.shadows[10],
-}));
-
-
-
-export default function Component() {
-    const [open, setOpen] = useState(true);
-    const [mode, setMode] = useState('light');
-    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-    const [chatOpen, setChatOpen] = useState(false);
-    const navigate = useNavigate();
-    const location = useLocation();
+export default function DashboardLayout() {
+    const [collapsed, setCollapsed] = useState(false)
+    const [chatOpen, setChatOpen] = useState(false)
+    const navigate = useNavigate()
+    const location = useLocation()
     const {
         sessions,
         activeSession,
+        setActiveSession,
+        addNewSession,
         addMessageToActiveSession,
         updateMessageInActiveSession,
-    } = useChatSessions();
-    const [message, setMessage] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [isTyping, setIsTyping] = useState(false);
-    const [username, setUsername] = useState(() => localStorage.getItem('username') || 'User');
+    } = chatSessions()
+    const [message, setMessage] = useState('')
+    const [isLoading, setIsLoading] = useState(false)
+    const [isTyping, setIsTyping] = useState(false)
+    const [username, setUsername] = useState(() => localStorage.getItem('username') || 'User')
 
+    const toggleSidebar = () => {
+        setCollapsed(!collapsed)
+    }
 
-    const theme = useMemo(
-        () =>
-            createTheme({
-                palette: {
-                    mode,
-                    ...(mode === 'light'
-                        ? {
-                            primary: {
-                                main: 'rgb(121,139,194)',
-                                light: '#c8d7e2',
-                            },
-                            background: {
-                                default: '#f5f7fa',
-                                paper: '#ffffff',
-                            },
-                        }
-                        : {
-                            primary: {
-                                main: '#e1dfb7',
-                                light: '#ffffff',
-                            },
-                            background: {
-                                default: '#ffffff',
-                                paper: '#1e1e1e',
-                            },
-                        }),
-                },
-                components: {
-                    MuiButton: {
-                        styleOverrides: {
-                            root: {
-                                borderRadius: 8,
-                            },
-                        },
-                    },
-                    MuiCard: {
-                        styleOverrides: {
-                            root: {
-                                borderRadius: 12,
-                                boxShadow: mode === 'dark' ? '0 4px 6px rgba(0, 0, 0, 0.2)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
-                            },
-                        },
-                    },
-                    MuiListItemIcon: {
-                        styleOverrides: {
-                            root: {
-                                color: mode === 'dark' ? '#e1dfb7' : '#c8d7e2',
-                            },
-                        },
-                    },
-                },
-            }),
-        [mode],
-    );
-
-
-    const toggleDrawer = () => {
-        setOpen(!open);
-    };
-
-
-    const getPageTitle = (path) => {
-        if (path === "/") {
-            return "Dashboard";
-        }
-        return path.substring(1).charAt(0).toUpperCase() + path.slice(2);
-    };
-
-
-    const toggleColorMode = () => {
-        setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
-    };
-
-
-    const handleLogout = () => {
-        setLogoutDialogOpen(true);
-    };
-
-
-    const handleLogoutConfirm = async () => {
-        setLogoutDialogOpen(false);
+    const handleLogout = async () => {
         try {
-            await logoutAPI();
-            removeToken();
-            localStorage.removeItem('username');
-            localStorage.removeItem('chatSessions');
-            localStorage.removeItem('uploadedFiles');
-            WebSocketService.handleLogout();
-            navigate('/login');
+            await logoutAPI()
+            removeToken()
+            localStorage.removeItem('username')
+            localStorage.removeItem('chatSessions')
+            localStorage.removeItem('uploadedFiles')
+            WebSocketService.handleLogout()
+            navigate('/login')
+            toast({
+                title: "Logged out successfully",
+                description: "You have been logged out of your account.",
+            })
         } catch (error) {
-            console.error('Logout failed:', error);
+            console.error('Logout failed:', error)
+            toast({
+                title: "Logout Failed",
+                description: "An error occurred during logout. Please try again.",
+                variant: "destructive",
+            })
         }
-    };
+    }
 
-
-    const handleLogoutCancel = () => {
-        setLogoutDialogOpen(false);
-    };
-
-
-    const handleAccountClick = () => {
-        navigate('/account');
-    };
-
-
-    const handleUserProfileClick = () => {
-        navigate('/userprofile');
-    };
-
-
-    const toggleChat = () => {
-        setChatOpen(!chatOpen);
-    };
-
+    const toggleChat = useCallback(() => {
+        setChatOpen(!chatOpen)
+        if (!chatOpen && sessions.length === 0) {
+            addNewSession()
+        }
+    }, [chatOpen, sessions, addNewSession])
 
     const handleSendMessage = useCallback(async () => {
         if (message.trim()) {
-            const decodedMessage = decodeURIComponent(message.trim());
-            console.log("User input:", decodedMessage);
+            const timestamp = new Date().toISOString()
+            const userMessage = { sender: username, content: message.trim(), timestamp }
+            addMessageToActiveSession(userMessage)
 
-
-            addMessageToActiveSession({ sender: username, content: decodedMessage });
-
-
-            setMessage('');
-            setIsLoading(true);
-            setIsTyping(true);
-
+            setMessage('')
+            setIsLoading(true)
+            setIsTyping(true)
 
             try {
-                const params = {
-                    prompt: decodedMessage,
-                    sessionId: activeSession,
-                };
-                const response = await FluxMessageWithHistoryAPI(params);
+                const messageId = addMessageToActiveSession({ sender: 'AI', content: '', timestamp: new Date().toISOString() })
 
+                const response = await ChatAPI({
+                    prompt: message.trim(),
+                })
 
-                const sseData = response.data;
-                const lines = sseData.split('\n');
-                let aiResponse = '';
-
-
-                const messageId = addMessageToActiveSession({ sender: 'AI', content: '' });
-
-
-                for (const line of lines) {
-                    if (line.startsWith('data:')) {
-                        const messagePart = line.replace('data:', '').trim();
-                        if (messagePart) {
-                            aiResponse = formatMessageContent(aiResponse, messagePart);
-                            updateMessageInActiveSession(messageId, { content: aiResponse });
-                            await new Promise(resolve => setTimeout(resolve, 20));
-                        }
-                    }
+                if (response.data) {
+                    updateMessageInActiveSession(messageId, {
+                        content: response.data,
+                        timestamp: new Date().toISOString()
+                    })
+                } else {
+                    updateMessageInActiveSession(messageId, { content: 'Sorry, no response received from the AI.' })
                 }
             } catch (error) {
-                console.error('Error sending message:', error);
-                updateMessageInActiveSession(messageId, { content: 'Sorry, there was an error processing your request.' });
+                console.error('Error sending message:', error)
+                const errorTimestamp = new Date().toISOString()
+                addMessageToActiveSession({
+                    sender: 'AI',
+                    content: 'Sorry, there was an error processing your request.',
+                    timestamp: errorTimestamp
+                })
             } finally {
-                setIsLoading(false);
-                setIsTyping(false);
+                setIsLoading(false)
+                setIsTyping(false)
             }
         }
-    }, [message, activeSession, username, addMessageToActiveSession, updateMessageInActiveSession]);
+    }, [message, username, addMessageToActiveSession, updateMessageInActiveSession, ChatAPI])
 
+    useEffect(() => {
+        if (location.pathname === '/report') {
+            setChatOpen(false)
+        }
+    }, [location.pathname])
 
     return (
-        <ThemeProvider theme={theme}>
-            <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-                <CssBaseline />
-                <AppBar position="absolute" open={open}>
-                    <Toolbar sx={{ pr: '24px' }}>
-                        <IconButton
-                            edge="start"
-                            color="inherit"
-                            aria-label="open drawer"
-                            onClick={toggleDrawer}
-                            sx={{
-                                marginRight: '36px',
-                                ...(open && { display: 'none' }),
-                            }}
-                        >
-                            <MenuIcon />
-                        </IconButton>
-                        <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1, fontWeight: 600 }}>
-                            {getPageTitle(location.pathname)}
-                        </Typography>
-                        <IconButton color="inherit" onClick={toggleColorMode}>
-                            {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-                        </IconButton>
-                        <IconButton color="inherit" onClick={handleAccountClick} aria-label="account settings">
-                            <SettingsIcon />
-                        </IconButton>
-                        <IconButton color="inherit" onClick={handleUserProfileClick} aria-label="user profile">
-                            <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.secondary.main }}>
-                                {username.charAt(0).toUpperCase()}
-                            </Avatar>
-                        </IconButton>
-                    </Toolbar>
-                </AppBar>
-                <Drawer variant="permanent" open={open}>
-                    <Toolbar
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            px: [1],
-                            background: 'linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)',
-                        }}
-                    >
-                        {open && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
-                                <img src="/public/logo.png" alt="Logo" style={{ height: '40px' }} />
-                            </Box>
-                        )}
-                        <IconButton onClick={toggleDrawer} sx={{ color: 'white' }}>
-                            <ChevronLeftIcon />
-                        </IconButton>
-                    </Toolbar>
-                    <Divider />
-                    <List component="nav">
-                        {mainListItems}
-                        <Divider sx={{ my: 1 }} />
-                        {secondaryListItems}
-                    </List>
-                    <Box sx={{ mt: 'auto', p: 2 }}>
-                        <Tooltip title="Logout" placement="right">
-                            <IconButton
-                                color="primary"
-                                onClick={handleLogout}
-                                sx={{
-                                    width: '100%',
-                                    justifyContent: open ? 'flex-start' : 'center',
-                                    '& .MuiButton-startIcon': {
-                                        mr: open ? 1 : 'auto',
-                                    },
-                                }}
-                            >
-                                <LogoutIcon />
-                                {open && (
-                                    <Typography variant="body2" sx={{ ml: 1, display: { xs: 'none', sm: 'block' } }}>
-                                        Logout
-                                    </Typography>
-                                )}
-                            </IconButton>
-                        </Tooltip>
-                    </Box>
-                </Drawer>
-                <Box
-                    component="main"
-                    sx={{
-                        backgroundColor: (theme) =>
-                            theme.palette.mode === 'light'
-                                ? theme.palette.grey[100]
-                                : theme.palette.grey[900],
-                        flexGrow: 1,
-                        height: '100vh',
-                        overflow: 'hidden',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
-                >
-                    <Toolbar />
-                    <Box sx={{ flexGrow: 1, overflow: 'auto', p: 0 }}>
-                        <Outlet />
-                    </Box>
-                </Box>
-            </Box>
-            <Dialog
-                open={logoutDialogOpen}
-                onClose={handleLogoutCancel}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-            >
-                <DialogTitle id="alert-dialog-title">{"Confirm Logout"}</DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        Are you sure you want to log out?
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleLogoutCancel}>Cancel</Button>
-                    <Button onClick={handleLogoutConfirm} autoFocus>
-                        Logout
+        <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+            <aside className={cn(
+                "bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out",
+                collapsed ? "w-20" : "w-64"
+            )}>
+                <div className="flex items-center justify-between p-4">
+                    {!collapsed && <img src="/logo.png" alt="Logo" className="h-8" />}
+                    <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+                        {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                     </Button>
-                </DialogActions>
-            </Dialog>
-            <ChatButton
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={toggleChat}
-            >
-                <IconButton
-                    color="primary"
-                    sx={{
-                        backgroundColor: theme.palette.background.paper,
-                        boxShadow: theme.shadows[4],
-                        '&:hover': {
-                            backgroundColor:  theme.palette.background.paper,
-                        },
-                    }}
+                </div>
+                <Separator />
+                <div className={cn("p-4", collapsed ? "flex justify-center" : "")}>
+                    <Button
+                        variant="ghost"
+                        className={cn("w-full", collapsed ? "p-0" : "justify-start")}
+                        onClick={() => navigate('/userprofile')}
+                    >
+                        <Avatar className={cn("w-8 h-8", collapsed ? "" : "mr-2")}>
+                            <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${username}`} alt={username} />
+                            <AvatarFallback>{username.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {!collapsed && (
+                            <span className="truncate">{username}</span>
+                        )}
+                    </Button>
+                </div>
+                <Separator />
+                <ScrollArea className="flex-1 h-[calc(100vh-16rem)]">
+                    <nav className="space-y-1 px-2 py-4">
+                        <MainListItems collapsed={collapsed} />
+                    </nav>
+                    <Separator className="my-4" />
+                    <nav className="space-y-1 px-2 py-4">
+                        <SecondaryListItems collapsed={collapsed} onLogout={handleLogout} />
+                    </nav>
+                </ScrollArea>
+            </aside>
+
+            <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+                <Outlet />
+            </main>
+
+            {location.pathname !== '/report' && (
+                <motion.div
+                    className="fixed bottom-4 right-4"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 50 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 >
-                    <ChatIcon />
-                </IconButton>
-            </ChatButton>
+                    <Button onClick={toggleChat} size="icon" className="rounded-full h-12 w-12">
+                        <MessageCircle className="h-6 w-6" />
+                    </Button>
+                </motion.div>
+            )}
+
             <AnimatePresence>
-                {chatOpen && (
-                    <ChatWindow
+                {chatOpen && location.pathname !== '/report' && (
+                    <motion.div
+                        className="fixed bottom-20 right-4 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden"
                         initial={{ opacity: 0, y: 50, scale: 0.3 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.3 }}
-                        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                     >
-                        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems:  'center', bgcolor: 'background.paper' }}>
-                            <Typography variant="h6" sx={{ fontWeight: 600 }}>AI Assistant</Typography>
-                            <IconButton onClick={toggleChat} size="small">
-                                <CloseIcon />
-                            </IconButton>
-                        </Box>
-                        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, bgcolor: 'background.default' }}>
-                            {sessions.find(s => s.id === activeSession)?.messages.map((message, index) => (
-                                <Box key={index} sx={{ mb: 2, display: 'flex', justifyContent: message.sender === username ? 'flex-end' : 'flex-start' }}>
-                                    <Paper
-                                        elevation={0}
-                                        sx={{
-                                            p: 2,
-                                            maxWidth: '80%',
-                                            borderRadius: 2,
-                                            bgcolor: message.sender === username ? 'primary.main' : 'background.paper',
-                                            color: message.sender === username ? 'primary.contrastText' : 'text.primary',
-                                        }}
-                                    >
-                                        <Typography variant="body2">{message.content}</Typography>
-                                    </Paper>
-                                </Box>
-                            ))}
-                            {isTyping && (
-                                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
-                                    <Paper elevation={0} sx={{ p: 2, maxWidth: '80%', borderRadius: 2, bgcolor: 'background.paper' }}>
-                                        <Typography variant="body2">AI is typing...</Typography>
-                                    </Paper>
-                                </Box>
-                            )}
-                        </Box>
-                        <Box component="form" onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-                            <TextField
-                                fullWidth
-                                variant="outlined"
-                                placeholder="Type your message..."
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                disabled={isLoading}
-                                InputProps={{
-                                    endAdornment: (
-                                        <IconButton type="submit" disabled={isLoading || !message.trim()}>
-                                            <SendIcon />
-                                        </IconButton>
-                                    ),
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        borderRadius: 4,
-                                        '&.Mui-focused': {
-                                            boxShadow: `0 0 0 2px ${theme.palette.primary.main}`, 
-                                        },
-                                    },
-                                }}
-                            />
-                        </Box>
-                    </ChatWindow>
+                        <Card>
+                            <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                                <h3 className="font-semibold text-lg">AI Assistant</h3>
+                                <Button variant="ghost" size="icon" onClick={toggleChat}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <CardContent>
+                                <ScrollArea className="h-96 pr-4">
+                                    {sessions.find(s => s.id === activeSession)?.messages.map((message, index) => (
+                                        <motion.div
+                                            key={index}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                            className={`mb-4 ${message.sender === username ? 'text-right' : 'text-left'}`}
+                                        >
+                                            <div className={`inline-block p-2 rounded-lg ${message.sender === username ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}>
+                                                <p className="text-sm">{message.content}</p>
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                {format(new Date(message.timestamp), 'HH:mm')}
+                                            </p>
+                                        </motion.div>
+                                    ))}
+                                    {isTyping && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="text-left mb-4"
+                                        >
+                                            <div className="inline-block p-2 rounded-lg bg-gray-200 dark:bg-gray-700">
+                                                <p className="text-sm">AI is typing...</p>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </ScrollArea>
+                                <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="mt-4">
+                                    <div className="flex space-x-2">
+                                        <Input
+                                            type="text"
+                                            placeholder="Type your message..."
+                                            value={message}
+                                            onChange={(e) => setMessage(e.target.value)}
+                                            disabled={isLoading}
+                                        />
+                                        <Button type="submit" disabled={isLoading || !message.trim()} size="icon">
+                                            <Send className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 )}
             </AnimatePresence>
-        </ThemeProvider>
-    );
+        </div>
+    )
 }
-
-
-

@@ -1,38 +1,5 @@
 import { request } from "@/utils"
 
-/**
- * Message API
- * @param {Object} params - The message form data
- * @returns {Promise} - The API response
- */
-export function MessageAPI(params) {
-    console.log("Sending message data:", params.toString())
-    return request({
-        url: '/message/chat',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        data: params.toString()
-    })
-}
-
-/**
- * Flux Message API
- * @param {Object} params - The message form data
- * @returns {Promise} - The API response
- */
-export function FluxMessageAPI(params) {
-    console.log("Sending flux message data:", params.toString())
-    return request({
-        url: '/message/chat/stream',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        data: params.toString()
-    })
-}
 
 /**
  * Flux Message with History API
@@ -42,11 +9,8 @@ export function FluxMessageAPI(params) {
 export function FluxMessageWithHistoryAPI(params) {
     console.log("Sending flux message data:", params);
     return request({
-        url: '/message/chat/stream/history',
+        url: '/ai/chat/general',
         method: 'GET',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
         params: {
             prompt: params.prompt,
             sessionId: params.sessionId
@@ -63,7 +27,7 @@ export function FluxMessageWithHistoryAPI(params) {
 export function UploadFileAPI(formData) {
     console.log("Uploading file data:", formData)
     return request({
-        url: '/document/vectordb/save',
+        url: '/vector-db/etl/read/multipart',
         method: 'POST',
         headers: {
             'Content-Type': 'multipart/form-data'
@@ -72,12 +36,25 @@ export function UploadFileAPI(formData) {
     })
 }
 
+export function ClearFileByFileNameAPI(fileName) {
+    return request ({
+        url: `/vector-db/etl/delete/${fileName}`,
+        method: "DELETE",
+    }).catch(error => {
+        console.error('API Error:', error);
+        throw error;
+    });
+}
+
 
 export function ClearFileAPI() {
     return request({
-        url: '/document/vectordb/clear',
+        url: '/vector-db/etl/clear',
         method: 'GET'
-    })
+    }).catch(error => {
+        console.error('API Error:', error);
+        throw error;
+    });
 }
 
 /**
@@ -86,18 +63,44 @@ export function ClearFileAPI() {
  * @returns {Promise} - The API response
  */
 export function ChatWithFileAPI(params) {
-    const requestData = new URLSearchParams({
-        prompt: params.get('prompt'),
-        sessionId: params.get('sessionId'),
-    });
-    console.log("Sending chat with file data:", requestData.toString());
+    console.log("Sending chat with file data:", params);
     return request({
-        url: '/document/chat/stream/database',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+        url: '/ai/chat/rag',
+        method: 'GET',
+        params: {
+            prompt: params.prompt,
+            conversationId: params.conversationId
         },
-        data: requestData.toString(),
         responseType: 'text'
+    }).catch(error => {
+        console.error('API Error:', error);
+        throw error;
+    });
+}
+
+export function ChatAPI(params) {
+    return request ({
+        url: "/ai/chat/chatWithoutMemory",
+        method: "GET",
+        params: {
+            prompt: params.prompt
+        },
     })
+}
+
+
+export function GenerateReport() {
+    return request ({
+        url: "/ai/analyser/financial-report",
+        method: "POST"
+    })
+}
+
+
+export function GetReportAPI() {
+    console.log("generate ai report");
+    return request({
+        url: "/financial-report",
+        method: 'GET'
+    });
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import WebSocketService from '@/service/WebSocketService';
+import WebSocketService from '@/services/WebSocketService';
 
-const useWebSocket = () => {
+const webSocket = () => {
   const [message, setMessage] = useState(null);
 
   const cleanMessage = useCallback((msg) => {
@@ -35,4 +35,4 @@ const useWebSocket = () => {
   return message;
 };
 
-export default useWebSocket;
+export default webSocket;
