@@ -63,10 +63,6 @@ public class S3Service {
     }
 
 
-    public String getFileUrl(String key) {
-        return amazonS3.getUrl(bucketName, key).toString();
-    }
-
     public static String generateS3Key(Long userId, String fileName) {
         return "user_" + userId + "/" + fileName;
     }
