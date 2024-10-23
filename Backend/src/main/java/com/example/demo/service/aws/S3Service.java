@@ -71,7 +71,7 @@ public class S3Service {
         return "user_" + userId + "/" + fileName;
     }
 
-    public List<S3FileMetadata> getAllFileNames(Long userId) {
+    public List<S3FileMetadata> getAllFiles(Long userId) {
         ObjectListing objectListing = amazonS3.listObjects(bucketName, "user_" + userId + "/");
         List<S3FileMetadata> metadata = new ArrayList<>();
 

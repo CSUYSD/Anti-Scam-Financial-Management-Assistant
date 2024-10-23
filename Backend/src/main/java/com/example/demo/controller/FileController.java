@@ -46,7 +46,7 @@ public class FileController {
     public ResponseEntity<List<S3FileMetadata>> getAllFileNames(@RequestHeader("Authorization") String token) {
         try{
             Long userId = getCurrentUserInfo.getCurrentUserId(token);
-            List<S3FileMetadata> fileNames = s3Service.getAllFileNames(userId);
+            List<S3FileMetadata> fileNames = s3Service.getAllFiles(userId);
             return ResponseEntity.ok(fileNames);
         } catch (Exception e) {
             log.error("Failed to get all file names", e);
