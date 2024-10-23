@@ -169,7 +169,6 @@ public class VectorDBControllerTest {
         Truth.assertThat(response.getStatusCodeValue()).isEqualTo(200);
         Truth.assertThat(response.getBody()).contains("cleared successfully");
 
-        // 验证传递给 chromaVectorStore 的文档 ID 包含重复的 [1, 2, 1, 2]
         Mockito.verify(chromaVectorStoreMock).doDelete(Arrays.asList("1", "2"));
 
         System.out.println("testClearVectorDB passed!");
