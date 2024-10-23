@@ -1,4 +1,4 @@
-package com.example.demo.controller.ed;
+package com.example.demo.controller.es;
 
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.web.bind.annotation.GetMapping;
