@@ -1,25 +1,23 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { format, parseISO } from 'date-fns'
-import { chatSessions } from '@/hooks/ChatSessions'
-import { fileUpload } from '@/hooks/FileUpload'
+import { format, parseISO, isValid } from 'date-fns'
+import { chatSessions } from '@/hooks/ChatSessions.jsx'
+import { fileUpload } from '@/hooks/FileUpload.jsx'
 import { FluxMessageWithHistoryAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileNameAPI, GenerateReport, UploadFileAPI } from '@/api/ai'
 import { formatMessageContent } from '@/utils/messageFormatter'
 import MarkdownRenderer from '@/utils/markdown-renderer'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Paperclip, X, Send, Download, Copy, Edit, Trash, ChevronDown, File } from 'lucide-react'
+import { GetAllFiles, DownloadFile, DeleteFileByFileName } from "@/api/s3-file"
+import { FilePreview } from "@/components/FilePreview"
+import { UploadedFiles } from "@/components/UploadedFiles"
+import {getFileType} from "@/utils/fileUtils.jsx";
 
 export default function Report() {
   const {
@@ -42,6 +40,122 @@ export default function Report() {
   const [editSessionId, setEditSessionId] = useState(null)
   const [newSessionName, setNewSessionName] = useState('')
   const fileInputRef = useRef(null)
+  const [previewContent, setPreviewContent] = useState(null)
+  const [previewFileName, setPreviewFileName] = useState('')
+  const [uploadedFiles, setUploadedFiles] = useState([])
+
+  useEffect(() => {
+    fetchUploadedFiles();
+  }, []);
+
+  const fetchUploadedFiles = async () => {
+    try {
+      const response = await GetAllFiles();
+      const files = response?.data || [];
+      if (Array.isArray(files)) {
+        const validFiles = files
+            .filter(file => file != null)
+            .sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+        console.log('Fetched files:', validFiles);
+        setUploadedFiles(validFiles);
+      } else {
+        console.error('Unexpected files format:', files);
+        setUploadedFiles([]);
+      }
+    } catch (error) {
+      console.error('Error fetching files:', error);
+      setUploadedFiles([]);
+    }
+  };
+
+  const handleDeleteUploadedFile = async (fileName) => {
+    if (!fileName) {
+      console.error('No fileName provided for deletion');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await DeleteFileByFileName(fileName);
+      await fetchUploadedFiles();
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePreviewFile = async (fileName) => {
+    if (!fileName) {
+      console.error('No fileName provided for preview');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await DownloadFile(fileName);
+
+      if (response.data instanceof Blob) {
+        const blob = response.data;
+        const fileType = getFileType(fileName);
+        if (fileType === 'text' || fileType === 'code') {
+          const text = await blob.text();
+          setPreviewContent(text);
+          setPreviewFileName(fileName);
+        } else if (fileType === 'image') {
+          const url = URL.createObjectURL(blob);
+          setPreviewContent(url);
+          setPreviewFileName(fileName);
+        } else {
+          console.log('File type not supported for preview');
+          setPreviewContent(null);
+          setPreviewFileName('');
+        }
+      } else {
+        console.error('Unexpected response format:', response);
+        setPreviewContent(null);
+        setPreviewFileName('');
+      }
+    } catch (error) {
+      console.error('Error previewing file:', error);
+      setPreviewContent(null);
+      setPreviewFileName('');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownloadUploadedFile = async (fileName) => {
+    if (!fileName) {
+      console.error('No fileName provided for download');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await DownloadFile(fileName);
+
+      if (response.data instanceof Blob) {
+        const blob = response.data;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 0);
+      } else {
+        console.error('Unexpected response format:', response);
+      }
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSendMessage = useCallback(async () => {
     if (message.trim() || (isRetrievalMode && files.length > 0)) {
@@ -109,21 +223,22 @@ export default function Report() {
   }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession, updateMessageInActiveSession]);
 
   const handleFileUpload = async (event) => {
-    const selectedFile = event.target.files?.[0]
+    const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
         const formData = new FormData();
         formData.append('file', selectedFile);
         await UploadFileAPI(formData);
         await uploadFile(selectedFile);
+        await fetchUploadedFiles();
       } catch (error) {
         console.error('Error uploading file:', error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
-  }
+  };
 
   const handleClearFiles = async () => {
     setIsLoading(true)
@@ -131,6 +246,7 @@ export default function Report() {
       await ClearFileAPI()
       clearFiles()
       if (fileInputRef.current) fileInputRef.current.value = ''
+      await fetchUploadedFiles()
     } catch (error) {
       console.error('Error clearing files:', error)
     } finally {
@@ -173,7 +289,7 @@ export default function Report() {
 
     let exportContent = `Conversation Export - ${currentSession.name}\n\n`
     currentSession.messages.forEach((msg) => {
-      const formattedTime = format(parseISO(msg.timestamp), 'yyyy-MM-dd HH:mm:ss')
+      const formattedTime = formatDate(msg.timestamp)
       exportContent += `[${formattedTime}] ${msg.sender}:\n${msg.content}\n\n`
     })
 
@@ -203,7 +319,6 @@ export default function Report() {
     setIsLoading(true)
     try {
       const response = await GenerateReport()
-      // Remove triple backticks from the beginning and end of the report
       const cleanedReport = response.data.replace(/^```[\s\S]*?\n/, '').replace(/\n```$/, '')
       addMessageToActiveSession({
         sender: 'AI',
@@ -229,11 +344,18 @@ export default function Report() {
       await ClearFileByFileNameAPI(fileName)
       clearFiles()
       if (fileInputRef.current) fileInputRef.current.value = ''
+      await fetchUploadedFiles()
     } catch (error) {
       console.error('Error deleting file:', error)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Invalid Date'
+    const date = parseISO(dateString)
+    return isValid(date) ? format(date, 'yyyy-MM-dd HH:mm:ss') : 'Invalid Date'
   }
 
   const canSendMessage = message.trim() || (isRetrievalMode && files.length > 0)
@@ -274,7 +396,22 @@ export default function Report() {
               </DropdownMenu>
             </div>
             <div className="flex items-center space-x-4">
+              <UploadedFiles
+                  files={uploadedFiles}
+                  onPreview={handlePreviewFile}
+                  onDownload={handleDownloadUploadedFile}
+                  onDelete={handleDeleteUploadedFile}
+                  formatDate={formatDate}
+              />
+              <FilePreview
+                  isOpen={!!previewContent}
+                  onClose={() => setPreviewContent(null)}
+                  content={previewContent}
+                  fileName={previewFileName}
+                  onDownload={() => handleDownloadUploadedFile(previewFileName)}
+              />
               <Button onClick={handleGenerateReport} disabled={isLoading}>
+
                 Generate AI Report
               </Button>
               <div className="flex items-center space-x-2">
@@ -307,9 +444,11 @@ export default function Report() {
                   handleRetry={handleRetry}
                   handleCopy={handleCopy}
                   handleDownload={handleDownload}
+                  formatDate={formatDate}
               />
             </div>
           </ScrollArea>
+
           {isRetrievalMode && files.length > 0 && (
               <div className="p-4 border-t border-border">
                 <h3 className="text-sm font-semibold mb-2">Uploaded Files:</h3>
@@ -365,7 +504,6 @@ export default function Report() {
                           ref={fileInputRef}
                           onChange={handleFileUpload}
                           className="hidden"
-
                       />
                       <Button
                           variant="outline"
@@ -417,7 +555,7 @@ export default function Report() {
   )
 }
 
-function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, handleDownload }) {
+function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, handleDownload, formatDate }) {
   const messagesEndRef = useRef(null)
 
   useEffect(() => {
@@ -451,7 +589,7 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
                     )}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground flex items-center justify-end space-x-2">
-                    <span>{message.timestamp ? format(parseISO(message.timestamp), 'HH:mm:ss') : 'No timestamp'}</span>
+                    <span>{formatDate(message.timestamp)}</span>
                     {message.sender !== username && (
                         <>
                           <button onClick={() => handleCopy(message.content)} className="p-1 text-muted-foreground hover:text-foreground transition-colors duration-200" aria-label="Copy message">

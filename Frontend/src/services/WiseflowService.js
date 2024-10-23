@@ -446,7 +446,7 @@ class WiseflowService {
 const wiseflowService = new WiseflowService({
     baseUrl: 'http://127.0.0.1:8090',
     adminEmail: 'songguocheng348@gmail.com',
-    adminPassword: 'Ericsgc@119742',
+    adminPassword: '',
     fetchInterval: 3600000 // 1 hour
 });
 

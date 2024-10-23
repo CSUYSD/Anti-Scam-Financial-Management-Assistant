@@ -1,8 +1,72 @@
-const API_KEY = 'I24S6DX8ZCFSBCI8';
+const API_KEY = '9142BAPWKIZULGUE';
 const BASE_URL = 'https://www.alphavantage.co/query';
 
-// 基础API调用函数
+// Cache configuration
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache duration
+
+/**
+ * Cache manager for storing API responses
+ * Implements a simple in-memory cache with expiration
+ */
+class CacheManager {
+    constructor() {
+        this.cache = new Map();
+    }
+
+    /**
+     * Store data in cache with timestamp
+     * @param {string} key - Cache key
+     * @param {any} data - Data to cache
+     */
+    set(key, data) {
+        this.cache.set(key, {
+            data,
+            timestamp: Date.now()
+        });
+    }
+
+    /**
+     * Retrieve data from cache if not expired
+     * @param {string} key - Cache key
+     * @returns {any|null} Cached data or null if expired/not found
+     */
+    get(key) {
+        const cached = this.cache.get(key);
+        if (!cached) return null;
+
+        const isExpired = Date.now() - cached.timestamp > CACHE_DURATION;
+        if (isExpired) {
+            this.cache.delete(key);
+            return null;
+        }
+
+        return cached.data;
+    }
+
+    /**
+     * Clear all cached data
+     */
+    clear() {
+        this.cache.clear();
+    }
+}
+
+const cache = new CacheManager();
+
+/**
+ * Base API call function with error handling and caching
+ * @param {Object} params - API parameters
+ * @returns {Promise<Object>} API response or mock data
+ */
 const fetchFromAPI = async (params) => {
+    const cacheKey = `${params.function}_${JSON.stringify(params)}`;
+    const cachedData = cache.get(cacheKey);
+
+    if (cachedData) {
+        console.log('Returning cached data for:', params.function);
+        return cachedData;
+    }
+
     try {
         const queryString = new URLSearchParams({
             ...params,
@@ -19,17 +83,19 @@ const fetchFromAPI = async (params) => {
         if (data['Error Message']) {
             throw new Error(data['Error Message']);
         }
-        if (data['Note']) {
-            console.warn('API调用频率限制:', data['Note']);
+
+        if (data['Note'] || data['Information']) {
+            console.warn('API rate limit reached:', data['Note'] || data['Information']);
             return getMockData(params.function);
         }
 
+        cache.set(cacheKey, data);
         return data;
     } catch (error) {
-        console.error('API调用失败:', error);
+        console.error('API call failed:', error);
         return getMockData(params.function);
     }
-};
+}
 
 // 获取模拟数据
 const getMockData = (functionName) => {
@@ -118,7 +184,121 @@ const getMockData = (functionName) => {
     return mockData[functionName] || {};
 };
 
-// 搜索股票
+/**
+ * Currency pairs configuration
+ */
+const CURRENCY_PAIRS = [
+    { from: 'AUD', to: 'CNY', name: 'AUD/CNY', baseRate: 4.7621 },
+    { from: 'AUD', to: 'USD', name: 'AUD/USD', baseRate: 0.6532 },
+    { from: 'AUD', to: 'GBP', name: 'AUD/GBP', baseRate: 0.5232 },
+    { from: 'AUD', to: 'EUR', name: 'AUD/EUR', baseRate: 0.6103 }
+];
+
+/**
+ * Generate realistic mock data for currency pairs
+ * @param {string} fromSymbol - Base currency
+ * @param {string} toSymbol - Quote currency
+ * @returns {Object} Mock exchange rate data
+ */
+const getMockExchangeRate = (fromSymbol, toSymbol) => {
+    const pair = CURRENCY_PAIRS.find(p => p.from === fromSymbol && p.to === toSymbol);
+    const baseRate = pair?.baseRate || 1;
+    const variation = 0.002; // 0.2% variation
+
+    const generateRate = () => baseRate * (1 + (Math.random() - 0.5) * variation);
+    const today = new Date().toISOString().split('T')[0];
+
+    return {
+        pair: `${fromSymbol}/${toSymbol}`,
+        date: today,
+        open: generateRate(),
+        high: generateRate(),
+        low: generateRate(),
+        close: generateRate(),
+        isMocked: true
+    };
+};
+
+/**
+ * Fetch daily exchange rate data for a single currency pair
+ * @param {string} fromSymbol - Base currency
+ * @param {string} toSymbol - Quote currency
+ * @param {string} outputSize - Data size (compact/full)
+ * @returns {Promise<Object>} Exchange rate data
+ */
+export const getFXDaily = async (fromSymbol, toSymbol, outputSize = 'compact') => {
+    const cacheKey = `FX_${fromSymbol}_${toSymbol}`;
+    const cachedData = cache.get(cacheKey);
+
+    if (cachedData) {
+        return cachedData;
+    }
+
+    try {
+        const response = await fetchFromAPI({
+            function: 'FX_DAILY',
+            from_symbol: fromSymbol,
+            to_symbol: toSymbol,
+            outputsize: outputSize
+        });
+
+        if (!response || !response['Time Series FX (Daily)']) {
+            throw new Error(`Unable to get ${fromSymbol}/${toSymbol} exchange rate data`);
+        }
+
+        const timeSeriesData = response['Time Series FX (Daily)'];
+        const latestDate = Object.keys(timeSeriesData)[0];
+        const latestData = timeSeriesData[latestDate];
+
+        const result = {
+            pair: `${fromSymbol}/${toSymbol}`,
+            date: latestDate,
+            open: parseFloat(latestData['1. open']),
+            high: parseFloat(latestData['2. high']),
+            low: parseFloat(latestData['3. low']),
+            close: parseFloat(latestData['4. close']),
+            isMocked: false
+        };
+
+        cache.set(cacheKey, result);
+        return result;
+
+    } catch (error) {
+        console.error(`Failed to get ${fromSymbol}/${toSymbol} exchange rate:`, error);
+        return getMockExchangeRate(fromSymbol, toSymbol);
+    }
+};
+
+/**
+ * Fetch exchange rates for all configured AUD currency pairs
+ * @returns {Promise<Array>} Array of exchange rate data
+ */
+export const getAllAUDExchangeRates = async () => {
+    try {
+        const ratesPromises = CURRENCY_PAIRS.map(pair =>
+            getFXDaily(pair.from, pair.to)
+        );
+
+        const rates = await Promise.all(ratesPromises);
+
+        return rates.map((rate, index) => ({
+            ...rate,
+            name: CURRENCY_PAIRS[index].name,
+            fromCurrency: CURRENCY_PAIRS[index].from,
+            toCurrency: CURRENCY_PAIRS[index].to
+        }));
+
+    } catch (error) {
+        console.error('Failed to get AUD exchange rates:', error);
+        return CURRENCY_PAIRS.map(pair => getMockExchangeRate(pair.from, pair.to));
+    }
+};
+
+/**
+ * Search for stocks by keyword
+ * @param {string} keywords - Search keywords
+ * @returns {Promise<Array>} Array of matching stocks
+ */
 export const searchStocks = async (keywords) => {
     try {
         const response = await fetchFromAPI({
@@ -139,64 +319,97 @@ export const searchStocks = async (keywords) => {
             matchScore: parseFloat(match['9. matchScore'])
         }));
     } catch (error) {
-        console.error('搜索股票失败:', error);
-        return (getMockData('SYMBOL_SEARCH').bestMatches || []).map(match => ({
-            symbol: match['1. symbol'],
-            name: match['2. name'],
-            type: match['3. type'],
-            region: match['4. region'],
-            marketOpen: match['5. marketOpen'],
-            marketClose: match['6. marketClose'],
-            timezone: match['7. timezone'],
-            currency: match['8. currency'],
-            matchScore: parseFloat(match['9. matchScore'])
-        }));
+        console.error('Stock search failed:', error);
+        return [];
     }
 };
 
-// 获取实时汇率
-export const getCurrencyExchangeRate = async (fromCurrency, toCurrency) => {
+/**
+ * Get detailed company overview data
+ * @param {string} symbol - Stock symbol
+ * @returns {Promise<Object|null>} Company overview data or null if not found
+ */
+export const getCompanyOverview = async (symbol) => {
     try {
         const response = await fetchFromAPI({
-            function: 'CURRENCY_EXCHANGE_RATE',
-            from_currency: fromCurrency,
-            to_currency: toCurrency
+            function: 'OVERVIEW',
+            symbol
         });
 
-        const rateData = response?.['Realtime Currency Exchange Rate'];
-        if (!rateData) {
-            throw new Error('Invalid response structure');
+        if (!response || !response.Symbol) {
+            throw new Error(`No data found for symbol: ${symbol}`);
         }
 
         return {
-            fromCurrency: rateData['1. From_Currency Code'] || fromCurrency,
-            fromCurrencyName: rateData['2. From_Currency Name'] || 'Unknown',
-            toCurrency: rateData['3. To_Currency Code'] || toCurrency,
-            toCurrencyName: rateData['4. To_Currency Name'] || 'Unknown',
-            exchangeRate: parseFloat(rateData['5. Exchange Rate']) || 0,
-            lastUpdated: rateData['6. Last Refreshed'] || new Date().toISOString(),
-            timeZone: rateData['7. Time Zone'] || 'UTC',
-            bidPrice: parseFloat(rateData['8. Bid Price']) || 0,
-            askPrice: parseFloat(rateData['9. Ask Price']) || 0
+            symbol: response.Symbol,
+            name: response.Name,
+            description: response.Description,
+            exchange: response.Exchange,
+            currency: response.Currency,
+            country: response.Country,
+            sector: response.Sector,
+            industry: response.Industry,
+            // Financial metrics
+            marketCap: parseFloat(response.MarketCapitalization),
+            peRatio: parseFloat(response.PERatio),
+            pegRatio: parseFloat(response.PEGRatio),
+            bookValue: parseFloat(response.BookValue),
+            dividendPerShare: parseFloat(response.DividendPerShare),
+            dividendYield: parseFloat(response.DividendYield),
+            eps: parseFloat(response.EPS),
+            revenuePerShareTTM: parseFloat(response.RevenuePerShareTTM),
+            profitMargin: parseFloat(response.ProfitMargin),
+            // Growth metrics
+            quarterlyEarningsGrowthYOY: parseFloat(response.QuarterlyEarningsGrowthYOY),
+            quarterlyRevenueGrowthYOY: parseFloat(response.QuarterlyRevenueGrowthYOY),
+            // Analyst targets
+            analystTargetPrice: parseFloat(response.AnalystTargetPrice),
+            // Additional info
+            beta: parseFloat(response.Beta),
+            weekHigh52: parseFloat(response['52WeekHigh']),
+            weekLow52: parseFloat(response['52WeekLow'])
         };
     } catch (error) {
-        console.error('获取汇率失败:', error);
-        const mockData = getMockData('CURRENCY_EXCHANGE_RATE')['Realtime Currency Exchange Rate'] || {};
-        return {
-            fromCurrency: fromCurrency,
-            fromCurrencyName: mockData['2. From_Currency Name'] || 'Unknown',
-            toCurrency: toCurrency,
-            toCurrencyName: mockData['4. To_Currency Name'] || 'Unknown',
-            exchangeRate: parseFloat(mockData['5. Exchange Rate'] || 1),
-            lastUpdated: mockData['6. Last Refreshed'] || new Date().toISOString(),
-            timeZone: mockData['7. Time Zone'] || 'UTC',
-            bidPrice: parseFloat(mockData['8. Bid Price'] || 1),
-            askPrice: parseFloat(mockData['9. Ask Price'] || 1)
-        };
+        console.error('Failed to get company overview:', error);
+        return null;
     }
 };
 
-// 获取市场状态
+/**
+ * Combined function to search stocks and get company overviews
+ * @param {string} keywords - Search keywords
+ * @returns {Promise<Array>} Array of stocks with detailed information
+ */
+export const searchAndGetOverview = async (keywords) => {
+    try {
+        const searchResults = await searchStocks(keywords);
+
+        if (!searchResults.length) {
+            return [];
+        }
+
+        const topMatches = searchResults.slice(0, 5);
+        const detailedResults = await Promise.all(
+            topMatches.map(async (result) => {
+                const overview = await getCompanyOverview(result.symbol);
+                return {
+                    ...result,
+                    overview
+                };
+            })
+        );
+
+        return detailedResults.filter(result => result.overview !== null);
+    } catch (error) {
+        console.error('Search and overview operation failed:', error);
+        return [];
+    }
+};
+
+/**
+ * Get current market status for major global markets
+ * @returns {Promise<Array>} Array of market status information
+ */
 export const getMarketStatus = async () => {
     try {
         const response = await fetchFromAPI({
@@ -214,15 +427,7 @@ export const getMarketStatus = async () => {
             notes: market.notes
         }));
     } catch (error) {
-        console.error('获取市场状态失败:', error);
-        return getMockData('MARKET_STATUS').markets.map(market => ({
-            marketType: market.market_type,
-            region: market.region,
-            primaryExchanges: market.primary_exchanges,
-            currentStatus: market.current_status,
-            localOpen: market.local_open,
-            localClose: market.local_close,
-            notes: market.notes
-        }));
+        console.error('Failed to get market status:', error);
+        return getMockData('MARKET_STATUS').markets;
     }
 };

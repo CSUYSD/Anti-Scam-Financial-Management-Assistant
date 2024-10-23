@@ -3,6 +3,7 @@ package com.example.demo.service.aws;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
 import com.example.demo.exception.S3DownloadException;
+import com.example.demo.model.aws.S3FileMetadata;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +12,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -67,12 +71,43 @@ public class S3Service {
         return "user_" + userId + "/" + fileName;
     }
 
-    public String[] getAllFileNames(Long userId) {
+    public List<S3FileMetadata> getAllFileNames(Long userId) {
         ObjectListing objectListing = amazonS3.listObjects(bucketName, "user_" + userId + "/");
-        return objectListing.getObjectSummaries().stream()
-                .map(S3ObjectSummary::getKey)
-                .toArray(String[]::new);
+        List<S3FileMetadata> metadata = new ArrayList<>();
+
+        do {
+            metadata.addAll(objectListing.getObjectSummaries().stream()
+                    .map(this::convertToMetadata)
+                    .toList());
+
+            // if stream
+            if (objectListing.isTruncated()) {
+                objectListing = amazonS3.listNextBatchOfObjects(objectListing);
+            } else {
+                break;
+            }
+        } while (true);
+
+        return metadata;
     }
+
+    /**
+     * convert s3 object to S3FileMetadata
+     */
+    private S3FileMetadata convertToMetadata(S3ObjectSummary summary) {
+        String fileName = summary.getKey().substring(summary.getKey().lastIndexOf('/') + 1);
+
+        return S3FileMetadata.builder()
+                .key(summary.getKey())
+                .fileName(fileName)
+                .size(summary.getSize())
+                .lastModified(summary.getLastModified())
+                .storageClass(summary.getStorageClass())
+                .owner(summary.getOwner() != null ? summary.getOwner().getDisplayName() : null)
+                .etag(summary.getETag())
+                .build();
+    }
+
 
     public void deleteFile(Long userId, String fileName) {
         try{
