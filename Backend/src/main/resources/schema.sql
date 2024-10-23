@@ -30,13 +30,6 @@ CREATE TABLE transaction_users (
 );
 
 
-INSERT INTO transaction_users (username, password, email, phone, dob, role_id, avatar) VALUES
-('johndoe', 'password123', 'johndoe@example.com', '1234567890', '1990-01-15', 1, null),
-('janedoe', 'securepassword', 'janedoe@example.com', '0987654321', '1992-02-25', 2, null),
-('alice', 'alicepassword', 'alice@example.com', '1112223333', '1988-03-10', 2, null),
-('bobsmith', 'bobbypass', 'bobsmith@example.com', '4445556666', '1985-04-05', 2, null),
-('charlie', 'charliepass', 'charlie@example.com', '7778889999', '1995-05-20', 2, null);
-
 
 CREATE TABLE account (
             id BIGINT PRIMARY KEY AUTO_INCREMENT,

@@ -1,7 +1,7 @@
 package com.example.demo.controller.ai;
 
 
-import com.example.demo.service.aws.AWSService;
+import com.example.demo.service.aws.S3Service;
 import com.example.demo.utility.GetCurrentUserInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -32,11 +32,11 @@ public class VectorDBController {
 
     private final Map<String, List<String>> fileDocumentIdsMap = new HashMap<>();
     private final ChromaVectorStore chromaVectorStore;
-    private final AWSService s3Service;
+    private final S3Service s3Service;
     private final GetCurrentUserInfo getCurrentUserInfo;
 
     @Autowired
-    public VectorDBController(ChromaVectorStore chromaVectorStore, AWSService s3Service, GetCurrentUserInfo getCurrentUserInfo) {
+    public VectorDBController(ChromaVectorStore chromaVectorStore, S3Service s3Service, GetCurrentUserInfo getCurrentUserInfo) {
         this.chromaVectorStore = chromaVectorStore;
         this.s3Service = s3Service;
         this.getCurrentUserInfo = getCurrentUserInfo;
@@ -55,7 +55,7 @@ public class VectorDBController {
 
     @SneakyThrows
     @PostMapping("etl/read/multipart")
-    public void saveFileVectorDB(@RequestParam MultipartFile file, @RequestHeader("Authorization") String token) {
+    public void UploadToVectorDB(@RequestParam MultipartFile file, @RequestHeader("Authorization") String token) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Uploaded file is empty");
         }
