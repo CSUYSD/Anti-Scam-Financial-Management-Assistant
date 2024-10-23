@@ -70,4 +70,20 @@ public class S3Service {
     public static String generateS3Key(Long userId, String fileName) {
         return "user_" + userId + "/" + fileName;
     }
+
+    public String[] getAllFileNames(Long userId) {
+        ObjectListing objectListing = amazonS3.listObjects(bucketName, "user_" + userId + "/");
+        return objectListing.getObjectSummaries().stream()
+                .map(S3ObjectSummary::getKey)
+                .toArray(String[]::new);
+    }
+
+    public void deleteFile(Long userId, String fileName) {
+        try{
+            String s3Key = S3Service.generateS3Key(userId, fileName);
+            amazonS3.deleteObject(bucketName, s3Key);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete file from S3", e);
+        }
+    }
 }
