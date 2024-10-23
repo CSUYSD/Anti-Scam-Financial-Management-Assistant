@@ -1,10 +1,10 @@
 package com.example.demo.SecurityTest;
 
 import com.example.demo.controller.ai.VectorDBController;
+import com.example.demo.service.aws.S3Service;
+import com.example.demo.utility.GetCurrentUserInfo;
 import com.google.common.truth.Truth;
-import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
-import org.mockito.Mockito;
+import org.mockito.*;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
@@ -25,6 +25,13 @@ public class VectorDBControllerTest {
     private VectorDBController vectorDBController;
     private ChromaVectorStore chromaVectorStoreMock;
 
+    @Mock
+    private S3Service s3ServiceMock;  // 模拟 S3Service
+    @Mock
+    private GetCurrentUserInfo getCurrentUserInfoMock;  // 模拟 GetCurrentUserInfo
+
+
+
     public static void main(String[] args) throws Exception {
         VectorDBControllerTest test = new VectorDBControllerTest();
         test.setup();
@@ -35,8 +42,11 @@ public class VectorDBControllerTest {
     }
 
     public void setup() throws Exception {
+        MockitoAnnotations.openMocks(this);  // 初始化 @Mock 注解的对象
         chromaVectorStoreMock = Mockito.mock(ChromaVectorStore.class);
-        vectorDBController = new VectorDBController(chromaVectorStoreMock);
+
+        // 实例化 VectorDBController 时传递所需的参数
+        vectorDBController = new VectorDBController(chromaVectorStoreMock, s3ServiceMock, getCurrentUserInfoMock);
 
         // 使用反射来设置 fileDocumentIdsMap
         Field fileDocumentIdsMapField = VectorDBController.class.getDeclaredField("fileDocumentIdsMap");
@@ -150,6 +160,7 @@ public class VectorDBControllerTest {
         fileDocumentIdsMapField.setAccessible(true);
         Map<String, List<String>> mockFileDocumentIdsMap = (Map<String, List<String>>) fileDocumentIdsMapField.get(vectorDBController);
         mockFileDocumentIdsMap.put("test1.txt", documentIds);
+//        mockFileDocumentIdsMap.put("test2.txt", documentIds);
 
         // 调用被测方法
         ResponseEntity<String> response = vectorDBController.clearVectorDB();
