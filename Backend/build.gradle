@@ -69,6 +69,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
 	//Websocket
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	//google truth
+	testImplementation 'org.mockito:mockito-core:4.0.0'
+	testImplementation 'com.google.truth:truth:1.1.5'
 }
 
 dependencyManagement {
