@@ -1,220 +1,270 @@
 import PocketBase from 'pocketbase';
 
-/**
- * Static resources for fallback
- */
-const staticResources = [
+// 静态数据保持不变
+const staticArticles = [
     {
         id: 1,
-        title: "Financial Freedom 101",
-        thumbnail: "https://img.youtube.com/vi/Tb1CLQuJOsE/mqdefault.jpg",
-        videoUrl: "https://www.youtube.com/embed/Tb1CLQuJOsE?autoplay=1",
-        youtubeUrl: "https://www.youtube.com/watch?v=Tb1CLQuJOsE",
-        description: "Learn strategies to achieve financial independence and retire early.",
+        title: "Understanding Market Trends",
+        url: "https://example.com/market-trends",
+        abstract: "A comprehensive analysis of current market trends and their implications for investors.",
+        content: "Market trends are essential indicators that help investors make informed decisions...",
+        publish_time: "2024-02-20T10:00:00Z"
     },
     {
         id: 2,
-        title: "Real Estate Investing Mastery",
-        thumbnail: "https://img.youtube.com/vi/ZykJzwueIzM/mqdefault.jpg",
-        videoUrl: "https://www.youtube.com/embed/ZykJzwueIzM?autoplay=1",
-        youtubeUrl: "https://www.youtube.com/watch?v=ZykJzwueIzM",
-        description: "Discover how to build wealth through strategic real estate investments.",
-    },
-    {
-        id: 3,
-        title: "Smart Saving Techniques",
-        thumbnail: "https://img.youtube.com/vi/VJXh0Qduup0/mqdefault.jpg",
-        videoUrl: "https://www.youtube.com/embed/VJXh0Qduup0?autoplay=1",
-        youtubeUrl: "https://www.youtube.com/watch?v=VJXh0Qduup0",
-        description: "Master the art of saving money for a secure financial future.",
-    },
-    {
-        id: 4,
-        title: "Compound Interest Explained",
-        thumbnail: "https://img.youtube.com/vi/59F4DiFquz0/mqdefault.jpg",
-        videoUrl: "https://www.youtube.com/embed/59F4DiFquz0?autoplay=1",
-        youtubeUrl: "https://www.youtube.com/watch?v=59F4DiFquz0",
-        description: "Understand the power of compound interest and how it grows your wealth.",
-    },
-    {
-        id: 5,
-        title: "stockMarket Market Fundamentals",
-        thumbnail: "https://img.youtube.com/vi/8Ij7A1VCB7I/mqdefault.jpg",
-        videoUrl: "https://www.youtube.com/embed/8Ij7A1VCB7I?autoplay=1",
-        youtubeUrl: "https://www.youtube.com/watch?v=8Ij7A1VCB7I",
-        description: "Learn the basics of stock market investing and analysis techniques.",
-    },
-    {
-        id: 6,
-        title: "Risk Management in Investing",
-        thumbnail: "https://img.youtube.com/vi/lNdOtlpmH5U/mqdefault.jpg",
-        videoUrl: "https://www.youtube.com/embed/lNdOtlpmH5U?autoplay=1",
-        youtubeUrl: "https://www.youtube.com/watch?v=lNdOtlpmH5U",
-        description: "Understand and mitigate investment risks for better returns.",
+        title: "Investment Strategies 2024",
+        url: "https://example.com/investment-2024",
+        abstract: "Key investment strategies to consider in the current economic climate.",
+        content: "As we navigate through 2024, several investment strategies have emerged as particularly effective...",
+        publish_time: "2024-02-19T15:30:00Z"
     }
 ];
 
-/**
- * WiseflowService Class
- * Manages data operations and real-time updates for the investment insights platform
- * Handles both insights and topics with subscription-based updates
- */
+const staticTopics = [
+    {
+        id: 1,
+        name: "Market Analysis",
+        explanation: "Analysis of market trends and patterns",
+        activated: true
+    },
+    {
+        id: 2,
+        name: "Investment Strategy",
+        explanation: "Different approaches to investment",
+        activated: true
+    }
+];
+
 class WiseflowService {
-    /**
-     * Initialize the service with configuration
-     * @param {Object} config - Service configuration
-     * @param {string} config.baseUrl - PocketBase server URL
-     * @param {string} config.adminEmail - Admin email for authentication
-     * @param {string} config.adminPassword - Admin password for authentication
-     * @param {number} [config.fetchInterval=3600000] - Data fetch interval in milliseconds
-     */
     constructor(config) {
         this.config = {
             baseUrl: config.baseUrl,
             adminEmail: config.adminEmail,
             adminPassword: config.adminPassword,
-            fetchInterval: config.fetchInterval || 3600000 // Default: 1 hour
+            fetchInterval: config.fetchInterval || 3600000
         };
 
-        // Initialize PocketBase client
         this.pb = new PocketBase(this.config.baseUrl);
-
-        // Service state
         this.fetchInterval = null;
         this.lastFetchTime = null;
-        this.isAuthenticated = false;
 
-        // Subscriber management
-        this.insightSubscribers = new Set();
+        this.articleSubscribers = new Set();
         this.topicSubscribers = new Set();
 
-        // Data state
-        this.currentInsights = staticResources;
-        this.currentTopics = [];
+        this.currentArticles = staticArticles;
+        this.currentTopics = staticTopics;
     }
 
     /**
-     * Authenticate with PocketBase server
-     * @private
-     * @throws {Error} If authentication fails
+     * 异步认证方法
      */
     async authenticate() {
-        if (this.isAuthenticated) return;
-
         try {
-            await this.pb.admins.authWithPassword(
+            // 检查当前认证状态
+            if (this.pb.authStore.isValid) {
+                console.log('Using existing authentication');
+                return true;
+            }
+
+            const authData = await this.pb.admins.authWithPassword(
                 this.config.adminEmail,
                 this.config.adminPassword
             );
-            this.isAuthenticated = true;
-        } catch (error) {
-            console.error('Authentication failed:', error);
-            this.isAuthenticated = false;
-            throw error;
-        }
-    }
 
-    /**
-     * Fetch insights from the server
-     * @returns {Promise<Array>} Array of insights
-     */
-    async fetchInsights() {
-        try {
-            await this.authenticate();
-
-            const records = await this.pb.collection('insights').getList(1, 50, {
-                sort: '-created',
+            const isValid = this.pb.authStore.isValid;
+            console.log('Authentication successful:', {
+                isValid,
+                model: this.pb.authStore.model?.email
             });
 
-            // Format insights to match expected structure
-            const formattedInsights = records.items.map(item => ({
-                id: item.id,
-                title: item.title || 'Untitled',
-                thumbnail: item.thumbnail,
-                videoUrl: item.videoUrl,
-                youtubeUrl: item.youtubeUrl,
-                description: item.description || '',
-            }));
-
-            // Use static resources if no data is returned
-            this.currentInsights = formattedInsights.length > 0 ? formattedInsights : staticResources;
-            this.notifyInsightSubscribers();
-            return this.currentInsights;
+            return isValid;
         } catch (error) {
-            console.error('Failed to fetch insights:', error);
-            this.currentInsights = staticResources;
-            this.notifyInsightSubscribers();
-            return staticResources;
+            console.error('Authentication error:', error);
+            this.pb.authStore.clear();
+            return false;
         }
     }
 
     /**
-     * Fetch all active topics
-     * @returns {Promise<Array>} Array of topics
+     * 异步获取文章列表
+     */
+    async fetchArticles() {
+        try {
+            const isAuthenticated = await this.authenticate();
+            if (!isAuthenticated) {
+                console.log('Using static articles due to authentication failure');
+                this.currentArticles = staticArticles;
+                this.notifyArticleSubscribers();
+                return staticArticles;
+            }
+
+            const records = await this.pb.collection('articles').getList(1, 50, {
+                sort: '-publish_time'
+            });
+
+            const formattedArticles = records.items.map(item => ({
+                id: item.id,
+                title: item.title || 'Untitled',
+                url: item.url || '',
+                abstract: item.abstract || '',
+                content: item.content || '',
+                publish_time: item.publish_time || new Date().toISOString()
+            }));
+
+            this.currentArticles = formattedArticles.length > 0 ? formattedArticles : staticArticles;
+            this.notifyArticleSubscribers();
+            return this.currentArticles;
+        } catch (error) {
+            console.error('Failed to fetch articles:', error);
+            this.currentArticles = staticArticles;
+            this.notifyArticleSubscribers();
+            return staticArticles;
+        }
+    }
+
+    /**
+     * 异步获取主题列表
      */
     async fetchTopics() {
         try {
-            await this.authenticate();
+            const isAuthenticated = await this.authenticate();
+            if (!isAuthenticated) {
+                console.log('Using static topics due to authentication failure');
+                this.currentTopics = staticTopics;
+                this.notifyTopicSubscribers();
+                return staticTopics;
+            }
 
             const records = await this.pb.collection('tags').getList(1, 50, {
                 sort: 'created',
                 filter: 'activated = true'
             });
 
-            this.currentTopics = records.items;
+            const formattedTopics = records.items.map(item => ({
+                id: item.id,
+                name: item.name,
+                explanation: item.explanation || '',
+                activated: item.activated !== false
+            }));
+
+            this.currentTopics = formattedTopics.length > 0 ? formattedTopics : staticTopics;
             this.notifyTopicSubscribers();
             return this.currentTopics;
         } catch (error) {
             console.error('Failed to fetch topics:', error);
-            throw error;
+            this.currentTopics = staticTopics;
+            this.notifyTopicSubscribers();
+            return staticTopics;
         }
     }
 
     /**
-     * Save new topics
-     * @param {Array<Object>} topics - Array of topic objects with name and explaination
-     * @returns {Promise<Object>} Result object
+     * 创建新文章
      */
-    async saveTopics(topics) {
+    async createArticle(article) {
         try {
-            await this.authenticate();
+            const isAuthenticated = await this.authenticate();
+            if (!isAuthenticated) {
+                throw new Error('Authentication required');
+            }
 
-            const results = await Promise.all(
-                topics.map(topic =>
-                    this.pb.collection('tags').create({
-                        name: topic.name,
-                        explaination: topic.explaination || '',
-                        activated: true,
-                        created: new Date().toISOString(),
-                    })
-                )
-            );
+            const result = await this.pb.collection('articles').create({
+                title: article.title,
+                url: article.url,
+                abstract: article.abstract,
+                content: article.content,
+                publish_time: new Date().toISOString()
+            });
+
+            await this.fetchArticles();
+            return {
+                success: true,
+                data: result,
+                message: 'Article created successfully'
+            };
+        } catch (error) {
+            console.error('Failed to create article:', error);
+            return {
+                success: false,
+                error: error.message,
+                message: 'Failed to create article'
+            };
+        }
+    }
+
+    /**
+     * 创建新主题
+     */
+    async createTopic(topic) {
+        try {
+            const isAuthenticated = await this.authenticate();
+            if (!isAuthenticated) {
+                throw new Error('Authentication required');
+            }
+
+            const result = await this.pb.collection('tags').create({
+                name: topic.name,
+                explanation: topic.explanation || '',
+                activated: true,
+                created: new Date().toISOString()
+            });
 
             await this.fetchTopics();
             return {
                 success: true,
-                data: results,
-                message: 'Topics saved successfully'
+                data: result,
+                message: 'Topic created successfully'
             };
         } catch (error) {
-            console.error('Failed to save topics:', error);
+            console.error('Failed to create topic:', error);
             return {
                 success: false,
                 error: error.message,
-                message: 'Failed to save topics'
+                message: 'Failed to create topic'
             };
         }
     }
 
     /**
-     * Update an existing topic
-     * @param {string} id - Topic ID
-     * @param {Object} updates - Topic updates including name and explaination
-     * @returns {Promise<Object>} Result object
+     * 更新文章
+     */
+    async updateArticle(id, updates) {
+        try {
+            const isAuthenticated = await this.authenticate();
+            if (!isAuthenticated) {
+                throw new Error('Authentication required');
+            }
+
+            const result = await this.pb.collection('articles').update(id, {
+                ...updates,
+                updated: new Date().toISOString()
+            });
+
+            await this.fetchArticles();
+            return {
+                success: true,
+                data: result,
+                message: 'Article updated successfully'
+            };
+        } catch (error) {
+            console.error('Failed to update article:', error);
+            return {
+                success: false,
+                error: error.message,
+                message: 'Failed to update article'
+            };
+        }
+    }
+
+    /**
+     * 更新主题
      */
     async updateTopic(id, updates) {
         try {
-            await this.authenticate();
+            const isAuthenticated = await this.authenticate();
+            if (!isAuthenticated) {
+                throw new Error('Authentication required');
+            }
 
             const result = await this.pb.collection('tags').update(id, {
                 ...updates,
@@ -238,13 +288,40 @@ class WiseflowService {
     }
 
     /**
-     * Soft delete a topic by marking it as inactive
-     * @param {string} id - Topic ID to delete
-     * @returns {Promise<Object>} Result object
+     * 删除文章
+     */
+    async deleteArticle(id) {
+        try {
+            const isAuthenticated = await this.authenticate();
+            if (!isAuthenticated) {
+                throw new Error('Authentication required');
+            }
+
+            await this.pb.collection('articles').delete(id);
+            await this.fetchArticles();
+            return {
+                success: true,
+                message: 'Article deleted successfully'
+            };
+        } catch (error) {
+            console.error('Failed to delete article:', error);
+            return {
+                success: false,
+                error: error.message,
+                message: 'Failed to delete article'
+            };
+        }
+    }
+
+    /**
+     * 软删除主题
      */
     async softDeleteTopic(id) {
         try {
-            await this.authenticate();
+            const isAuthenticated = await this.authenticate();
+            if (!isAuthenticated) {
+                throw new Error('Authentication required');
+            }
 
             await this.pb.collection('tags').update(id, {
                 activated: false,
@@ -267,62 +344,44 @@ class WiseflowService {
     }
 
     /**
-     * Subscribe to insights updates
-     * @param {Function} callback - Callback function to receive updates
+     * 订阅机制
      */
     subscribe(callback) {
-        this.insightSubscribers.add(callback);
-        callback(this.currentInsights);
+        this.articleSubscribers.add(callback);
+        callback(this.currentArticles);
         this.startPeriodicFetch();
     }
 
-    /**
-     * Unsubscribe from insights updates
-     * @param {Function} callback - Callback function to remove
-     */
-    unsubscribe(callback) {
-        this.insightSubscribers.delete(callback);
-        if (this.insightSubscribers.size === 0) {
-            this.stopPeriodicFetch();
-        }
-    }
-
-    /**
-     * Subscribe to topics updates
-     * @param {Function} callback - Callback function to receive updates
-     */
     subscribeToTopics(callback) {
         this.topicSubscribers.add(callback);
         callback(this.currentTopics);
         this.fetchTopics().catch(console.error);
     }
 
-    /**
-     * Unsubscribe from topics updates
-     * @param {Function} callback - Callback function to remove
-     */
-    unsubscribeFromTopics(callback) {
-        this.topicSubscribers.delete(callback);
+    unsubscribe(callback) {
+        this.articleSubscribers.delete(callback);
+        if (this.articleSubscribers.size === 0 && this.topicSubscribers.size === 0) {
+            this.stopPeriodicFetch();
+        }
     }
 
-    /**
-     * Notify all insight subscribers of updates
-     * @private
-     */
-    notifyInsightSubscribers() {
-        this.insightSubscribers.forEach(callback => {
+    unsubscribeFromTopics(callback) {
+        this.topicSubscribers.delete(callback);
+        if (this.articleSubscribers.size === 0 && this.topicSubscribers.size === 0) {
+            this.stopPeriodicFetch();
+        }
+    }
+
+    notifyArticleSubscribers() {
+        this.articleSubscribers.forEach(callback => {
             try {
-                callback(this.currentInsights);
+                callback(this.currentArticles);
             } catch (error) {
-                console.error('Insight subscriber callback error:', error);
+                console.error('Article subscriber callback error:', error);
             }
         });
     }
 
-    /**
-     * Notify all topic subscribers of updates
-     * @private
-     */
     notifyTopicSubscribers() {
         this.topicSubscribers.forEach(callback => {
             try {
@@ -334,22 +393,35 @@ class WiseflowService {
     }
 
     /**
-     * Start periodic data fetching
-     * @private
+     * 定期获取数据
      */
-    startPeriodicFetch() {
+    async startPeriodicFetch() {
         if (this.fetchInterval) return;
 
-        this.fetchInsights().catch(console.error);
-        this.fetchInterval = setInterval(() => {
-            this.fetchInsights().catch(console.error);
-        }, this.config.fetchInterval);
+        const fetchData = async () => {
+            try {
+                const isAuthenticated = await this.authenticate();
+                if (!isAuthenticated) {
+                    console.log('Periodic fetch skipped due to authentication failure');
+                    return;
+                }
+
+                await Promise.all([
+                    this.fetchArticles(),
+                    this.fetchTopics()
+                ]);
+            } catch (error) {
+                console.error('Periodic fetch error:', error);
+            }
+        };
+
+        // 立即执行一次
+        await fetchData();
+
+        // 设置定时器
+        this.fetchInterval = setInterval(fetchData, this.config.fetchInterval);
     }
 
-    /**
-     * Stop periodic data fetching
-     * @private
-     */
     stopPeriodicFetch() {
         if (this.fetchInterval) {
             clearInterval(this.fetchInterval);
@@ -358,23 +430,23 @@ class WiseflowService {
     }
 
     /**
-     * Clean up service resources
-     * Call this when the service is no longer needed
+     * 清理资源
      */
     destroy() {
         this.stopPeriodicFetch();
-        this.insightSubscribers.clear();
+        this.articleSubscribers.clear();
         this.topicSubscribers.clear();
-        this.currentInsights = staticResources;
-        this.currentTopics = [];
+        this.currentArticles = staticArticles;
+        this.currentTopics = staticTopics;
+        this.pb.authStore.clear();
     }
 }
 
-// Create and export singleton instance
+// 创建服务实例
 const wiseflowService = new WiseflowService({
     baseUrl: 'http://127.0.0.1:8090',
     adminEmail: 'songguocheng348@gmail.com',
-    adminPassword: '',
+    adminPassword: 'Ericsgc@119742',
     fetchInterval: 3600000 // 1 hour
 });
 

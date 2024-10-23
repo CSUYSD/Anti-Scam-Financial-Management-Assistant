@@ -1,4 +1,3 @@
-
 const API_KEY = 'I24S6DX8ZCFSBCI8';
 const BASE_URL = 'https://www.alphavantage.co/query';
 
@@ -22,236 +21,208 @@ const fetchFromAPI = async (params) => {
         }
         if (data['Note']) {
             console.warn('API调用频率限制:', data['Note']);
-            // 返回模拟数据而不是null
             return getMockData(params.function);
         }
 
         return data;
     } catch (error) {
         console.error('API调用失败:', error);
-        // 返回模拟数据而不是抛出错误
         return getMockData(params.function);
     }
 };
 
 // 获取模拟数据
 const getMockData = (functionName) => {
-    switch (functionName) {
-        case 'GLOBAL_QUOTE':
-            return {
-                'Global Quote': {
-                    '01. symbol': 'AAPL',
-                    '02. open': '150.00',
-                    '03. high': '152.00',
-                    '04. low': '149.00',
-                    '05. price': '151.00',
-                    '06. volume': '1000000',
-                    '07. latest trading day': '2024-10-22',
-                    '08. previous close': '150.50',
-                    '09. change': '0.50',
-                    '10. change percent': '0.33%'
+    const mockData = {
+        'SYMBOL_SEARCH': {
+            'bestMatches': [
+                {
+                    '1. symbol': 'AAPL',
+                    '2. name': 'Apple Inc',
+                    '3. type': 'Equity',
+                    '4. region': 'United States',
+                    '5. marketOpen': '09:30',
+                    '6. marketClose': '16:00',
+                    '7. timezone': 'UTC-04',
+                    '8. currency': 'USD',
+                    '9. matchScore': '1.0000'
+                },
+                {
+                    '1. symbol': 'AAPL.LON',
+                    '2. name': 'Apple Inc - London',
+                    '3. type': 'Equity',
+                    '4. region': 'United Kingdom',
+                    '5. marketOpen': '08:00',
+                    '6. marketClose': '16:30',
+                    '7. timezone': 'UTC+01',
+                    '8. currency': 'GBP',
+                    '9. matchScore': '0.8000'
                 }
-            };
-        case 'TIME_SERIES_DAILY':
-            return {
-                'Time Series (Daily)': Array.from({ length: 90 }, (_, i) => ({
-                    [`2024-10-${22 - i}`]: {
-                        '1. open': '150.00',
-                        '2. high': '152.00',
-                        '3. low': '149.00',
-                        '4. close': '151.00',
-                        '5. volume': '1000000'
-                    }
-                })).reduce((acc, cur) => ({ ...acc, ...cur }), {})
-            };
-        default:
-            return {};
-    }
-};
-
-// 全球市场数据
-export const fetchGlobalMarketData = async () => {
-    try {
-        const responses = await Promise.all([
-            fetchFromAPI({
-                function: 'GLOBAL_QUOTE',
-                symbol: 'SPY'
-            }),
-            fetchFromAPI({
-                function: 'GLOBAL_QUOTE',
-                symbol: 'EWA'
-            }),
-            fetchFromAPI({
-                function: 'GLOBAL_QUOTE',
-                symbol: 'EWU'
-            })
-        ]);
-
-        return [
-            {
-                market: 'US',
-                index: 'S&P 500',
-                value: parseFloat(responses[0]['Global Quote']?.['05. price'] || 0),
-                change: parseFloat(responses[0]['Global Quote']?.['10. change percent']?.replace('%', '') || 0)
-            },
-            {
-                market: 'Australia',
-                index: 'ASX 200',
-                value: parseFloat(responses[1]['Global Quote']?.['05. price'] || 0),
-                change: parseFloat(responses[1]['Global Quote']?.['10. change percent']?.replace('%', '') || 0)
-            },
-            {
-                market: 'UK',
-                index: 'FTSE 100',
-                value: parseFloat(responses[2]['Global Quote']?.['05. price'] || 0),
-                change: parseFloat(responses[2]['Global Quote']?.['10. change percent']?.replace('%', '') || 0)
+            ]
+        },
+        'CURRENCY_EXCHANGE_RATE': {
+            'Realtime Currency Exchange Rate': {
+                '1. From_Currency Code': 'USD',
+                '2. From_Currency Name': 'United States Dollar',
+                '3. To_Currency Code': 'JPY',
+                '4. To_Currency Name': 'Japanese Yen',
+                '5. Exchange Rate': '148.8550',
+                '6. Last Refreshed': '2024-10-23 12:00:00 UTC',
+                '7. Time Zone': 'UTC',
+                '8. Bid Price': '148.8500',
+                '9. Ask Price': '148.8600'
             }
-        ];
-    } catch (error) {
-        console.error('获取全球市场数据失败:', error);
-        // 返回模拟数据
-        return [
-            { market: 'US', index: 'S&P 500', value: 4185.81, change: 0.75 },
-            { market: 'Australia', index: 'ASX 200', value: 7306.40, change: 0.31 },
-            { market: 'UK', index: 'FTSE 100', value: 7256.94, change: 0.52 }
-        ];
-    }
-};
-
-// 由于没有直接的期权API，使用股票数据模拟
-export const fetchRealTimeOptions = async () => {
-    try {
-        const stocks = ['AAPL', 'GOOGL', 'AMZN'];
-        const responses = await Promise.all(
-            stocks.map(symbol =>
-                fetchFromAPI({
-                    function: 'GLOBAL_QUOTE',
-                    symbol
-                })
-            )
-        );
-
-        return responses.map((response, index) => ({
-            symbol: `${stocks[index]}`,
-            lastPrice: parseFloat(response['Global Quote']?.['05. price'] || 0),
-            change: parseFloat(response['Global Quote']?.['09. change'] || 0),
-            volume: parseInt(response['Global Quote']?.['06. volume'] || 0)
-        }));
-    } catch (error) {
-        console.error('获取期权数据失败:', error);
-        // 返回模拟数据
-        return [
-            { symbol: 'AAPL', lastPrice: 150.25, change: 2.5, volume: 1000000 },
-            { symbol: 'GOOGL', lastPrice: 2800.75, change: -1.2, volume: 500000 },
-            { symbol: 'AMZN', lastPrice: 3300.50, change: 1.8, volume: 750000 }
-        ];
-    }
-};
-
-// 市场趋势数据
-export const fetchMarketTrendData = async (market) => {
-    try {
-        const symbol = market === 'US' ? 'SPY' : market === 'Australia' ? 'EWA' : 'EWU';
-        const response = await fetchFromAPI({
-            function: 'TIME_SERIES_DAILY',
-            symbol,
-            outputsize: 'compact'
-        });
-
-        const timeSeriesData = response['Time Series (Daily)'];
-        return Object.entries(timeSeriesData)
-            .map(([date, values]) => ({
-                date,
-                value: parseFloat(values['4. close'])
-            }))
-            .slice(0, 90)
-            .reverse();
-    } catch (error) {
-        console.error('获取市场趋势数据失败:', error);
-        // 返回模拟数据
-        const baseValue = market === 'US' ? 4000 : market === 'Australia' ? 7000 : 7000;
-        return Array.from({ length: 90 }, (_, i) => ({
-            date: new Date(Date.now() - (89 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            value: baseValue + Math.random() * 500 - 250
-        }));
-    }
-};
-
-// 公司股票数据
-export const fetchCompanyStock = async (symbol) => {
-    try {
-        const response = await fetchFromAPI({
-            function: 'GLOBAL_QUOTE',
-            symbol
-        });
-
-        const quote = response['Global Quote'];
-        return {
-            symbol: symbol,
-            name: symbol, // 简化处理，直接使用symbol作为名称
-            price: parseFloat(quote?.['05. price'] || 0),
-            change: parseFloat(quote?.['09. change'] || 0),
-            volume: parseInt(quote?.['06. volume'] || 0),
-            marketCap: 'N/A', // 简化处理
-            pe: 0,
-            dividend: 0
-        };
-    } catch (error) {
-        console.error('获取公司股票数据失败:', error);
-        return {
-            symbol: symbol,
-            name: symbol,
-            price: 0,
-            change: 0,
-            volume: 0,
-            marketCap: 'N/A',
-            pe: 0,
-            dividend: 0
-        };
-    }
-};
-
-// 股票价格历史
-export const fetchStockPriceHistory = async (symbol) => {
-    try {
-        const response = await fetchFromAPI({
-            function: 'TIME_SERIES_DAILY',
-            symbol,
-            outputsize: 'compact'
-        });
-
-        return Object.entries(response['Time Series (Daily)'])
-            .map(([date, values]) => ({
-                date,
-                price: parseFloat(values['4. close'])
-            }))
-            .slice(0, 30)
-            .reverse();
-    } catch (error) {
-        console.error('获取历史价格数据失败:', error);
-        // 返回模拟数据
-        return Array.from({ length: 30 }, (_, i) => ({
-            date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            price: 140 + Math.random() * 40
-        }));
-    }
-};
-
-// 新闻情绪分析
-export const fetchNewsAndSentiment = async (symbol) => {
-    return {
-        sentiment: 'Positive',
-        shortTermPrediction: 'Upward trend expected in the next week',
-        longTermOutlook: 'Strong growth potential over the next 6 months',
-        riskAssessment: 'Moderate risk'
+        },
+        'MARKET_STATUS': {
+            'markets': [
+                {
+                    'market_type': 'Equity',
+                    'region': 'United States',
+                    'primary_exchanges': 'NYSE, NASDAQ',
+                    'current_status': 'open',
+                    'local_open': '09:30',
+                    'local_close': '16:00',
+                    'notes': 'Regular trading hours'
+                },
+                {
+                    'market_type': 'Equity',
+                    'region': 'China',
+                    'primary_exchanges': 'SSE, SZSE',
+                    'current_status': 'closed',
+                    'local_open': '09:30',
+                    'local_close': '15:00',
+                    'notes': 'Closed for the day'
+                },
+                {
+                    'market_type': 'Equity',
+                    'region': 'Japan',
+                    'primary_exchanges': 'TSE',
+                    'current_status': 'closed',
+                    'local_open': '09:00',
+                    'local_close': '15:30',
+                    'notes': 'Closed for the day'
+                },
+                {
+                    'market_type': 'Equity',
+                    'region': 'United Kingdom',
+                    'primary_exchanges': 'LSE',
+                    'current_status': 'open',
+                    'local_open': '08:00',
+                    'local_close': '16:30',
+                    'notes': 'Regular trading hours'
+                }
+            ]
+        }
     };
+
+    return mockData[functionName] || {};
 };
 
-// 用户偏好
-export const getUserPreferences = () => {
-    return ['AAPL', 'GOOGL', 'MSFT'];
+// 搜索股票
+export const searchStocks = async (keywords) => {
+    try {
+        const response = await fetchFromAPI({
+            function: 'SYMBOL_SEARCH',
+            keywords
+        });
+
+        const matches = response.bestMatches || [];
+        return matches.map(match => ({
+            symbol: match['1. symbol'],
+            name: match['2. name'],
+            type: match['3. type'],
+            region: match['4. region'],
+            marketOpen: match['5. marketOpen'],
+            marketClose: match['6. marketClose'],
+            timezone: match['7. timezone'],
+            currency: match['8. currency'],
+            matchScore: parseFloat(match['9. matchScore'])
+        }));
+    } catch (error) {
+        console.error('搜索股票失败:', error);
+        return (getMockData('SYMBOL_SEARCH').bestMatches || []).map(match => ({
+            symbol: match['1. symbol'],
+            name: match['2. name'],
+            type: match['3. type'],
+            region: match['4. region'],
+            marketOpen: match['5. marketOpen'],
+            marketClose: match['6. marketClose'],
+            timezone: match['7. timezone'],
+            currency: match['8. currency'],
+            matchScore: parseFloat(match['9. matchScore'])
+        }));
+    }
 };
 
-export const saveUserPreferences = (preferences) => {
-    return Promise.resolve();
+// 获取实时汇率
+export const getCurrencyExchangeRate = async (fromCurrency, toCurrency) => {
+    try {
+        const response = await fetchFromAPI({
+            function: 'CURRENCY_EXCHANGE_RATE',
+            from_currency: fromCurrency,
+            to_currency: toCurrency
+        });
+
+        const rateData = response?.['Realtime Currency Exchange Rate'];
+        if (!rateData) {
+            throw new Error('Invalid response structure');
+        }
+
+        return {
+            fromCurrency: rateData['1. From_Currency Code'] || fromCurrency,
+            fromCurrencyName: rateData['2. From_Currency Name'] || 'Unknown',
+            toCurrency: rateData['3. To_Currency Code'] || toCurrency,
+            toCurrencyName: rateData['4. To_Currency Name'] || 'Unknown',
+            exchangeRate: parseFloat(rateData['5. Exchange Rate']) || 0,
+            lastUpdated: rateData['6. Last Refreshed'] || new Date().toISOString(),
+            timeZone: rateData['7. Time Zone'] || 'UTC',
+            bidPrice: parseFloat(rateData['8. Bid Price']) || 0,
+            askPrice: parseFloat(rateData['9. Ask Price']) || 0
+        };
+    } catch (error) {
+        console.error('获取汇率失败:', error);
+        const mockData = getMockData('CURRENCY_EXCHANGE_RATE')['Realtime Currency Exchange Rate'] || {};
+        return {
+            fromCurrency: fromCurrency,
+            fromCurrencyName: mockData['2. From_Currency Name'] || 'Unknown',
+            toCurrency: toCurrency,
+            toCurrencyName: mockData['4. To_Currency Name'] || 'Unknown',
+            exchangeRate: parseFloat(mockData['5. Exchange Rate'] || 1),
+            lastUpdated: mockData['6. Last Refreshed'] || new Date().toISOString(),
+            timeZone: mockData['7. Time Zone'] || 'UTC',
+            bidPrice: parseFloat(mockData['8. Bid Price'] || 1),
+            askPrice: parseFloat(mockData['9. Ask Price'] || 1)
+        };
+    }
+};
+
+// 获取市场状态
+export const getMarketStatus = async () => {
+    try {
+        const response = await fetchFromAPI({
+            function: 'MARKET_STATUS'
+        });
+
+        const markets = response.markets || getMockData('MARKET_STATUS').markets;
+        return markets.map(market => ({
+            marketType: market.market_type,
+            region: market.region,
+            primaryExchanges: market.primary_exchanges,
+            currentStatus: market.current_status,
+            localOpen: market.local_open,
+            localClose: market.local_close,
+            notes: market.notes
+        }));
+    } catch (error) {
+        console.error('获取市场状态失败:', error);
+        return getMockData('MARKET_STATUS').markets.map(market => ({
+            marketType: market.market_type,
+            region: market.region,
+            primaryExchanges: market.primary_exchanges,
+            currentStatus: market.current_status,
+            localOpen: market.local_open,
+            localClose: market.local_close,
+            notes: market.notes
+        }));
+    }
 };

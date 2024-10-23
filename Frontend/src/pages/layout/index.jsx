@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { NavLink, useLocation, Outlet, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
-import { v4 as uuidv4 } from 'uuid'
 import {
     LayoutDashboard,
     DollarSign,
@@ -17,7 +16,6 @@ import {
     MessageCircle,
     Send,
     X,
-    Menu
 } from 'lucide-react'
 
 import { cn } from "@/lib/utils"
@@ -35,7 +33,7 @@ import { chatSessions } from '@/hooks/ChatSessions.jsx'
 import { ChatAPI } from '@/api/ai'
 import WebSocketService from "@/services/WebSocketService.js"
 
-const NavItem = React.forwardRef(({ icon: Icon, children, to, onClick, ...props }, ref) => {
+const NavItem = React.forwardRef(({ icon: Icon, children, to, onClick, collapsed, ...props }, ref) => {
     const location = useLocation()
     const isActive = location.pathname === to
 
@@ -47,45 +45,46 @@ const NavItem = React.forwardRef(({ icon: Icon, children, to, onClick, ...props 
             {...props}
             className={cn(
                 "flex items-center py-2 px-4 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 ease-in-out",
-                isActive ? "bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400" : "text-gray-900 dark:text-gray-100"
+                isActive ? "bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400" : "text-gray-900 dark:text-gray-100",
+                collapsed ? "justify-center" : "justify-start"
             )}
         >
-            <Icon className="w-5 h-5 mr-3" />
-            <span>{children}</span>
+            <Icon className={cn("w-5 h-5", collapsed ? "" : "mr-3")} />
+            {!collapsed && <span>{children}</span>}
         </NavLink>
     )
 })
 
 const MainListItems = ({ collapsed }) => (
     <>
-        <NavItem icon={LayoutDashboard} to="/">
-            {!collapsed && "Dashboard"}
+        <NavItem icon={LayoutDashboard} to="/" collapsed={collapsed}>
+            Dashboard
         </NavItem>
-        <NavItem icon={DollarSign} to="/transaction">
-            {!collapsed && "Transaction"}
+        <NavItem icon={DollarSign} to="/transaction" collapsed={collapsed}>
+            Transaction
         </NavItem>
-        <NavItem icon={BarChart} to="/report">
-            {!collapsed && "Reports"}
+        <NavItem icon={BarChart} to="/report" collapsed={collapsed}>
+            Reports
         </NavItem>
-        <NavItem icon={Briefcase} to="/investment">
-            {!collapsed && "Investment"}
+        <NavItem icon={Briefcase} to="/investment" collapsed={collapsed}>
+            Investment
         </NavItem>
-        <NavItem icon={TrendingUp} to="/stock-market">
-            {!collapsed && "stockMarket Market"}
+        <NavItem icon={TrendingUp} to="/stock-market" collapsed={collapsed}>
+            Stock Market
         </NavItem>
-        <NavItem icon={HelpCircle} to="/contact-us">
-            {!collapsed && "Contact Us"}
+        <NavItem icon={HelpCircle} to="/contact-us" collapsed={collapsed}>
+            Contact Us
         </NavItem>
     </>
 )
 
 const SecondaryListItems = ({ collapsed, onLogout }) => (
     <>
-        <NavItem icon={Settings} to="/account">
-            {!collapsed && "Account Settings"}
+        <NavItem icon={Settings} to="/account" collapsed={collapsed}>
+            Account Settings
         </NavItem>
-        <NavItem icon={LogOut} to="#" onClick={onLogout}>
-            {!collapsed && "Logout"}
+        <NavItem icon={LogOut} to="#" onClick={onLogout} collapsed={collapsed}>
+            Logout
         </NavItem>
     </>
 )
@@ -107,7 +106,6 @@ export default function DashboardLayout() {
     const [isLoading, setIsLoading] = useState(false)
     const [isTyping, setIsTyping] = useState(false)
     const [username, setUsername] = useState(() => localStorage.getItem('username') || 'User')
-    const [chatSessionId, setChatSessionId] = useState('')
 
     const toggleSidebar = () => {
         setCollapsed(!collapsed)
@@ -138,13 +136,10 @@ export default function DashboardLayout() {
 
     const toggleChat = useCallback(() => {
         setChatOpen(!chatOpen)
-        if (!chatOpen && !chatSessionId) {
-            const newSessionId = uuidv4()
-            addNewSession(newSessionId)
-            setActiveSession(newSessionId)
-            setChatSessionId(newSessionId)
+        if (!chatOpen && sessions.length === 0) {
+            addNewSession()
         }
-    }, [chatOpen, chatSessionId, addNewSession, setActiveSession])
+    }, [chatOpen, sessions, addNewSession])
 
     const handleSendMessage = useCallback(async () => {
         if (message.trim()) {
@@ -205,23 +200,13 @@ export default function DashboardLayout() {
                     </Button>
                 </div>
                 <Separator />
-                <ScrollArea className="flex-1 h-[calc(100vh-10rem)]">
-                    <nav className="space-y-1 px-2 py-4">
-                        <MainListItems collapsed={collapsed} />
-                    </nav>
-                    <Separator className="my-4" />
-                    <nav className="space-y-1 px-2 py-4">
-                        <SecondaryListItems collapsed={collapsed} onLogout={handleLogout} />
-                    </nav>
-                </ScrollArea>
-                <Separator />
-                <div className="p-4">
+                <div className={cn("p-4", collapsed ? "flex justify-center" : "")}>
                     <Button
                         variant="ghost"
-                        className="w-full justify-start"
+                        className={cn("w-full", collapsed ? "p-0" : "justify-start")}
                         onClick={() => navigate('/userprofile')}
                     >
-                        <Avatar className="w-8 h-8 mr-2">
+                        <Avatar className={cn("w-8 h-8", collapsed ? "" : "mr-2")}>
                             <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${username}`} alt={username} />
                             <AvatarFallback>{username.charAt(0)}</AvatarFallback>
                         </Avatar>
@@ -230,6 +215,16 @@ export default function DashboardLayout() {
                         )}
                     </Button>
                 </div>
+                <Separator />
+                <ScrollArea className="flex-1 h-[calc(100vh-16rem)]">
+                    <nav className="space-y-1 px-2 py-4">
+                        <MainListItems collapsed={collapsed} />
+                    </nav>
+                    <Separator className="my-4" />
+                    <nav className="space-y-1 px-2 py-4">
+                        <SecondaryListItems collapsed={collapsed} onLogout={handleLogout} />
+                    </nav>
+                </ScrollArea>
             </aside>
 
             <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">

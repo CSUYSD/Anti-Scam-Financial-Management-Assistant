@@ -1,18 +1,14 @@
-'use client'
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { chatSessions } from '@/hooks/ChatSessions.jsx'
-import { fileUpload } from '@/hooks/FileUpload.jsx'
+import { motion } from 'framer-motion'
+import { format, parseISO } from 'date-fns'
+import { chatSessions } from '@/hooks/ChatSessions'
+import { fileUpload } from '@/hooks/FileUpload'
 import { FluxMessageWithHistoryAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileNameAPI, GenerateReport, UploadFileAPI } from '@/api/ai'
 import { formatMessageContent } from '@/utils/messageFormatter'
-import { format, parseISO } from 'date-fns'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import MarkdownRenderer from '@/utils/markdown-renderer'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
@@ -207,9 +203,21 @@ export default function Report() {
     setIsLoading(true)
     try {
       const response = await GenerateReport()
-      const messageId = addMessageToActiveSession({ sender: 'AI', content: response.data, timestamp: new Date().toISOString() })
+      // Remove triple backticks from the beginning and end of the report
+      const cleanedReport = response.data.replace(/^```[\s\S]*?\n/, '').replace(/\n```$/, '')
+      addMessageToActiveSession({
+        sender: 'AI',
+        content: cleanedReport,
+        timestamp: new Date().toISOString(),
+        isReport: true
+      })
     } catch (error) {
       console.error('Error generating report:', error)
+      addMessageToActiveSession({
+        sender: 'AI',
+        content: 'Sorry, there was an error generating the report.',
+        timestamp: new Date().toISOString(),
+      })
     } finally {
       setIsLoading(false)
     }
@@ -357,6 +365,7 @@ export default function Report() {
                           ref={fileInputRef}
                           onChange={handleFileUpload}
                           className="hidden"
+
                       />
                       <Button
                           variant="outline"
@@ -372,7 +381,7 @@ export default function Report() {
                 <Button
                     onClick={handleSendMessage}
                     disabled={isLoading || !canSendMessage}
-                    className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 ${
+                    className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-200 transform  hover:scale-105 ${
                         canSendMessage
                             ? 'bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary'
                             : 'bg-muted text-muted-foreground cursor-not-allowed'
@@ -386,7 +395,7 @@ export default function Report() {
         </main>
 
         {editSessionId && (
-            <div  className="fixed inset-0 bg-background/80 flex items-center justify-center">
+            <div className="fixed inset-0 bg-background/80 flex items-center justify-center">
               <Card className="w-full max-w-sm">
                 <CardContent className="pt-6">
                   <h2 className="text-lg font-semibold mb-4">Rename Session</h2>
@@ -433,30 +442,13 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
                 />
                 <div className={`${message.sender === username ? 'text-right' : 'text-left'}`}>
                   <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
-                    <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          code({node, inline, className, children, ...props}) {
-                            const match = /language-(\w+)/.exec(className || '')
-                            return !inline && match ? (
-                                <SyntaxHighlighter
-                                    style={tomorrow}
-                                    language={match[1]}
-                                    PreTag="div"
-                                    {...props}
-                                >
-                                  {String(children).replace(/\n$/, '')}
-                                </SyntaxHighlighter>
-                            ) : (
-                                <code className={className} {...props}>
-                                  {children}
-                                </code>
-                            )
-                          }
-                        }}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
+                    {message.isReport ? (
+                        <div className="markdown-content">
+                          <MarkdownRenderer content={message.content} />
+                        </div>
+                    ) : (
+                        <p>{message.content}</p>
+                    )}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground flex items-center justify-end space-x-2">
                     <span>{message.timestamp ? format(parseISO(message.timestamp), 'HH:mm:ss') : 'No timestamp'}</span>
