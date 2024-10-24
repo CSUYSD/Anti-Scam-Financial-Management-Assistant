@@ -1,7 +1,6 @@
-package com.example.demo.SecurityTest;
+package com.example.demo.service.rabbitmq;
 
 import com.example.demo.model.message.AnalyseRequest;
-import com.example.demo.service.rabbitmq.RabbitMQService;
 import groovy.util.logging.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

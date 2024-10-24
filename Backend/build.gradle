@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.3.2'
 	id 'io.spring.dependency-management' version '1.1.6'
+	id 'jacoco'
 }
 
 group = 'com.example'
@@ -12,6 +13,35 @@ java {
 		languageVersion = JavaLanguageVersion.of(17)
 	}
 }
+
+jacoco {
+	toolVersion = "0.8.8"  // 确保使用 JaCoCo 的最新版本
+}
+
+test {
+	useJUnitPlatform()
+	finalizedBy jacocoTestReport  // 在测试任务之后自动生成覆盖率报告
+}
+
+jacocoTestReport {
+	dependsOn test  // 确保测试运行后再生成报告
+	reports {
+		xml.required = true
+		html.required = true  // 生成 HTML 格式的报告
+	}
+}
+
+jacocoTestCoverageVerification {
+	violationRules {
+		rule {
+			limit {
+				minimum = 0.80  // 设置覆盖率最低阈值为 80%
+			}
+		}
+	}
+}
+
+test.finalizedBy jacocoTestCoverageVerification  // 在测试后检查覆盖率是否达标
 
 //snapshot version support
 repositories {
@@ -27,6 +57,13 @@ compileJava {
 ext {
 	set('springAiVersion', "1.0.0-M2")
 }
+
+configurations {
+	all {
+		exclude group: 'com.vaadin.external.google', module: 'android-json'
+	}
+}
+
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -48,8 +85,8 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok:1.18.34'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
-	testImplementation 'com.google.truth:truth:1.1.3'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'com.google.truth:truth:1.1.5'
+	testImplementation 'org.mockito:mockito-core:4.5.1'
 	// Spring Boot DevTools
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
@@ -71,10 +108,6 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	// AWS S3
 	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.529'
-
-	//google truth
-	testImplementation 'org.mockito:mockito-core:4.0.0'
-	testImplementation 'com.google.truth:truth:1.1.5'
 }
 
 dependencyManagement {
@@ -83,6 +116,16 @@ dependencyManagement {
 	}
 }
 
+
+
 tasks.named('test') {
 	useJUnitPlatform()
+	jvmArgs '-Dfile.encoding=UTF-8'
 }
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+tasks.withType(Test) {
+	jvmArgs '-Dfile.encoding=UTF-8'
+}
+

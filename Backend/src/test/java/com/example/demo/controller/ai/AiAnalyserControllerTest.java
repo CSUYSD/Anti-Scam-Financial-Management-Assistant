@@ -1,6 +1,5 @@
-package com.example.demo.SecurityTest;
+package com.example.demo.controller.ai;
 
-import com.example.demo.controller.ai.AiAnalyserController;
 import com.example.demo.service.ai.AiAnalyserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

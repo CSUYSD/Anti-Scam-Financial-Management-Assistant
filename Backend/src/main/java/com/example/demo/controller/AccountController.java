@@ -63,7 +63,7 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
             // 账户创建成功
         } catch (AccountAlreadyExistException e){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("账户名已存在");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("User already exists");
             // 账户名已存在
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("用户未找到");

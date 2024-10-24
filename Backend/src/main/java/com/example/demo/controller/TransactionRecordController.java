@@ -30,12 +30,15 @@ public class TransactionRecordController {
     private final JwtUtil jwtUtil;
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+
     @Autowired
     private AccountService accountService;
 
-    public TransactionRecordController(TransactionRecordService recordService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
+    public TransactionRecordController(TransactionRecordService recordService, JwtUtil jwtUtil, StringRedisTemplate stringRedisTemplate, AccountService accountService, RedisTemplate<String, Object> redisTemplate) {
         this.recordService = recordService;
         this.jwtUtil = jwtUtil;
+        this.stringRedisTemplate = stringRedisTemplate;
+        this.accountService = accountService;
     }
 
     @GetMapping("/all")

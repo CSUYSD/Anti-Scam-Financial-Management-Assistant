@@ -1,0 +1,153 @@
+package com.example.demo.service.es;
+
+import com.example.demo.model.Account;
+import com.example.demo.model.TransactionRecord;
+import com.example.demo.model.TransactionRecordES;
+import com.example.demo.repository.TransactionRecordDao;
+import com.example.demo.repository.es.RecordESDao;
+import com.google.common.truth.Truth;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.List;
+
+public class RecordSyncServiceTest {
+
+    private RecordSyncService recordSyncService;
+
+    @Mock
+    private TransactionRecordDao transactionRecordDao;
+
+    @Mock
+    private RecordESDao recordESDao;
+
+    public static void main(String[] args) throws Exception {
+        RecordSyncServiceTest test = new RecordSyncServiceTest();
+        test.setup();
+        test.testSyncToElasticsearch();
+        test.testDeleteFromElasticsearch();
+        test.testDeleteFromElasticsearchInBatch();
+        test.testUpdateInElasticsearchSuccess();
+        test.testUpdateInElasticsearchNotFound();
+        System.out.println("All tests passed!");
+    }
+
+    public void setup() throws Exception {
+        MockitoAnnotations.openMocks(this);
+        recordSyncService = new RecordSyncService(transactionRecordDao, recordESDao);
+    }
+
+    public void testSyncToElasticsearch() throws Exception {
+        // Arrange
+        TransactionRecord record = createTestRecord();
+        ArgumentCaptor<TransactionRecordES> esRecordCaptor = ArgumentCaptor.forClass(TransactionRecordES.class);
+
+        // Act
+        recordSyncService.syncToElasticsearch(record);
+
+        // Assert
+        Mockito.verify(recordESDao).save(esRecordCaptor.capture());
+        TransactionRecordES capturedRecord = esRecordCaptor.getValue();
+        verifyESRecord(capturedRecord, record);
+        System.out.println("testSyncToElasticsearch passed!");
+    }
+
+    public void testDeleteFromElasticsearch() throws Exception {
+        // Arrange
+        Long recordId = 1L;
+
+        // Act
+        recordSyncService.deleteFromElasticsearch(recordId);
+
+        // Assert
+        Mockito.verify(recordESDao).deleteById(String.valueOf(recordId));
+        System.out.println("testDeleteFromElasticsearch passed!");
+    }
+
+    public void testDeleteFromElasticsearchInBatch() throws Exception {
+        // Arrange
+        List<Long> recordIds = Arrays.asList(1L, 2L, 3L);
+        List<String> expectedEsIds = Arrays.asList("1", "2", "3");
+
+        // Act
+        recordSyncService.deleteFromElasticsearchInBatch(recordIds);
+
+        // Assert
+        Mockito.verify(recordESDao).deleteAllById(expectedEsIds);
+        System.out.println("testDeleteFromElasticsearchInBatch passed!");
+    }
+
+    public void testUpdateInElasticsearchSuccess() throws Exception {
+        // Arrange
+        TransactionRecord record = createTestRecord();
+        Mockito.when(recordESDao.existsById(String.valueOf(record.getId()))).thenReturn(true);
+        ArgumentCaptor<TransactionRecordES> esRecordCaptor = ArgumentCaptor.forClass(TransactionRecordES.class);
+
+        // Act
+        recordSyncService.updateInElasticsearch(record);
+
+        // Assert
+        Mockito.verify(recordESDao).save(esRecordCaptor.capture());
+        TransactionRecordES capturedRecord = esRecordCaptor.getValue();
+        verifyESRecord(capturedRecord, record);
+        System.out.println("testUpdateInElasticsearchSuccess passed!");
+    }
+
+    public void testUpdateInElasticsearchNotFound() throws Exception {
+        // Arrange
+        TransactionRecord record = createTestRecord();
+        Mockito.when(recordESDao.existsById(String.valueOf(record.getId()))).thenReturn(false);
+
+        try {
+            // Act
+            recordSyncService.updateInElasticsearch(record);
+            throw new AssertionError("Expected RuntimeException was not thrown");
+        } catch (Exception e) {
+            // Assert
+            Truth.assertThat(e).isInstanceOf(RuntimeException.class);
+            Truth.assertThat(e).hasMessageThat().contains("Record not found in Elasticsearch");
+            System.out.println("testUpdateInElasticsearchNotFound passed!");
+        }
+    }
+
+    private TransactionRecord createTestRecord() {
+        TransactionRecord record = new TransactionRecord();
+        record.setId(1L);
+        record.setType("EXPENSE");
+        record.setCategory("Food");
+        record.setAmount(100.0);
+        record.setTransactionMethod("Cash");
+
+        // 修改为使用 ZonedDateTime
+        record.setTransactionTime(ZonedDateTime.now());
+
+        record.setTransactionDescription("Test transaction");
+        record.setUserId(1L);
+
+        Account account = new Account();
+        account.setId(1L);
+        record.setAccount(account);
+
+        return record;
+    }
+
+    private void verifyESRecord(TransactionRecordES esRecord, TransactionRecord record) {
+        Truth.assertThat(esRecord.getId()).isEqualTo(String.valueOf(record.getId()));
+        Truth.assertThat(esRecord.getType()).isEqualTo(record.getType());
+        Truth.assertThat(esRecord.getCategory()).isEqualTo(record.getCategory());
+        Truth.assertThat(esRecord.getAmount()).isEqualTo(record.getAmount());
+        Truth.assertThat(esRecord.getTransactionMethod()).isEqualTo(record.getTransactionMethod());
+        Truth.assertThat(esRecord.getTransactionDescription()).isEqualTo(record.getTransactionDescription());
+        Truth.assertThat(esRecord.getUserId()).isEqualTo(String.valueOf(record.getUserId()));
+        Truth.assertThat(esRecord.getAccountId()).isEqualTo(String.valueOf(record.getAccount().getId()));
+
+        // 只验证时间不为空
+        Truth.assertThat(esRecord.getTransactionTime()).isNotNull();
+    }
+}

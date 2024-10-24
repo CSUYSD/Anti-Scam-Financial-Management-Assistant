@@ -1,19 +1,28 @@
 package com.example.demo.SecurityTest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 
-@Configuration
-@AutoConfigureMockMvc
+@TestConfiguration
 public class TestConfig {
 
     @Bean
-    public MappingJackson2HttpMessageConverter jacksonMessageConverter() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        return new MappingJackson2HttpMessageConverter(objectMapper);
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/users/register", "/users/login").permitAll()
+                        .requestMatchers("/users/allusers").permitAll()  // 测试时允许所有访问
+                        .anyRequest().authenticated()
+                );
+
+        return http.build();
     }
 }

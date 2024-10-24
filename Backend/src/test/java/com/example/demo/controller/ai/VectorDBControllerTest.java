@@ -1,22 +1,15 @@
-package com.example.demo.SecurityTest;
+package com.example.demo.controller.ai;
 
-import com.example.demo.controller.ai.VectorDBController;
 import com.example.demo.service.aws.S3Service;
 import com.example.demo.utility.GetCurrentUserInfo;
 import com.google.common.truth.Truth;
 import org.mockito.*;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.*;
 
