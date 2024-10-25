@@ -4,7 +4,6 @@ import { format, parseISO, isValid } from 'date-fns'
 import { chatSessions } from '@/hooks/ChatSessions.jsx'
 import { fileUpload } from '@/hooks/FileUpload.jsx'
 import { FluxMessageWithHistoryAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileNameAPI, GenerateReport, UploadFileAPI } from '@/api/ai'
-import { formatMessageContent } from '@/utils/messageFormatter'
 import MarkdownRenderer from '@/utils/markdown-renderer'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,7 +16,7 @@ import { Paperclip, X, Send, Download, Copy, Edit, Trash, ChevronDown, File } fr
 import { GetAllFiles, DownloadFile, DeleteFileByFileName } from "@/api/s3-file"
 import { FilePreview } from "@/components/FilePreview"
 import { UploadedFiles } from "@/components/UploadedFiles"
-import {getFileType} from "@/utils/fileUtils.jsx";
+import { getFileType } from "@/utils/fileUtils.jsx";
 
 export default function Report() {
   const {
@@ -28,7 +27,6 @@ export default function Report() {
     deleteSession,
     updateSessionName,
     addMessageToActiveSession,
-    updateMessageInActiveSession,
   } = chatSessions()
   const { files, uploadFile, clearFiles } = fileUpload()
 
@@ -166,10 +164,7 @@ export default function Report() {
       setIsLoading(true);
       setIsTyping(true);
 
-      let messageId;
       try {
-        messageId = addMessageToActiveSession({ sender: 'AI', content: '', timestamp: new Date().toISOString() });
-
         let response;
 
         if (isRetrievalMode) {
@@ -192,35 +187,28 @@ export default function Report() {
           });
         }
 
-        let aiResponse = '';
-        const processChunk = (chunk) => {
-          const lines = chunk.split('\n');
-          lines.forEach(line => {
-            if (line.startsWith('data:')) {
-              const messagePart = line.replace('data:', '').trim();
-              if (messagePart) {
-                aiResponse = formatMessageContent(aiResponse, messagePart);
-                updateMessageInActiveSession(messageId, { content: aiResponse });
-              }
-            }
-          });
-        };
-
-        if (response.data) {
-          processChunk(response.data);
-        }
+        // Add AI response directly without formatting
+        addMessageToActiveSession({
+          sender: 'AI',
+          content: response.data,
+          timestamp: new Date().toISOString(),
+          isAIResponse: true
+        });
 
       } catch (error) {
         console.error('Error sending message:', error);
-        if (messageId) {
-          updateMessageInActiveSession(messageId, { content: 'Sorry, there was an error processing your request.' });
-        }
+        addMessageToActiveSession({
+          sender: 'AI',
+          content: 'Sorry, there was an error processing your request.',
+          timestamp: new Date().toISOString(),
+          isAIResponse: true
+        });
       } finally {
         setIsLoading(false);
         setIsTyping(false);
       }
     }
-  }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession, updateMessageInActiveSession]);
+  }, [message, activeSession, isRetrievalMode, files, username, addMessageToActiveSession]);
 
   const handleFileUpload = async (event) => {
     const selectedFile = event.target.files?.[0];
@@ -454,15 +442,16 @@ export default function Report() {
                 <h3 className="text-sm font-semibold mb-2">Uploaded Files:</h3>
                 <div className="flex flex-wrap gap-2">
                   {files.map((file, index) => (
-                      <div key={index} className="flex items-center bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm">
-                        <File className="w-4 h-4 mr-2" />
+                      <div key={index}
+                           className="flex items-center bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm">
+                        <File className="w-4 h-4 mr-2"/>
                         {file.name}
                         <button
                             onClick={() => handleDeleteFile(file.name)}
                             className="ml-2 text-muted-foreground hover:text-foreground transition-colors duration-200"
                             aria-label={`Delete ${file.name}`}
                         >
-                          <X className="w-4 w-4" />
+                          <X className="w-4 w-4"/>
                         </button>
                       </div>
                   ))}
@@ -497,7 +486,7 @@ export default function Report() {
                           disabled={isLoading}
                           aria-label="Upload file"
                       >
-                        <Paperclip className="h-4 w-4" />
+                        <Paperclip className="h-4 w-4"/>
                       </Button>
                       <input
                           type="file"
@@ -512,7 +501,7 @@ export default function Report() {
                           disabled={isLoading || files.length === 0}
                           aria-label="Clear files"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-4 w-4"/>
                       </Button>
                     </>
                 )}
@@ -525,7 +514,7 @@ export default function Report() {
                             : 'bg-muted text-muted-foreground cursor-not-allowed'
                     }`}
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-4 w-4"/>
                 </Button>
               </div>
             </div>
@@ -580,7 +569,7 @@ function ChatMessages({ messages, username, isTyping, handleRetry, handleCopy, h
                 />
                 <div className={`${message.sender === username ? 'text-right' : 'text-left'}`}>
                   <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
-                    {message.isReport ? (
+                    {message.isAIResponse || message.isReport ? (
                         <div className="markdown-content">
                           <MarkdownRenderer content={message.content} />
                         </div>
