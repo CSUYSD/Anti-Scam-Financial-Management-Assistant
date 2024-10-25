@@ -11,6 +11,8 @@ import com.example.demo.model.security.LoginVo;
 import com.example.demo.model.dto.TransactionUserDTO;
 import com.example.demo.utility.jwt.JwtUtil;
 import com.google.common.truth.Truth;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -28,57 +30,44 @@ import java.util.Optional;
 public class SecurityServiceTest {
 
     private SecurityService securityService;
+
+    @Mock
     private TransactionUserDao transactionUserDao;
+
+    @Mock
     private AuthenticationManager authenticationManager;
+
+    @Mock
     private JwtUtil jwtUtil;
+
+    @Mock
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
     private UserRoleDao userRoleDao;
+
+    @Mock
     private ValueOperations<String, Object> valueOperations;
 
-    public static void main(String[] args) {
-        try {
-            SecurityServiceTest test = new SecurityServiceTest();
-            test.setup();
-            test.testSaveUser();
-            test.testLogin();
-            test.testUpdatePassword();
-            System.out.println("All tests passed successfully!");
-        } catch (Exception e) {
-            System.err.println("Test failed with exception: " + e.getMessage());
-            e.printStackTrace();
-            System.exit(1);
-        }
-    }
-
+    @BeforeEach
     public void setup() {
-        try {
-            // 手动创建所有mock对象
-            transactionUserDao = Mockito.mock(TransactionUserDao.class);
-            authenticationManager = Mockito.mock(AuthenticationManager.class);
-            jwtUtil = Mockito.mock(JwtUtil.class);
-            redisTemplate = Mockito.mock(RedisTemplate.class);
-            passwordEncoder = Mockito.mock(PasswordEncoder.class);
-            userRoleDao = Mockito.mock(UserRoleDao.class);
-            valueOperations = Mockito.mock(ValueOperations.class);
+        MockitoAnnotations.openMocks(this);
+        Mockito.when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
-            Mockito.when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-
-            securityService = new SecurityService(
-                    passwordEncoder,
-                    transactionUserDao,
-                    authenticationManager,
-                    jwtUtil,
-                    redisTemplate,
-                    userRoleDao
-            );
-            System.out.println("Setup completed successfully");
-        } catch (Exception e) {
-            System.err.println("Setup failed: " + e.getMessage());
-            throw e;
-        }
+        securityService = new SecurityService(
+                passwordEncoder,
+                transactionUserDao,
+                authenticationManager,
+                jwtUtil,
+                redisTemplate,
+                userRoleDao
+        );
     }
 
+    @Test
     public void testSaveUser() {
         try {
             System.out.println("Starting testSaveUser...");
@@ -89,9 +78,6 @@ public class SecurityServiceTest {
 
             UserRole userRole = new UserRole();
             userRole.setRole("ROLE_USER");
-
-            // 重置 mock，清除之前的所有交互
-            Mockito.reset(transactionUserDao);
 
             Mockito.when(transactionUserDao.findByUsername("testUser")).thenReturn(Optional.empty());
             Mockito.when(userRoleDao.findByRole("ROLE_USER")).thenReturn(Optional.of(userRole));
@@ -108,12 +94,10 @@ public class SecurityServiceTest {
         }
     }
 
+    @Test
     public void testLogin() {
         try {
             System.out.println("Starting testLogin...");
-
-            // 重置所有 mock
-            Mockito.reset(transactionUserDao, authenticationManager, jwtUtil);
 
             LoginVo loginVo = new LoginVo();
             loginVo.setUsername("testUser");
@@ -146,17 +130,14 @@ public class SecurityServiceTest {
             System.out.println("testLogin passed!");
         } catch (Exception e) {
             System.err.println("testLogin failed: " + e.getMessage());
-            e.printStackTrace();
             throw e;
         }
     }
 
-    public void testUpdatePassword() {
+    @Test
+    public void testUpdatePassword() throws PasswordNotCorrectException {
         try {
             System.out.println("Starting testUpdatePassword...");
-
-            // 重置所有 mock
-            Mockito.reset(transactionUserDao, jwtUtil, passwordEncoder);
 
             String token = "Bearer test-token";
             Map<String, String> passwords = Map.of(
@@ -174,22 +155,16 @@ public class SecurityServiceTest {
             Mockito.when(passwordEncoder.matches("oldPass123", "encodedOldPass")).thenReturn(true);
             Mockito.when(passwordEncoder.encode("newPass123")).thenReturn("encodedNewPass");
 
-            try {
-                securityService.updatePassword(token, passwords);
-            } catch (UserNotFoundException e) {
-                throw new RuntimeException(e);
-            }
+            securityService.updatePassword(token, passwords);
 
             // 验证 save 方法被调用一次
             Mockito.verify(transactionUserDao, Mockito.times(1)).save(Mockito.any(TransactionUser.class));
             System.out.println("testUpdatePassword passed!");
         } catch (Exception e) {
             System.err.println("testUpdatePassword failed: " + e.getMessage());
-            try {
-                throw e;
-            } catch (PasswordNotCorrectException ex) {
-                throw new RuntimeException(ex);
-            }
+            throw e;
+        } catch (UserNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 }

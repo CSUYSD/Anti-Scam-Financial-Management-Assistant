@@ -4,14 +4,17 @@ import com.example.demo.model.TransactionUser;
 import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.utility.jwt.JwtUtil;
 import com.google.common.truth.Truth;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.Optional;
 
+@RunWith(MockitoJUnitRunner.class)
 public class GetCurrentUserInfoTest {
 
     private GetCurrentUserInfo getCurrentUserInfo;

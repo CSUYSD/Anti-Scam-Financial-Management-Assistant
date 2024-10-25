@@ -1,25 +1,21 @@
 package com.example.demo.utility;
 
 import com.google.common.truth.Truth;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
 
 public class PromptManagerTest {
 
     private PromptManager promptManager;
 
-    public static void main(String[] args) throws Exception {
-        PromptManagerTest test = new PromptManagerTest();
-        test.setup();
-        test.testGetFinancialReportContext();
-        test.testGetFinancialReportPrompt();
-        System.out.println("All tests passed!");
-    }
-
+    @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
         promptManager = new PromptManager();
     }
 
+    @Test
     public void testGetFinancialReportContext() {
         // Act
         String result = promptManager.getFinancialReportContext();
@@ -31,6 +27,7 @@ public class PromptManagerTest {
         System.out.println("testGetFinancialReportContext passed!");
     }
 
+    @Test
     public void testGetFinancialReportPrompt() {
         // Arrange
         String recentRecords = "Test Records";

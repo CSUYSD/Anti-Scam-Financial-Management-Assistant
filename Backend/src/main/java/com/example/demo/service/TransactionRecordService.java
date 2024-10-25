@@ -175,7 +175,7 @@ public class TransactionRecordService {
     }
 
 
-    private void updateRedisAccount(Account account) {
+    void updateRedisAccount(Account account) {
         String redisAccountKey = "login_user:" + account.getTransactionUser().getId() + ":account:" + account.getId();
 //        System.out.println("Redis Key: " + redisAccountKey);
         RedisAccount redisAccount = new RedisAccount(

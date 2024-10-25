@@ -8,17 +8,15 @@ import com.example.demo.model.TransactionUser;
 import com.example.demo.repository.FinancialReportRepository;
 import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.utility.GetCurrentUserInfo;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-@RunWith(MockitoJUnitRunner.class)
 public class FinancialReportServiceTest {
 
     private FinancialReportService financialReportService;
@@ -32,8 +30,9 @@ public class FinancialReportServiceTest {
     @Mock
     private FinancialReportRepository financialReportRepository;
 
-    @Before
+    @BeforeEach
     public void setUp() {
+        MockitoAnnotations.openMocks(this);
         financialReportService = new FinancialReportService(
                 getCurrentUserInfo,
                 transactionUserDao,

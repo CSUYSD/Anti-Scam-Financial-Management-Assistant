@@ -20,25 +20,76 @@ jacoco {
 
 test {
 	useJUnitPlatform()
-	finalizedBy jacocoTestReport  // 在测试任务之后自动生成覆盖率报告
-}
-
-jacocoTestReport {
-	dependsOn test  // 确保测试运行后再生成报告
-	reports {
-		xml.required = true
-		html.required = true  // 生成 HTML 格式的报告
+	jvmArgs '-Dfile.encoding=UTF-8'
+	finalizedBy jacocoTestReport
+	testLogging {
+		events "passed", "skipped", "failed"
+		exceptionFormat "full"
 	}
 }
 
+// JaCoCo 报告配置
+jacocoTestReport {
+	dependsOn test
+	reports {
+		html.required = true
+		xml.required = true
+		csv.required = false
+	}
+
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+					// 排除所有模型类
+					"com/example/demo/model/**",
+					"com/example/demo/model/dto/**",
+					"com/example/demo/model/redis/**",
+					// 排除配置类
+					"com/example/demo/config/**",
+					// 排除常量类
+					"com/example/demo/constant/**",
+					// 排除异常类
+					"com/example/demo/exception/**",
+					// 排除启动类
+					"**/DemoApplication*",
+					// 排除工具类（可选）
+					// "com/example/demo/utility/**"
+			])
+		}))
+	}
+}
+
+// 覆盖率验证规则
 jacocoTestCoverageVerification {
+	dependsOn jacocoTestReport
+
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+					"com/example/demo/model/**",
+					"com/example/demo/model/dto/**",
+					"com/example/demo/model/redis/**",
+					"com/example/demo/config/**",
+					"com/example/demo/constant/**",
+					"com/example/demo/exception/**",
+					"**/DemoApplication*"
+			])
+		}))
+	}
+
 	violationRules {
 		rule {
 			limit {
-				minimum = 0.80  // 设置覆盖率最低阈值为 80%
+				minimum = 0.80
 			}
 		}
 	}
+}
+
+// 编码设置
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+	options.compilerArgs += ['-parameters']
 }
 
 test.finalizedBy jacocoTestCoverageVerification  // 在测试后检查覆盖率是否达标

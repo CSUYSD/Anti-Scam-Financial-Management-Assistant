@@ -1,169 +1,210 @@
 package com.example.demo.controller.ai;
 
+import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
+import static org.mockito.Mockito.*;
+
 import com.example.demo.service.aws.S3Service;
 import com.example.demo.utility.GetCurrentUserInfo;
-import com.google.common.truth.Truth;
-import org.mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.*;
 
 public class VectorDBControllerTest {
 
     private VectorDBController vectorDBController;
-    private ChromaVectorStore chromaVectorStoreMock;
 
     @Mock
-    private S3Service s3ServiceMock;  // 模拟 S3Service
+    private ChromaVectorStore chromaVectorStore;
+
     @Mock
-    private GetCurrentUserInfo getCurrentUserInfoMock;  // 模拟 GetCurrentUserInfo
+    private S3Service s3Service;
 
+    @Mock
+    private GetCurrentUserInfo getCurrentUserInfo;
 
+    @Mock
+    private TokenTextSplitter tokenTextSplitter;
 
-    public static void main(String[] args) throws Exception {
-        VectorDBControllerTest test = new VectorDBControllerTest();
-        test.setup();
-        test.testReadForLocal();
-//        test.testSaveVectorDB();
-        test.testDeleteFileFromVectorDB();
-        test.testClearVectorDB();
-    }
-
+    @BeforeEach
     public void setup() throws Exception {
-        MockitoAnnotations.openMocks(this);  // 初始化 @Mock 注解的对象
-        chromaVectorStoreMock = Mockito.mock(ChromaVectorStore.class);
+        MockitoAnnotations.openMocks(this);
+        vectorDBController = new VectorDBController(chromaVectorStore, s3Service, getCurrentUserInfo);
 
-        // 实例化 VectorDBController 时传递所需的参数
-        vectorDBController = new VectorDBController(chromaVectorStoreMock, s3ServiceMock, getCurrentUserInfoMock);
-
-        // 使用反射来设置 fileDocumentIdsMap
+        // 初始化 fileDocumentIdsMap
         Field fileDocumentIdsMapField = VectorDBController.class.getDeclaredField("fileDocumentIdsMap");
         fileDocumentIdsMapField.setAccessible(true);
-
-        // 设置一个初始值
         Map<String, List<String>> mockFileDocumentIdsMap = new HashMap<>();
         fileDocumentIdsMapField.set(vectorDBController, mockFileDocumentIdsMap);
     }
 
+    @Test
     public void testReadForLocal() throws Exception {
+        // Arrange
         String filePath = "D:\\lessons\\2024 s2\\ELEC5619\\5619new\\Backend\\src\\main\\resources\\testFiles\\testvectorDB.txt";
-        FileSystemResource mockResource = Mockito.mock(FileSystemResource.class);
-        TikaDocumentReader readerMock = Mockito.mock(TikaDocumentReader.class);
-        List<Document> mockDocuments = new ArrayList<>();
+        FileSystemResource mockResource = mock(FileSystemResource.class);
+        TikaDocumentReader readerMock = mock(TikaDocumentReader.class);
 
-        // 使用Map构造metadata
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("id", "1");
-
-        // 根据 bank_statement.txt 文件的内容创建 Document
         Document doc = new Document("testvectorDB", metadata);
+        List<Document> mockDocuments = Collections.singletonList(doc);
 
-        mockDocuments.add(doc);
-        Mockito.when(readerMock.read()).thenReturn(mockDocuments);
+        when(readerMock.read()).thenReturn(mockDocuments);
 
-        // 调用被测方法
+        // Act
         String result = vectorDBController.readForLocal(filePath).trim();
 
-        // 验证结果是否符合预期
-        Truth.assertThat(result).isEqualTo("testvectorDB");
-        System.out.println("testReadForLocal passed!");
+        // Assert
+        assertThat(result).isEqualTo("testvectorDB");
     }
 
-//    public void testSaveVectorDB() throws Exception {
-//        // 模拟文件上传
-//        MockMultipartFile mockMultipartFile = new MockMultipartFile("file", "test.txt", "text/plain", "这是测试内容".getBytes());
-//
-//        // 模拟 TikaDocumentReader
-//        TikaDocumentReader readerMock = Mockito.mock(TikaDocumentReader.class);
-//        List<Document> mockDocuments = new ArrayList<>();
-//
-//        // 使用Map构造metadata
-//        Map<String, Object> metadata = new HashMap<>();
-//        metadata.put("id", "1");
-//        Document doc = new Document("testvectorDB", metadata);
-//        mockDocuments.add(doc);
-//
-//        // 模拟 readerMock.read()，使用 ArgumentMatchers 来匹配 InputStream
-//        Mockito.when(readerMock.read()).thenReturn(mockDocuments);
-//
-//        // 调用被测方法
-//        vectorDBController.saveVectorDB(mockMultipartFile);
-//
-//        // 验证文档是否被正确添加到 ChromaVectorStore 中
-//        ArgumentCaptor<List<Document>> documentCaptor = ArgumentCaptor.forClass(List.class);
-//        Mockito.verify(chromaVectorStoreMock).doAdd(documentCaptor.capture());
-//
-//        // 获取捕获的文档对象
-//        List<Document> capturedDocuments = documentCaptor.getValue();
-//        Document capturedDocument = capturedDocuments.get(0);
-//
-//        // 验证 metadata 和 content
-//        Truth.assertThat(capturedDocument.getMetadata()).containsExactly("id", "1");
-//        Truth.assertThat(capturedDocument.getContent()).isEqualTo("testvectorDB");
-//
-//        // 验证 fileDocumentIdsMap 中是否正确保存了文档ID
-//        Map<String, List<String>> fileDocumentIdsMap = getFileDocumentIdsMapFromController();
-//        Truth.assertThat(fileDocumentIdsMap.get("test.txt")).containsExactly(doc.getId());
-//
-//        System.out.println("testSaveVectorDB passed!");
-//    }
-//
-//    // Helper method to get fileDocumentIdsMap using reflection (if it's private)
-//    private Map<String, List<String>> getFileDocumentIdsMapFromController() throws Exception {
-//        Field fileDocumentIdsMapField = VectorDBController.class.getDeclaredField("fileDocumentIdsMap");
-//        fileDocumentIdsMapField.setAccessible(true);
-//        return (Map<String, List<String>>) fileDocumentIdsMapField.get(vectorDBController);
-//    }
-
+    @Test
     public void testDeleteFileFromVectorDB() throws Exception {
+        // Arrange
         String fileName = "test.txt";
-        List<String> documentIds = new ArrayList<>();
-        documentIds.add("1");
+        List<String> documentIds = Collections.singletonList("1");
 
-        // 使用反射将模拟数据插入 fileDocumentIdsMap
         Field fileDocumentIdsMapField = VectorDBController.class.getDeclaredField("fileDocumentIdsMap");
         fileDocumentIdsMapField.setAccessible(true);
         Map<String, List<String>> mockFileDocumentIdsMap = (Map<String, List<String>>) fileDocumentIdsMapField.get(vectorDBController);
         mockFileDocumentIdsMap.put(fileName, documentIds);
 
+        // Act
         ResponseEntity<String> response = vectorDBController.deleteFileFromVectorDB(fileName);
 
-        // Assert response is ok
-        Truth.assertThat(response.getStatusCodeValue()).isEqualTo(200);
-        Truth.assertThat(response.getBody()).contains("deleted successfully");
-
-        // Verify that the documents are deleted from chromaVectorStore
-        Mockito.verify(chromaVectorStoreMock, Mockito.times(1)).doDelete(documentIds);
-
-        System.out.println("testDeleteFileFromVectorDB passed!");
+        // Assert
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+        assertThat(response.getBody()).contains("deleted successfully");
+        verify(chromaVectorStore, times(1)).doDelete(documentIds);
     }
 
+    @Test
     public void testClearVectorDB() throws Exception {
-        List<String> documentIds = new ArrayList<>();
-        documentIds.add("1");
-        documentIds.add("2");
-
-        // 使用反射将模拟数据插入 fileDocumentIdsMap
+        // Arrange
+        List<String> documentIds = Arrays.asList("1", "2");
         Field fileDocumentIdsMapField = VectorDBController.class.getDeclaredField("fileDocumentIdsMap");
         fileDocumentIdsMapField.setAccessible(true);
         Map<String, List<String>> mockFileDocumentIdsMap = (Map<String, List<String>>) fileDocumentIdsMapField.get(vectorDBController);
         mockFileDocumentIdsMap.put("test1.txt", documentIds);
-//        mockFileDocumentIdsMap.put("test2.txt", documentIds);
 
-        // 调用被测方法
+        // Act
         ResponseEntity<String> response = vectorDBController.clearVectorDB();
 
-        // 验证响应是否正确
-        Truth.assertThat(response.getStatusCodeValue()).isEqualTo(200);
-        Truth.assertThat(response.getBody()).contains("cleared successfully");
+        // Assert
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+        assertThat(response.getBody()).contains("cleared successfully");
+        verify(chromaVectorStore).doDelete(Arrays.asList("1", "2"));
+    }
 
-        Mockito.verify(chromaVectorStoreMock).doDelete(Arrays.asList("1", "2"));
 
-        System.out.println("testClearVectorDB passed!");
+    @Test
+    public void testUploadToVectorDB() throws Exception {
+        // Arrange
+        String fileName = "test.txt";
+        String content = "Test content";
+        String token = "Bearer test-token";
+        Long userId = 1L;
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                fileName,
+                "text/plain",
+                content.getBytes()
+        );
+
+        // 创建测试文档
+        Document testDoc = new Document(content, Collections.singletonMap("id", "1"));
+        List<Document> documents = Collections.singletonList(testDoc);
+
+        // Mock TokenTextSplitter
+        when(tokenTextSplitter.apply(any())).thenReturn(documents);
+
+        // Mock getCurrentUserId
+        when(getCurrentUserInfo.getCurrentUserId(token)).thenReturn(userId);
+
+        // Mock S3 upload
+        doNothing().when(s3Service).uploadFile(
+                eq(userId),
+                any(InputStream.class),
+                anyLong(),
+                eq("text/plain"),
+                eq(fileName)
+        );
+
+        // Act
+        vectorDBController.UploadToVectorDB(file, token);
+
+        // Assert
+        verify(chromaVectorStore).doAdd(any());
+        verify(s3Service).uploadFile(
+                eq(userId),
+                any(InputStream.class),
+                anyLong(),
+                eq("text/plain"),
+                eq(fileName)
+        );
+
+        // 验证文档ID是否被正确保存
+        Field fileDocumentIdsMapField = VectorDBController.class.getDeclaredField("fileDocumentIdsMap");
+        fileDocumentIdsMapField.setAccessible(true);
+        Map<String, List<String>> fileDocumentIdsMap = (Map<String, List<String>>) fileDocumentIdsMapField.get(vectorDBController);
+
+        assertThat(fileDocumentIdsMap).containsKey(fileName);
+        List<String> savedDocumentIds = fileDocumentIdsMap.get(fileName);
+        assertThat(savedDocumentIds).isNotEmpty();
+    }
+
+    @Test
+    public void testUploadToVectorDB_EmptyFile() {
+        // Arrange
+        MockMultipartFile emptyFile = new MockMultipartFile(
+                "file",
+                "empty.txt",
+                "text/plain",
+                new byte[0]
+        );
+
+        // Act & Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            vectorDBController.UploadToVectorDB(emptyFile, "Bearer test-token");
+        });
+
+        assertThat(exception.getMessage()).isEqualTo("Uploaded file is empty");
+    }
+
+    @Test
+    public void testUploadToVectorDB_S3UploadFailure() {
+        // Arrange
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.txt",
+                "text/plain",
+                "Test content".getBytes()
+        );
+
+        when(getCurrentUserInfo.getCurrentUserId(anyString())).thenReturn(1L);
+        doThrow(new RuntimeException("S3 upload failed"))
+                .when(s3Service)
+                .uploadFile(anyLong(), any(), anyLong(), anyString(), anyString());
+
+        // Act & Assert
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            vectorDBController.UploadToVectorDB(file, "Bearer test-token");
+        });
+
+        assertThat(exception.getMessage()).contains("Failed to upload file to S3");
     }
 }

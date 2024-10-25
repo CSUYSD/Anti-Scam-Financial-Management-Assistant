@@ -4,15 +4,18 @@ import com.example.demo.model.message.AnalyseRequest;
 import groovy.util.logging.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.*;
 
 @Slf4j
+@RunWith(MockitoJUnitRunner.class)
 class RabbitMQServiceTest {
 
     @Mock

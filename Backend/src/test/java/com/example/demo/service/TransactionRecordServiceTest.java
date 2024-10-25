@@ -14,21 +14,20 @@ import com.example.demo.service.es.RecordSyncService;
 import com.example.demo.service.rabbitmq.RabbitMQService;
 import com.example.demo.utility.GetCurrentUserInfo;
 import com.example.demo.utility.jwt.JwtUtil;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.MockitoAnnotations;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-@RunWith(MockitoJUnitRunner.class)
 public class TransactionRecordServiceTest {
 
     private TransactionRecordService transactionRecordService;
@@ -45,8 +44,9 @@ public class TransactionRecordServiceTest {
     @Mock private StringRedisTemplate stringRedisTemplate;
     @Mock private ValueOperations<String, Object> valueOperations;
 
-    @Before
+    @BeforeEach
     public void setUp() {
+        MockitoAnnotations.openMocks(this);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         transactionRecordService = new TransactionRecordService(
                 transactionRecordDao, jwtUtil, redisTemplate, accountDao,
@@ -81,7 +81,13 @@ public class TransactionRecordServiceTest {
         Long userId = 1L;
         Long accountId = 1L;
         TransactionRecordDTO dto = createTestRecordDTO("expense", 100.0);
+        dto.setTransactionTime(ZonedDateTime.now()); // 添加时间
+
+        TransactionUser user = new TransactionUser();
+        user.setId(userId);
+
         Account account = createTestAccount(accountId, 0.0, 0.0);
+        account.setTransactionUser(user); // 设置用户
 
         when(jwtUtil.getUserIdFromToken("test-token")).thenReturn(userId);
         when(getCurrentUserInfo.getCurrentAccountId(userId)).thenReturn(accountId);
@@ -102,7 +108,12 @@ public class TransactionRecordServiceTest {
         Long recordId = 1L;
         TransactionRecordDTO newDto = createTestRecordDTO("income", 150.0);
         TransactionRecord existingRecord = createTestRecord(recordId, "expense", 100.0);
+
+        TransactionUser user = new TransactionUser();
+        user.setId(1L);
+
         Account account = createTestAccount(1L, 200.0, 100.0);
+        account.setTransactionUser(user); // 设置用户
         existingRecord.setAccount(account);
 
         when(transactionRecordDao.findById(recordId)).thenReturn(Optional.of(existingRecord));
@@ -122,7 +133,12 @@ public class TransactionRecordServiceTest {
     public void deleteTransactionRecord_ShouldUpdateAccountBalance() {
         // Arrange
         Long recordId = 1L;
+        TransactionUser user = new TransactionUser();
+        user.setId(1L);
+
         Account account = createTestAccount(1L, 200.0, 100.0);
+        account.setTransactionUser(user); // 设置用户
+
         TransactionRecord record = createTestRecord(recordId, "expense", 50.0);
         record.setAccount(account);
 
@@ -137,6 +153,7 @@ public class TransactionRecordServiceTest {
         verify(transactionRecordDao).delete(record);
         verify(recordSyncService).deleteFromElasticsearch(recordId);
     }
+
 
     @Test
     public void findRecordByAccountIdAndType_ShouldReturnFilteredRecords() {

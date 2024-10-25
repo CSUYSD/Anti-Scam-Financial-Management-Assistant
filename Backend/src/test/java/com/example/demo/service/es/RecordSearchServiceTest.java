@@ -4,7 +4,8 @@ import com.example.demo.model.TransactionRecordES;
 import com.example.demo.repository.es.RecordESDao;
 import com.example.demo.utility.GetCurrentUserInfo;
 import com.google.common.truth.Truth;
-import jakarta.persistence.criteria.CriteriaQuery;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -12,8 +13,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.elasticsearch.core.query.Query;
+import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,20 +33,13 @@ public class RecordSearchServiceTest {
     @Mock
     private GetCurrentUserInfo getCurrentUserInfo;
 
-    public static void main(String[] args) throws Exception {
-        RecordSearchServiceTest test = new RecordSearchServiceTest();
-        test.setup();
-        test.testSearchRecordsWithKeyword();
-        test.testSearchRecordsWithoutKeyword();
-        test.testAdvancedSearch();
-        System.out.println("All tests passed!");
-    }
-
-    public void setup() throws Exception {
+    @BeforeEach
+    public void setup() {
         MockitoAnnotations.openMocks(this);
         recordSearchService = new RecordSearchService(recordESDao, elasticsearchOperations, getCurrentUserInfo);
     }
 
+    @Test
     public void testSearchRecordsWithKeyword() throws Exception {
         // Arrange
         String token = "test-token";
@@ -73,6 +68,7 @@ public class RecordSearchServiceTest {
         System.out.println("testSearchRecordsWithKeyword passed!");
     }
 
+    @Test
     public void testSearchRecordsWithoutKeyword() throws Exception {
         // Arrange
         String token = "test-token";
@@ -100,6 +96,7 @@ public class RecordSearchServiceTest {
     }
 
     @SuppressWarnings("unchecked")
+    @Test
     public void testAdvancedSearch() throws Exception {
         // Arrange
         String token = "test-token";
@@ -118,14 +115,18 @@ public class RecordSearchServiceTest {
 
         // 设置 SearchHits 的行为
         Mockito.when(mockSearchHits.stream())
-                .thenAnswer(invocation -> expectedRecords.stream());
+                .thenAnswer(invocation -> expectedRecords.stream().map(record -> {
+                    SearchHit<TransactionRecordES> hit = Mockito.mock(SearchHit.class);
+                    Mockito.when(hit.getContent()).thenReturn(record);
+                    return hit;
+                }));
 
         Mockito.when(getCurrentUserInfo.getCurrentUserId(token)).thenReturn(userId);
         Mockito.when(getCurrentUserInfo.getCurrentAccountId(userId)).thenReturn(accountId);
 
         // 修改 mock 设置，返回模拟的 SearchHits
         Mockito.when(elasticsearchOperations.search(
-                (Query) Mockito.any(CriteriaQuery.class),
+                (CriteriaQuery) Mockito.any(),
                 Mockito.eq(TransactionRecordES.class)
         )).thenReturn(mockSearchHits);
 

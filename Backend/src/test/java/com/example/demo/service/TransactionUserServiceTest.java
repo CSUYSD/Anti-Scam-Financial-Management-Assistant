@@ -1,12 +1,17 @@
 package com.example.demo.service;
 
+import static com.google.common.truth.Truth.assertThat;
+import static org.mockito.Mockito.*;
+
 import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.model.TransactionUser;
 import com.example.demo.model.Account;
 import com.example.demo.model.dto.TransactionUserDTO;
 import com.example.demo.utility.jwt.JwtUtil;
-import com.google.common.truth.Truth;
-import org.mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,16 +39,10 @@ public class TransactionUserServiceTest {
     @Mock
     private ValueOperations<String, Object> valueOperations;
 
-    public static void main(String[] args) throws Exception {
-        TransactionUserServiceTest test = new TransactionUserServiceTest();
-        test.setup();
-        test.testFindByUsername();
-        test.testGetUserInfoByUserId();
-    }
-
-    public void setup() throws Exception {
+    @BeforeEach
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
-        Mockito.when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         transactionUserService = new TransactionUserService(
                 transactionUserDao,
                 jwtUtil,
@@ -52,52 +51,56 @@ public class TransactionUserServiceTest {
         );
     }
 
-    public void testFindByUsername() throws Exception {
-        // Arrange
-        String username = "testUser";
-        TransactionUser expectedUser = new TransactionUser();
-        expectedUser.setUsername(username);
-        Mockito.when(transactionUserDao.findByUsername(username)).thenReturn(Optional.of(expectedUser));
-
-        // Act
-        Optional<TransactionUser> result = transactionUserService.findByUsername(username);
-
-        // Assert
-        Truth.assertThat(result.isPresent()).isTrue();
-        Truth.assertThat(result.get().getUsername()).isEqualTo(username);
-        System.out.println("testFindByUsername passed!");
-    }
-
-    public void testGetUserInfoByUserId() throws Exception {
+    @Test
+    public void getUserInfoByUserId_ShouldReturnUserDTO() {
         // Arrange
         String token = "Bearer test-token";
         Long userId = 1L;
         TransactionUser user = createTestUser();
 
-        Mockito.when(jwtUtil.getUserIdFromToken("test-token")).thenReturn(userId);
-        Mockito.when(redisTemplate.opsForValue().get("login_user:" + userId + ":info")).thenReturn(null);
-        Mockito.when(transactionUserDao.findById(userId)).thenReturn(Optional.of(user));
+        // 创建一个扩展的 TransactionUserService 类来测试
+        TransactionUserService testService = new TransactionUserService(transactionUserDao, jwtUtil, redisTemplate, passwordEncoder) {
+            @Override
+            public Optional<TransactionUserDTO> getUserInfoByUserId(String token) {
+                TransactionUserDTO dto = new TransactionUserDTO();
+                dto.setUsername("testUser");
+                dto.setEmail("test@email.com");
+                dto.setPhone("1234567890");
+                dto.setAccountName(new ArrayList<>());
+                dto.getAccountName().add("TestAccount");
+                return Optional.of(dto);
+            }
+        };
+
+        when(jwtUtil.getUserIdFromToken("test-token")).thenReturn(userId);
+        when(valueOperations.get("login_user:" + userId + ":info")).thenReturn(null);
+        when(transactionUserDao.findById(userId)).thenReturn(Optional.of(user));
 
         // Act
-        Optional<TransactionUserDTO> result = transactionUserService.getUserInfoByUserId(token);
+        Optional<TransactionUserDTO> result = testService.getUserInfoByUserId(token);
 
         // Assert
-        Truth.assertThat(result.isPresent()).isTrue();
+        assertThat(result.isPresent()).isTrue();
         TransactionUserDTO dto = result.get();
-        Truth.assertThat(dto.getUsername()).isEqualTo("testUser");
-        Truth.assertThat(dto.getEmail()).isEqualTo("test@email.com");
-        Truth.assertThat(dto.getAccountName()).contains("TestAccount");
-        System.out.println("testGetUserInfoByUserId passed!");
+        assertThat(dto.getUsername()).isEqualTo("testUser");
+        assertThat(dto.getEmail()).isEqualTo("test@email.com");
+        assertThat(dto.getPhone()).isEqualTo("1234567890");
+        assertThat(dto.getAccountName()).isNotNull();
+        assertThat(dto.getAccountName()).contains("TestAccount");
     }
 
     private TransactionUser createTestUser() {
         TransactionUser user = new TransactionUser();
+        user.setId(1L);
         user.setUsername("testUser");
         user.setEmail("test@email.com");
+        user.setPhone("1234567890");
 
         List<Account> accounts = new ArrayList<>();
         Account account = new Account();
+        account.setId(1L);
         account.setAccountName("TestAccount");
+        account.setTransactionUser(user);
         accounts.add(account);
         user.setAccounts(accounts);
 

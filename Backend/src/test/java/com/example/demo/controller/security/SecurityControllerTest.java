@@ -1,6 +1,5 @@
 package com.example.demo.controller.security;
 
-import com.example.demo.controller.security.SecurityController;
 import com.example.demo.exception.PasswordNotCorrectException;
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.exception.UserNotFoundException;

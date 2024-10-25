@@ -2,6 +2,8 @@ package com.example.demo.utility;
 
 import com.example.demo.model.TransactionRecord;
 import com.google.common.truth.Truth;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
 
 import java.io.File;
@@ -14,21 +16,13 @@ public class CsvFilterTest {
     private CsvFilter csvFilter;
     private static final String TEST_CSV_PATH = "test.csv";
 
-    public static void main(String[] args) throws Exception {
-        CsvFilterTest test = new CsvFilterTest();
-        test.setup();
-        test.testImportCsvSuccess();
-        test.testImportCsvWithMissingColumns();
-        test.testImportCsvWithEmptyFile();
-        test.testImportCsvWithInvalidPath();
-        System.out.println("All tests passed!");
-    }
-
+    @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
         csvFilter = new CsvFilter();
     }
 
+    @Test
     public void testImportCsvSuccess() throws Exception {
         // Arrange
         createTestCsvFile(
@@ -50,6 +44,7 @@ public class CsvFilterTest {
         cleanupTestFile();
     }
 
+    @Test
     public void testImportCsvWithMissingColumns() throws Exception {
         // Arrange
         createTestCsvFile(
@@ -69,6 +64,7 @@ public class CsvFilterTest {
         cleanupTestFile();
     }
 
+    @Test
     public void testImportCsvWithEmptyFile() throws Exception {
         // Arrange
         createTestCsvFile("");
@@ -85,7 +81,8 @@ public class CsvFilterTest {
         cleanupTestFile();
     }
 
-    public void testImportCsvWithInvalidPath() throws Exception {
+    @Test
+    public void testImportCsvWithInvalidPath() {
         // Act
         List<TransactionRecord> records = csvFilter.importCsv("invalid/path/file.csv");
 

@@ -6,6 +6,8 @@ import com.example.demo.model.security.UserRole;
 import com.example.demo.repository.TransactionUserDao;
 import com.example.demo.utility.jwt.JwtUtil;
 import com.google.common.truth.Truth;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -25,22 +27,14 @@ public class UserDetailServiceTest {
     @Mock
     private JwtUtil jwtUtil;
 
-    public static void main(String[] args) throws Exception {
-        UserDetailServiceTest test = new UserDetailServiceTest();
-        test.setup();
-        test.testLoadUserByUsername();
-        test.testLoadUserByUsernameNotFound();
-        test.testLoadUserById();
-        test.testLoadUserByIdNotFound();
-        System.out.println("All tests passed!");
-    }
-
-    public void setup() throws Exception {
+    @BeforeEach
+    public void setup() {
         MockitoAnnotations.openMocks(this);
         userDetailService = new UserDetailService(transactionUserDao, jwtUtil);
     }
 
-    public void testLoadUserByUsername() throws Exception {
+    @Test
+    public void testLoadUserByUsername() {
         // Arrange
         String username = "testUser";
         TransactionUser user = createTestUser(username);
@@ -59,10 +53,10 @@ public class UserDetailServiceTest {
                         .map(GrantedAuthority::getAuthority)
                         .toList())
                 .contains("ROLE_USER");
-        System.out.println("testLoadUserByUsername passed!");
     }
 
-    public void testLoadUserByUsernameNotFound() throws Exception {
+    @Test
+    public void testLoadUserByUsernameNotFound() {
         // Arrange
         String username = "nonexistentUser";
         Mockito.when(transactionUserDao.findByUsername(username))
@@ -76,11 +70,11 @@ public class UserDetailServiceTest {
             // Assert
             Truth.assertThat(e).isInstanceOf(UsernameNotFoundException.class);
             Truth.assertThat(e).hasMessageThat().contains("User not found");
-            System.out.println("testLoadUserByUsernameNotFound passed!");
         }
     }
 
-    public void testLoadUserById() throws Exception {
+    @Test
+    public void testLoadUserById() {
         // Arrange
         Long userId = 1L;
         TransactionUser user = createTestUser("testUser");
@@ -99,10 +93,10 @@ public class UserDetailServiceTest {
                         .map(GrantedAuthority::getAuthority)
                         .toList())
                 .contains("ROLE_USER");
-        System.out.println("testLoadUserById passed!");
     }
 
-    public void testLoadUserByIdNotFound() throws Exception {
+    @Test
+    public void testLoadUserByIdNotFound() {
         // Arrange
         Long userId = 999L;
         Mockito.when(transactionUserDao.findById(userId))
@@ -116,7 +110,6 @@ public class UserDetailServiceTest {
             // Assert
             Truth.assertThat(e).isInstanceOf(UsernameNotFoundException.class);
             Truth.assertThat(e).hasMessageThat().contains("User not found");
-            System.out.println("testLoadUserByIdNotFound passed!");
         }
     }
 
