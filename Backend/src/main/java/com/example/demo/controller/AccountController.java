@@ -20,7 +20,7 @@ import com.example.demo.utility.jwt.JwtUtil;
 
 import jakarta.validation.Valid;
 
-@RestController 
+@RestController
 @RequestMapping("/account")
 @Validated
 @Slf4j
@@ -72,7 +72,7 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("服务器错误");
         }
     }
-    
+
     @GetMapping("/current")
     public ResponseEntity<Account> getAccountByAccountId(@RequestHeader("Authorization") String token) {
         try {
