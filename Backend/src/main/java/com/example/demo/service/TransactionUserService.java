@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import com.example.demo.model.redis.RedisAccount;
+import com.example.demo.utility.GetCurrentUserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,14 +37,16 @@ public class TransactionUserService {
     private final TransactionUserDao transactionUserDao;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final GetCurrentUserInfo  getCurrentUserInfo;
 
     private final PasswordEncoder passwordEncoder;
     @Autowired
-    public TransactionUserService(TransactionUserDao transactionUserDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder) {
+    public TransactionUserService(TransactionUserDao transactionUserDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, PasswordEncoder passwordEncoder, GetCurrentUserInfo  getCurrentUserInfo) {
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
+        this.getCurrentUserInfo = getCurrentUserInfo;
 
     }
 
@@ -58,16 +62,43 @@ public class TransactionUserService {
         return transactionUserDao.findByUsername(username);
     }
 
-    public void updateUser(Long id, TransactionUser updatedUser) throws UserNotFoundException {
-        TransactionUser existingUser = findExistingUser(id);
+    public void updateUser(String token, TransactionUserDTO updatedUser) throws UserNotFoundException {
+        Long userId = getCurrentUserInfo.getCurrentUserId(token);
+        Optional<TransactionUser> existingUserOptional = transactionUserDao.findById(userId);
 
+        if (existingUserOptional.isEmpty()) {
+            throw new UserNotFoundException("User not found");
+        }
+
+        TransactionUser existingUser = existingUserOptional.get();
+        existingUser.setUsername(updatedUser.getUsername());
         existingUser.setEmail(updatedUser.getEmail());
         existingUser.setPhone(updatedUser.getPhone());
 
-        // **如果密码不为空，进行加密处理
-        updatePasswordIfNotEmpty(updatedUser, existingUser);
-
         transactionUserDao.save(existingUser);
+
+        String redisUserKey = "login_user:" + userId + ":info";
+        RedisUser redisUser = (RedisUser) redisTemplate.opsForValue().get(redisUserKey);
+
+        if (redisUser != null) {
+            // update user info in redis
+            RedisUser updatedRedisUser = new RedisUser(
+                    redisUser.getUserId(),
+                    updatedUser.getUsername(),
+                    updatedUser.getEmail(),
+                    updatedUser.getPhone(),
+                    redisUser.getAvatar(),
+                    redisUser.getToken()
+            );
+
+            // save update user info into redis with same login session
+            Long ttl = redisTemplate.getExpire(redisUserKey);
+            if (ttl > 0) {
+                redisTemplate.opsForValue().set(redisUserKey, updatedRedisUser, ttl, TimeUnit.SECONDS);
+            } else {
+                redisTemplate.opsForValue().set(redisUserKey, updatedRedisUser, 1, TimeUnit.HOURS);
+            }
+        }
     }
 
     // **提取的查找现有用户的方法

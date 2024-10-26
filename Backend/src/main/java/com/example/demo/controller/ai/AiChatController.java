@@ -1,5 +1,8 @@
 package com.example.demo.controller.ai;
 
+import com.example.demo.agent.Agent;
+import com.example.demo.model.ai.AiMessageWrapper;
+import com.example.demo.utility.GetCurrentUserInfo;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -9,61 +12,81 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.vectorstore.ChromaVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
-import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/ai/chat")
 @Slf4j
 public class AiChatController {
-    @Autowired ChromaVectorStore chromaVectorStore;
+    @Autowired
+    VectorStore vectorStore;
     private final OpenAiChatModel openAiChatModel;
     private final ChatMemory chatMemory = new InMemoryChatMemory();
+    private final ApplicationContext applicationContext;
+    private final GetCurrentUserInfo getCurrentUserInfo;
 
 
     private String currentConversationId = "";
 
-    public AiChatController(OpenAiChatModel openAiChatModel) {
+    public AiChatController(OpenAiChatModel openAiChatModel, ApplicationContext applicationContext, GetCurrentUserInfo getCurrentUserInfo) {
         this.openAiChatModel = openAiChatModel;
+        this.applicationContext = applicationContext;
+        this.getCurrentUserInfo = getCurrentUserInfo;
     }
 
 
     @SneakyThrows
-    @GetMapping(value = "/rag", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public String chatStreamWithVectorDB(@RequestParam String prompt, @RequestParam String conversationId) {
-        // 1. 定义提示词模板，question_answer_context会被替换成向量数据库中查询到的文档。
-        String promptWithContext = """
-                Below is the context information:
-                ---------------------
-                {question_answer_context}
-                ---------------------
-                Please respond based on the provided context and historical information, rather than using prior knowledge. If the answer is not present in the context, let the user know that you don't know the answer.
-                """;
-        currentConversationId = conversationId;
+    @PostMapping(value = "/rag")
+    public String chat(@RequestBody AiMessageWrapper input, @RequestHeader("Authorization") String token) {
+        String[] functionBeanNames = new String[0];
+        // 如果启用Agent则获取Agent的bean
+        if (input.getParams().getEnableAgent()) {
+            // 获取带有Agent注解的bean
+            Map<String, Object> beansWithAnnotation = applicationContext.getBeansWithAnnotation(Agent.class);
+            functionBeanNames = new String[beansWithAnnotation.keySet().size()];
+            functionBeanNames = beansWithAnnotation.keySet().toArray(functionBeanNames);
+            System.out.printf("================functionBeanNames: %s\n", functionBeanNames);
+            input.getInputMessage().setAccountId(String.valueOf(getCurrentUserInfo.getCurrentAccountId(getCurrentUserInfo.getCurrentUserId(token))));
+        }
+
         return ChatClient.create(openAiChatModel).prompt()
-                .user(prompt)
-                // 2. QuestionAnswerAdvisor会在运行时替换模板中的占位符`question_answer_context`，替换成向量数据库中查询到的文档。此时的query=用户的提问+替换完的提示词模板;
-                .advisors(new QuestionAnswerAdvisor(chromaVectorStore, SearchRequest.defaults(), promptWithContext))
-                .advisors(new MessageChatMemoryAdvisor(chatMemory, conversationId, 10))
+                .user(promptUserSpec -> buildPrompt(promptUserSpec, input))
+                .functions(functionBeanNames)
+                .advisors(advisorSpec -> {
+                    // use chat memory
+                    useChatHistory(advisorSpec, input.getInputMessage().getConversationId());
+                    // use vectore store
+                    useVectorStore(advisorSpec, input.getParams().getEnableVectorStore());
+                })
                 .call()
-                // 3. query发送给大模型得到答案
                 .content();
     }
 
-    //streaming chat with memory use SSE pipeline.
+    private void buildPrompt(ChatClient.PromptUserSpec promptUserSpec, AiMessageWrapper message) {
+        if (message.getParams().getEnableAgent()){
+            String m = message.getInputMessage().getMessage() + "My account id is " + message.getInputMessage().getAccountId();
+            promptUserSpec.text(m);
+        } else {
+            promptUserSpec.text(message.getInputMessage().getMessage());
+        }
+    }
+
+
     @GetMapping(value = "/general", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public String chatStream(@RequestParam String prompt, @RequestParam String sessionId) {
         MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory, sessionId, 10);
         return ChatClient.create(openAiChatModel).prompt()
                 .user(prompt)
                 .advisors(messageChatMemoryAdvisor)
-                .call() //流式返回
+                .call()
                 .content();
     }
 
@@ -75,6 +98,22 @@ public class AiChatController {
                 .user(prompt)
                 .call()
                 .content();
+    }
+
+    public void useChatHistory(ChatClient.AdvisorSpec advisorSpec, String sessionId) {
+        advisorSpec.advisors(new MessageChatMemoryAdvisor(chatMemory, sessionId, 10));
+    }
+
+    public void useVectorStore(ChatClient.AdvisorSpec advisorSpec, Boolean enableVectorStore) {
+        if (!enableVectorStore) return;
+        String promptWithContext = """
+                Below is the context information:
+                ---------------------
+                {question_answer_context}
+                ---------------------
+                Please respond based on the provided context and historical information, rather than using prior knowledge. If the answer is not present in the context, let the user know that you don't know the answer.
+                """;
+        advisorSpec.advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults(), promptWithContext));
     }
 
     @RabbitListener(queues = "financial.report.to.chatbot")
