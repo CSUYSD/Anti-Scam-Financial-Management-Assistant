@@ -52,14 +52,14 @@ export function updatePasswordAPI( oldPassword, newPassword) {
     });
 }
 
-export function updateUserAPI(id, userDetails) {
+export function updateUserAPI( TransactionUserDTO) {
     return request({
-        url: `/users/update/${id}`,
+        url: `/users/update/info`,
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
         },
-        data: userDetails
+        data: TransactionUserDTO
     });
 }
 

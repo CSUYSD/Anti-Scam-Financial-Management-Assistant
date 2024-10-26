@@ -63,10 +63,10 @@ public class TransactionUserController {
         return userOptional.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<String> updateUser(@PathVariable Long id, @RequestBody TransactionUser transactionUserDetails) {
+    @PutMapping("/update/info")
+    public ResponseEntity<String> updateUser(@RequestHeader("Authorization") String token, @RequestBody TransactionUserDTO transactionUserDTO) {
         try {
-            transactionUserService.updateUser(id, transactionUserDetails);
+            transactionUserService.updateUser(token, transactionUserDTO);
             return ResponseEntity.ok("User updated successfully");
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

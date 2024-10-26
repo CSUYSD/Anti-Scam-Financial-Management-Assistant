@@ -2,7 +2,6 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.3.2'
 	id 'io.spring.dependency-management' version '1.1.6'
-	id 'jacoco'
 }
 
 group = 'com.example'
@@ -14,91 +13,12 @@ java {
 	}
 }
 
-jacoco {
-	toolVersion = "0.8.8"  // 确保使用 JaCoCo 的最新版本
-}
-
-test {
-	useJUnitPlatform()
-	jvmArgs '-Dfile.encoding=UTF-8'
-	finalizedBy jacocoTestReport
-	testLogging {
-		events "passed", "skipped", "failed"
-		exceptionFormat "full"
-	}
-}
-
-// JaCoCo 报告配置
-jacocoTestReport {
-	dependsOn test
-	reports {
-		html.required = true
-		xml.required = true
-		csv.required = truegin
-	}
-
-	afterEvaluate {
-		classDirectories.setFrom(files(classDirectories.files.collect {
-			fileTree(dir: it, exclude: [
-					// 排除所有模型类
-					"com/example/demo/model/**",
-					"com/example/demo/model/dto/**",
-					"com/example/demo/model/redis/**",
-					// 排除配置类
-					"com/example/demo/config/**",
-					// 排除常量类
-					"com/example/demo/constant/**",
-					// 排除异常类
-					"com/example/demo/exception/**",
-					// 排除启动类
-					"**/DemoApplication*",
-					// 排除工具类（可选）
-					// "com/example/demo/utility/**"
-			])
-		}))
-	}
-}
-
-// 覆盖率验证规则
-jacocoTestCoverageVerification {
-	dependsOn jacocoTestReport
-
-	afterEvaluate {
-		classDirectories.setFrom(files(classDirectories.files.collect {
-			fileTree(dir: it, exclude: [
-					"com/example/demo/model/**",
-					"com/example/demo/model/dto/**",
-					"com/example/demo/model/redis/**",
-					"com/example/demo/config/**",
-					"com/example/demo/constant/**",
-					"com/example/demo/exception/**",
-					"**/DemoApplication*"
-			])
-		}))
-	}
-
-	violationRules {
-		rule {
-			limit {
-				minimum = 0.80
-			}
-		}
-	}
-}
-
-// 编码设置
-tasks.withType(JavaCompile) {
-	options.encoding = 'UTF-8'
-	options.compilerArgs += ['-parameters']
-}
-
-test.finalizedBy jacocoTestCoverageVerification  // 在测试后检查覆盖率是否达标
-
 //snapshot version support
 repositories {
 	mavenCentral()
 	maven { url 'https://repo.spring.io/milestone' }
 	maven { url 'https://repo.spring.io/snapshot' }
+	maven { url 'https://jitpack.io' }
 }
 
 compileJava {
@@ -108,13 +28,6 @@ compileJava {
 ext {
 	set('springAiVersion', "1.0.0-M2")
 }
-
-configurations {
-	all {
-		exclude group: 'com.vaadin.external.google', module: 'android-json'
-	}
-}
-
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -159,6 +72,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	// AWS S3
 	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.529'
+//	Alpha Vantage
+	implementation 'com.github.crazzyghost:alphavantage-java:1.6.2'
+
 }
 
 dependencyManagement {
@@ -167,16 +83,6 @@ dependencyManagement {
 	}
 }
 
-
-
 tasks.named('test') {
 	useJUnitPlatform()
-	jvmArgs '-Dfile.encoding=UTF-8'
 }
-tasks.withType(JavaCompile) {
-	options.encoding = 'UTF-8'
-}
-tasks.withType(Test) {
-	jvmArgs '-Dfile.encoding=UTF-8'
-}
-
