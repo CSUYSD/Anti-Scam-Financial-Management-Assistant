@@ -16,7 +16,6 @@ import com.example.demo.utility.jwt.JwtUtil;
 import com.example.demo.utility.converter.TransactionRecordConverter;
 import com.example.demo.utility.converter.PromptConverter;
 import com.example.demo.utility.GetCurrentUserInfo;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,10 +43,9 @@ public class TransactionRecordService {
 
     @Autowired private StringRedisTemplate stringRedisTemplate;
 
-    private final RabbitTemplate rabbitTemplate;
 
     @Autowired
-    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService, GetCurrentUserInfo getCurrentUserInfo, RabbitMQService rabbitMQService, RabbitTemplate rabbitTemplate) {
+    public TransactionRecordService(TransactionRecordDao transactionRecordDao, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, AccountDao accountDao, TransactionUserDao transactionUserDao, RecordSyncService recordSyncService, GetCurrentUserInfo getCurrentUserInfo, RabbitMQService rabbitMQService) {
         this.transactionRecordDao = transactionRecordDao;
         this.transactionUserDao = transactionUserDao;
         this.jwtUtil = jwtUtil;
@@ -56,7 +54,6 @@ public class TransactionRecordService {
         this.recordSyncService = recordSyncService;
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.rabbitMQService = rabbitMQService;
-        this.rabbitTemplate = rabbitTemplate;
     }
 
 
@@ -144,7 +141,6 @@ public class TransactionRecordService {
     public void deleteTransactionRecordsInBatch(String token, List<Long> recordIds) {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
-        Account account = findAccountById(accountId); // 使用传入的 accountId 查找账户
         List<TransactionRecord> records = transactionRecordDao.findAllByIdInAndAccountId(recordIds, accountId);
         if (records.isEmpty()) {
             throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
@@ -154,16 +150,7 @@ public class TransactionRecordService {
 //      delete batch of records from elastic search
         recordSyncService.deleteFromElasticsearchInBatch(recordIds);
 
-        // 计算并更新账户的总收入和总支出
-        for (Long recordId : recordIds) {
-            TransactionRecord transactionRecord = findTransactionRecordById(recordId);
-            if (transactionRecord.getType().equalsIgnoreCase("expense")) {
-                account.setTotalExpense(account.getTotalExpense() - transactionRecord.getAmount());
-            } else if (transactionRecord.getType().equalsIgnoreCase("income")) {
-                account.setTotalIncome(account.getTotalIncome() - transactionRecord.getAmount());
-            }
-        }
-        updateRedisAccount(account);
+
     }
 
     @Transactional(readOnly = true)
@@ -175,7 +162,7 @@ public class TransactionRecordService {
     }
 
 
-    void updateRedisAccount(Account account) {
+    private void updateRedisAccount(Account account) {
         String redisAccountKey = "login_user:" + account.getTransactionUser().getId() + ":account:" + account.getId();
 //        System.out.println("Redis Key: " + redisAccountKey);
         RedisAccount redisAccount = new RedisAccount(
@@ -207,4 +194,5 @@ public class TransactionRecordService {
         return transactionUserDao.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found for id: " + userId));
     }
+
 }

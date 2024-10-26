@@ -4,11 +4,11 @@ import java.util.Arrays;
 import java.util.List;
 
 
-import com.example.demo.exception.AccountNotFoundException;
 import com.example.demo.model.dto.TransactionRecordDTO;
 import com.example.demo.service.AccountService;
 import com.example.demo.utility.jwt.JwtUtil;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -22,23 +22,20 @@ import com.example.demo.model.TransactionRecord;
 import com.example.demo.service.TransactionRecordService;
 @RestController
 @RequestMapping("/records")
-
 @Validated
+@Slf4j
 public class TransactionRecordController {
 
     private final TransactionRecordService recordService;
     private final JwtUtil jwtUtil;
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
-
     @Autowired
     private AccountService accountService;
 
-    public TransactionRecordController(TransactionRecordService recordService, JwtUtil jwtUtil, StringRedisTemplate stringRedisTemplate, AccountService accountService, RedisTemplate<String, Object> redisTemplate) {
+    public TransactionRecordController(TransactionRecordService recordService, JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
         this.recordService = recordService;
         this.jwtUtil = jwtUtil;
-        this.stringRedisTemplate = stringRedisTemplate;
-        this.accountService = accountService;
     }
 
     @GetMapping("/all")
@@ -58,7 +55,7 @@ public class TransactionRecordController {
         try {
             recordService.addTransactionRecord(token, transactionRecordDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body("Transaction record has been created successfully.");
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error creating transaction record: " + e.getMessage());
         }
     }
@@ -92,7 +89,7 @@ public class TransactionRecordController {
             recordService.deleteTransactionRecordsInBatch(token, recordIds);
             return ResponseEntity.ok("Records deleted successfully.");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete records: " + e.getMessage());
+            return ResponseEntity.status(500).body("Failed to delete records: " + e.getMessage());
         }
     }
 

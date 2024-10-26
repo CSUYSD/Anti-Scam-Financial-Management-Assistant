@@ -90,9 +90,9 @@ export function deleteRecordAPI(id) {
 }
 
 // Delete multiple records in batch
-export function deleteRecordsInBatchAPI(accountId, recordIds) {
+export function deleteRecordsInBatchAPI( recordIds) {
     return request({
-        url: `/records/batch?accountId=${accountId}`, // 添加 accountId 查询参数
+        url: `/records/batch`,
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',

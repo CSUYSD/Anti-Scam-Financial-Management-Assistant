@@ -20,7 +20,7 @@ import com.example.demo.utility.jwt.JwtUtil;
 
 import jakarta.validation.Valid;
 
-@RestController 
+@RestController
 @RequestMapping("/account")
 @Validated
 @Slf4j
@@ -49,7 +49,6 @@ public class AccountController {
         }
     }
 
-
     @PostMapping("/create")
     public ResponseEntity<String> createAccount(@RequestHeader("Authorization") String token, @Valid @RequestBody AccountDTO account) {
         if (token == null || token.isEmpty()) {
@@ -63,7 +62,7 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
             // 账户创建成功
         } catch (AccountAlreadyExistException e){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("User already exists");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("账户名已存在");
             // 账户名已存在
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("用户未找到");
@@ -73,7 +72,7 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("服务器错误");
         }
     }
-    
+
     @GetMapping("/current")
     public ResponseEntity<Account> getAccountByAccountId(@RequestHeader("Authorization") String token) {
         try {

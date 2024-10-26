@@ -51,7 +51,7 @@ public class TransactionRecordServiceTest {
         transactionRecordService = new TransactionRecordService(
                 transactionRecordDao, jwtUtil, redisTemplate, accountDao,
                 transactionUserDao, recordSyncService, getCurrentUserInfo,
-                rabbitMQService, rabbitTemplate
+                rabbitMQService
         );
     }
 
