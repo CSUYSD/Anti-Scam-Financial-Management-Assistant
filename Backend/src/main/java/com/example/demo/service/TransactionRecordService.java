@@ -141,17 +141,39 @@ public class TransactionRecordService {
     public void deleteTransactionRecordsInBatch(String token, List<Long> recordIds) {
         Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
         Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
+        Account account = findAccountById(accountId);
+
+
         List<TransactionRecord> records = transactionRecordDao.findAllByIdInAndAccountId(recordIds, accountId);
+
+
         if (records.isEmpty()) {
             throw new RuntimeException("No records found for provided IDs and accountId: " + accountId);
         }
+
+
+        // Update total income and expense based on the records to be deleted
+        for (TransactionRecord record : records) {
+            if (record.getType().equalsIgnoreCase("expense")) {
+                account.setTotalExpense(account.getTotalExpense() - record.getAmount());
+            } else if (record.getType().equalsIgnoreCase("income")) {
+                account.setTotalIncome(account.getTotalIncome() - record.getAmount());
+            }
+        }
+
+
+        // Delete records from database
         transactionRecordDao.deleteAll(records);
 
-//      delete batch of records from elastic search
+
+        // Delete batch of records from Elasticsearch
         recordSyncService.deleteFromElasticsearchInBatch(recordIds);
 
 
+        // Update Redis cache with the modified account information
+        updateRedisAccount(account);
     }
+
 
     @Transactional(readOnly = true)
     public List<TransactionRecordDTO> getCertainDaysRecords(Long accountId, Integer duration) {

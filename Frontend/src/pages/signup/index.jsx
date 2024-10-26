@@ -81,7 +81,7 @@ export default function EnhancedSignUp() {
         if (isSuccess) {
             const timer = setTimeout(() => {
                 window.location.href = '/login'
-            }, 5000)
+            }, 2000)
             return () => clearTimeout(timer)
         }
     }, [isSuccess])
