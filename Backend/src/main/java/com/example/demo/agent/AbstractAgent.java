@@ -37,15 +37,15 @@ public abstract class AbstractAgent<Req, Resp> implements Function<Req, Resp> {
      * @return Function Call名称列表
      */
     private String[] getFunctions() {
-        // 1. 找到所有带有Description注解的内部类
+        //  找到所有带有Description注解的内部类
         List<Class<?>> classList = Arrays.stream(this.getClass().getClasses())
                 .filter(aClass -> aClass.isAnnotationPresent(Description.class))
                 .toList();
 
-        // 2. 创建结果数组
+        //  创建结果数组
         String[] names = new String[classList.size()];
 
-        // 3. 转换类为函数名称并存储映射
+        //  转换类为函数名称并存储映射
         return classList.stream()
                 .map(aClass -> {
                     // 生成Spring Bean名称
@@ -66,33 +66,21 @@ public abstract class AbstractAgent<Req, Resp> implements Function<Req, Resp> {
                 .toArray(String[]::new);
     }
 
-    /**
-     * 处理每个函数类，建立映射并返回OpenAI格式的函数名
-     */
     private String processFunctionClass(Class<?> functionClass) {
-        // Spring Bean名称（用于Spring容器）
         String beanName = this.getClass().getSimpleName() + "." + functionClass.getSimpleName();
 
-        // OpenAI函数名（用于API调用）
         String openAiFunctionName = generateOpenAiFunctionName(functionClass);
 
-        // 存储映射关系
         functionNameMapping.put(openAiFunctionName, beanName);
 
         return openAiFunctionName;
     }
 
-    /**
-     * 生成符合OpenAI规范的函数名
-     */
     private String generateOpenAiFunctionName(Class<?> functionClass) {
         String baseName = StringUtils.uncapitalize(functionClass.getSimpleName());
         return baseName.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
     }
 
-    /**
-     * 获取Spring Bean名称的映射
-     */
     protected String getBeanNameForFunction(String openAiFunctionName) {
         return functionNameMapping.get(openAiFunctionName);
     }

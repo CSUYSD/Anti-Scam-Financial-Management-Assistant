@@ -18,6 +18,7 @@ repositories {
 	mavenCentral()
 	maven { url 'https://repo.spring.io/milestone' }
 	maven { url 'https://repo.spring.io/snapshot' }
+	maven { url 'https://jitpack.io' }
 }
 
 compileJava {
@@ -71,6 +72,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	// AWS S3
 	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.529'
+//	Alpha Vantage
+	implementation 'com.github.crazzyghost:alphavantage-java:1.6.2'
 
 }
 
