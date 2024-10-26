@@ -57,24 +57,19 @@ export function ClearFileAPI() {
     });
 }
 
-/**
- * Chat with File API
- * @param {Object} params - The chat form data
- * @returns {Promise} - The API response
- */
-export function ChatWithFileAPI(params) {
-    console.log("Sending chat with file data:", params);
+
+export function ChatWithFileAPI(formdata) {
+    console.log("Sending chat with file data:", formdata);
     return request({
-        url: '/ai/chat/rag',
-        method: 'GET',
-        params: {
-            prompt: params.prompt,
-            conversationId: params.conversationId
+        url: "/ai/chat/rag",
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
         },
-        responseType: 'text'
-    }).catch(error => {
-        console.error('API Error:', error);
-        throw error;
+        data: JSON.stringify({
+            inputMessage: formdata.inputMessage,
+            params: formdata.params
+        })
     });
 }
 
