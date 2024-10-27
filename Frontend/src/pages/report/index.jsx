@@ -1,9 +1,11 @@
+'use client'
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, isValid } from 'date-fns';
 import { chatSessions } from '@/hooks/ChatSessions';
 import { fileUpload } from '@/hooks/FileUpload';
-import { FluxMessageWithHistoryAPI, ChatWithFileAPI, ClearFileAPI, ClearFileByFileNameAPI, GenerateReport, UploadFileAPI } from '@/api/ai';
+import { ChatWithFileAPI, ClearFileAPI, ClearFileByFileNameAPI, GenerateReport, UploadFileAPI } from '@/api/ai';
 import MarkdownRenderer from '@/utils/markdown-renderer';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -165,27 +167,18 @@ const ChatInterface = () => {
       setIsTyping(true);
 
       try {
-        let response;
+        const messageData = {
+          inputMessage: {
+            conversationId: activeSession,
+            message: message.trim(),
+          },
+          params: {
+            enableAgent: isAgentEnabled,
+            enableVectorStore: files.length > 0,
+          },
+        };
 
-        if (isAgentEnabled || files.length > 0) {
-          const messageData = {
-            inputMessage: {
-              conversationId: activeSession,
-              message: message.trim(),
-            },
-            params: {
-              enableAgent: isAgentEnabled,
-              enableVectorStore: !isAgentEnabled && files.length > 0,
-            },
-          };
-
-          response = await ChatWithFileAPI(messageData);
-        } else {
-          response = await FluxMessageWithHistoryAPI({
-            prompt: message.trim(),
-            sessionId: activeSession,
-          });
-        }
+        const response = await ChatWithFileAPI(messageData);
 
         addMessageToActiveSession({
           sender: 'AI',
@@ -399,7 +392,6 @@ const ChatInterface = () => {
               />
               <Button onClick={handleGenerateReport} disabled={isLoading}>
                 Generate AI Report
-
               </Button>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -415,7 +407,7 @@ const ChatInterface = () => {
                   className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors duration-200"
                   aria-label="Export conversation"
               >
-                <Download className="w-5 h-5" />
+                <Download className="w-5 h-5"   />
               </button>
             </div>
           </div>
@@ -450,7 +442,7 @@ const ChatInterface = () => {
                             className="ml-2 text-muted-foreground hover:text-foreground transition-colors duration-200"
                             aria-label={`Delete ${file.name}`}
                         >
-                          <X className="w-4 w-4"/>
+                          <X className="w-4 h-4"/>
                         </button>
                       </div>
                   ))}
