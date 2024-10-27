@@ -36,7 +36,7 @@ public class WarningRecordAnalyser {
         long accountId = request.getAccountId();
         log.debug("Processing current record: {}", currentRecord);
         log.info("Fetching recent records for accountId: {}", accountId);
-        String recentRecords = PromptConverter.parseRecentTransactionRecordsToPrompt(transactionRecordService.getCertainDaysRecords(accountId, 10), true);
+        String recentRecords = PromptConverter.parseRecentTransactionRecordsToPrompt(transactionRecordService.getCertainDaysRecords(accountId, 10), false);
         log.info("Recent records parsed: {}", recentRecords);
 
         log.info("Analyzing current record with AI service");

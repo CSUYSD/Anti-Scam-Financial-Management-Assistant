@@ -40,7 +40,25 @@ public class AiAnalyserService {
     public final RabbitMQService rabbitMQService;
     public final FinancialReportRepository financialReportRepository;
 
-    @Autowired
+    @Autowired        String context = """
+    You are reviewing a recent bank transaction to assess if it's potentially a scam or bank card fraud.
+    
+    Recent transaction records for reference:
+    ---------------------
+    {context}
+    ---------------------
+    Do not include recent records directly in your response.
+    
+    Instructions:
+    - Begin your reply with 'WARNING' only if the current record has strong indicators of fraud. Examples include:
+        - Multiple transactions with the same amount or recipient within a short time frame (e.g., two similar transactions within the same day).
+        - A sudden large withdrawal or purchase from an unfamiliar location.
+        - Unusual patterns or purposes compared to recent records.
+    - If the transaction seems legitimate, provide a brief explanation, such as "No unusual patterns detected."
+    
+    Remember, keep your response concise and under 50 words.
+    
+    """;
     public AiAnalyserService(OpenAiChatModel openAiChatModel, JwtUtil jwtUtil, GetCurrentUserInfo getCurrentUserInfo, TransactionRecordService recordService, ChromaVectorStore vectorStore, PromptManager promptManager, RabbitMQService rabbitMQService, FinancialReportRepository financialReportRepository) {
         this.openAiChatModel = openAiChatModel;
         this.jwtUtil = jwtUtil;
@@ -55,21 +73,26 @@ public class AiAnalyserService {
 
     public String analyseCurrentRecord(String currentRecord, String recentRecords) {
         String context = """
-        Based on the following recent transaction records, generate a reply using the context provided.:
-        ---------------------
-        {context}
-        ---------------------
-        Above is the recent record, only use it as a reference, do not include it in your reply.
-        """;
+    You are reviewing a recent bank transaction to assess if it's potentially a scam or bank card fraud.
+    
+    Recent transaction records for reference:
+    ---------------------
+    {context}
+    ---------------------
+    Do not include recent records directly in your response.
+    
+    Instructions:
+    - Begin your reply with 'WARNING' only if the current record has strong indicators of fraud. Examples include:
+        - Multiple transactions with the same amount or recipient within a short time frame (e.g., two similar transactions within the same day).
+        - A sudden large withdrawal or purchase from an unfamiliar location.
+        - Unusual patterns or purposes compared to recent records.
+    - If the transaction seems legitimate, provide a brief explanation, such as "No unusual patterns detected."
+    
+    Remember, keep your response concise and under 50 words.
+    
+    """;
         try {
-            Message userMessage = new UserMessage("Here is my current record: "
-                    + currentRecord
-                    + "If no recent records are given, reply nothing. "
-                    + "If you find current records highly suspicious of being a scam based on given recent context, start your reply with 'WARNING'. "
-                    +" If you thin current records are not super suspicious, do not reply anything. "
-                    + "Here is some suspicious context: 1. Duplicate transaction within one day 2. Huge amount of transaction for investment or Tuition Fees"
-                    + "if the current transaction is Income, reply nothing" +
-                    "Keep your response under 50 words." );
+            Message userMessage = new UserMessage("Here is my current record: " + currentRecord);
 
             SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(context);
 
