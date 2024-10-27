@@ -10,6 +10,7 @@ public class PromptManager {
         ---------------------
         {question_answer_context}
         ---------------------
+        Please respond based on the provided context and historical information, rather than using prior knowledge. If the answer is not present in the context, let the user know that you don't know the answer.
     """;
 
     private static final String FINANCIAL_REPORT_TEMPLATE = """
