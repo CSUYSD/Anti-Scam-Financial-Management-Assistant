@@ -30,7 +30,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { logoutAPI } from '@/api/user'
 import { removeToken } from "@/utils/index"
 import { chatSessions } from '@/hooks/ChatSessions.jsx'
-import { ChatAPI } from '@/api/ai'
+import { ChatWithFileAPI } from '@/api/ai'
 import WebSocketService from "@/services/WebSocketService.js"
 
 const NavItem = React.forwardRef(({ icon: Icon, children, to, onClick, collapsed, ...props }, ref) => {
@@ -154,8 +154,15 @@ export default function DashboardLayout() {
             try {
                 const messageId = addMessageToActiveSession({ sender: 'AI', content: '', timestamp: new Date().toISOString() })
 
-                const response = await ChatAPI({
-                    prompt: message.trim(),
+                const response = await ChatWithFileAPI({
+                    inputMessage: {
+                        conversationId: activeSession,
+                        message: message.trim(),
+                    },
+                    params: {
+                        enableAgent: false,
+                        enableVectorStore: false,
+                    },
                 })
 
                 if (response.data) {
@@ -179,7 +186,7 @@ export default function DashboardLayout() {
                 setIsTyping(false)
             }
         }
-    }, [message, username, addMessageToActiveSession, updateMessageInActiveSession, ChatAPI])
+    }, [message, username, activeSession, addMessageToActiveSession, updateMessageInActiveSession])
 
     useEffect(() => {
         if (location.pathname === '/report') {

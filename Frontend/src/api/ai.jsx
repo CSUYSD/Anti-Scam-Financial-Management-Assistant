@@ -2,24 +2,6 @@ import { request } from "@/utils"
 
 
 /**
- * Flux Message with History API
- * @param {Object} params - The message form data
- * @returns {Promise} - The API response
- */
-export function FluxMessageWithHistoryAPI(params) {
-    console.log("Sending flux message data:", params);
-    return request({
-        url: '/ai/chat/general',
-        method: 'GET',
-        params: {
-            prompt: params.prompt,
-            sessionId: params.sessionId
-        },
-        responseType: 'text'
-    });
-}
-
-/**
  * Upload File API
  * @param {Object} formData - The file form data
  * @returns {Promise} - The API response
@@ -71,16 +53,6 @@ export function ChatWithFileAPI(formdata) {
             params: formdata.params
         })
     });
-}
-
-export function ChatAPI(params) {
-    return request ({
-        url: "/ai/chat/chatWithoutMemory",
-        method: "GET",
-        params: {
-            prompt: params.prompt
-        },
-    })
 }
 
 
