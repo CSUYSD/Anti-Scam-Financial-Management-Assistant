@@ -10,19 +10,15 @@ import com.example.demo.agent.Agent;
 import com.example.demo.agent.AbstractAgent;
 import com.example.demo.model.dto.TransactionRecordDTO;
 import com.example.demo.service.TransactionRecordService;
-import com.example.demo.service.stock.StockService;
-import com.example.demo.service.weather.WeatherService;
 import com.example.demo.utility.converter.PromptConverter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Description;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -66,7 +62,7 @@ public class RecordAnalyzer extends AbstractAgent<RecordAnalyzer.Request, String
                     .limit(20)
                     .collect(Collectors.toList());
 
-            return PromptConverter.parseRecentTransactionRecordsToPrompt(recentRecords);
+            return PromptConverter.parseRecentTransactionRecordsToPrompt(recentRecords, false);
         }
 
         public record Request(

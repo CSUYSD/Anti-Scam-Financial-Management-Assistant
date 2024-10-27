@@ -10,9 +10,9 @@ public class PromptConverter {
     private static final int MAX_RECORDS = 10;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
 
-    public static String parseRecentTransactionRecordsToPrompt(List<TransactionRecordDTO> records) {
+    public static String parseRecentTransactionRecordsToPrompt(List<TransactionRecordDTO> records, Boolean isForWarning) {
         List<TransactionRecordDTO> processedRecords = new ArrayList<>(records);
-        if (!processedRecords.isEmpty()) {
+        if (!processedRecords.isEmpty() && isForWarning) {
             processedRecords.remove(0);
         }
         System.out.printf("====================================Fetched Recent Records: %s\n", processedRecords);

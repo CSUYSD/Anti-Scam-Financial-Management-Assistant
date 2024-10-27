@@ -22,9 +22,9 @@ import AIReports from '@/components/ai-reports'
 import { cn } from "@/lib/utils"
 
 const transactionTypes = ['Income', 'Expense']
-const expenseCategories = ['Grocery', 'Electronic', 'Devices', 'Rent', 'Bills', 'Tuition Fees']
+const expenseCategories = ['Grocery', 'Devices', 'Rent', 'Bills', 'Investment', 'Tuition Fees']
 const incomeCategories = ['Salary', 'Investment', 'Gift', 'Other']
-const transactionMethods = ['Credit Card', 'Cash', 'PayPal']
+const transactionMethods = ['Credit Card', 'Debit Card', 'Cash', 'PayPal']
 
 export default function EnhancedTransactionManagement() {
     const [allTransactions, setAllTransactions] = useState([])

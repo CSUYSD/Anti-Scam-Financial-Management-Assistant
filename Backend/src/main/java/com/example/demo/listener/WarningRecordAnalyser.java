@@ -13,19 +13,19 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class AiAnalyser {
+public class WarningRecordAnalyser {
     public final AiAnalyserService aiAnalyserService;
     public final GetCurrentUserInfo getCurrentUserInfo;
     public final TransactionRecordService transactionRecordService;
     public final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public AiAnalyser(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, TransactionRecordService transactionRecordService, SimpMessagingTemplate messagingTemplate) {
+    public WarningRecordAnalyser(AiAnalyserService aiAnalyserService, GetCurrentUserInfo getCurrentUserInfo, TransactionRecordService transactionRecordService, SimpMessagingTemplate messagingTemplate) {
         this.aiAnalyserService = aiAnalyserService;
         this.getCurrentUserInfo = getCurrentUserInfo;
         this.transactionRecordService = transactionRecordService;
         this.messagingTemplate = messagingTemplate;
-        log.info("AiAnalyser initialized with dependencies");
+        log.info("WarningRecordAnalyser initialized with dependencies");
     }
 
     @RabbitListener(queues = "new.record.to.ai.analyser")
@@ -36,7 +36,7 @@ public class AiAnalyser {
         long accountId = request.getAccountId();
         log.debug("Processing current record: {}", currentRecord);
         log.info("Fetching recent records for accountId: {}", accountId);
-        String recentRecords = PromptConverter.parseRecentTransactionRecordsToPrompt(transactionRecordService.getCertainDaysRecords(accountId, 10));
+        String recentRecords = PromptConverter.parseRecentTransactionRecordsToPrompt(transactionRecordService.getCertainDaysRecords(accountId, 10), true);
         log.info("Recent records parsed: {}", recentRecords);
 
         log.info("Analyzing current record with AI service");

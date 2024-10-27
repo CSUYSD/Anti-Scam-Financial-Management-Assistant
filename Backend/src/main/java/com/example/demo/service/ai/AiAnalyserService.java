@@ -59,10 +59,17 @@ public class AiAnalyserService {
         ---------------------
         {context}
         ---------------------
-        If no recent records are given, reply nothing. If you find any transaction suspicious of being a scam, start your reply with 'WARNING'. Keep your response under 50 words.
+        Above is the recent record, only use it as a reference, do not include it in your reply.
         """;
         try {
-            Message userMessage = new UserMessage(currentRecord);
+            Message userMessage = new UserMessage("Here is my current record: "
+                    + currentRecord
+                    + "If no recent records are given, reply nothing. "
+                    + "If you find current records highly suspicious of being a scam based on given recent context, start your reply with 'WARNING'. "
+                    +" If you thin current records are not super suspicious, do not reply anything. "
+                    + "Here is some suspicious context: 1. Duplicate transaction within one day 2. Huge amount of transaction for investment or Tuition Fees"
+                    + "if the current transaction is Income, reply nothing" +
+                    "Keep your response under 50 words." );
 
             SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(context);
 
@@ -80,10 +87,10 @@ public class AiAnalyserService {
         Long userId = getCurrentUserInfo.getCurrentUserId(token);
         Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
         List<TransactionRecordDTO> records = recordService.getCertainDaysRecords(accountId, 10);
-        String recentRecords = PromptConverter.parseRecentTransactionRecordsToPrompt(records);
+        String recentRecords = PromptConverter.parseRecentTransactionRecordsToPrompt(records, false);
 
         String context = promptManager.getFinancialReportPrompt(recentRecords);
-        String prompt = String.format(promptManager.getFinancialReportContext(), recentRecords);
+        String prompt = String.format(promptManager.getRAGPromptTemplate(), recentRecords);
 
         ChatClient chatClient = ChatClient.create(openAiChatModel);
         String response = chatClient.prompt()

@@ -57,7 +57,7 @@ public class PromptManager {
         ```
         """;
 
-    public String getFinancialReportContext() {
+    public String getRAGPromptTemplate() {
         return RAG_CONTEXT_TEMPLATE;
     }
 
