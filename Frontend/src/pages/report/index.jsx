@@ -1,4 +1,3 @@
-'use client'
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,10 +42,15 @@ const ChatInterface = () => {
   const [previewContent, setPreviewContent] = useState(null);
   const [previewFileName, setPreviewFileName] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [displayedFiles, setDisplayedFiles] = useState(files);
 
   useEffect(() => {
     fetchUploadedFiles();
   }, []);
+
+  useEffect(() => {
+    setDisplayedFiles(files);
+  }, [files]);
 
   const fetchUploadedFiles = async () => {
     try {
@@ -77,7 +81,8 @@ const ChatInterface = () => {
     try {
       setIsLoading(true);
       await DeleteFileByFileName(fileName);
-      await fetchUploadedFiles();
+      setUploadedFiles(prevFiles => prevFiles.filter(file => file.name !== fileName));
+      window.location.reload();
     } catch (error) {
       console.error('Error deleting file:', error);
     } finally {
@@ -158,7 +163,7 @@ const ChatInterface = () => {
   };
 
   const handleSendMessage = useCallback(async () => {
-    if (message.trim() || (files.length > 0)) {
+    if (message.trim() || (displayedFiles.length > 0)) {
       const timestamp = new Date().toISOString();
       addMessageToActiveSession({ sender: username, content: message.trim(), timestamp });
 
@@ -174,7 +179,7 @@ const ChatInterface = () => {
           },
           params: {
             enableAgent: isAgentEnabled,
-            enableVectorStore: files.length > 0,
+            enableVectorStore: displayedFiles.length > 0,
           },
         };
 
@@ -200,7 +205,7 @@ const ChatInterface = () => {
         setIsTyping(false);
       }
     }
-  }, [message, activeSession, isAgentEnabled, files, username, addMessageToActiveSession]);
+  }, [message, activeSession, isAgentEnabled, displayedFiles, username, addMessageToActiveSession]);
 
   const handleFileUpload = async (event) => {
     const selectedFile = event.target.files?.[0];
@@ -211,7 +216,8 @@ const ChatInterface = () => {
         formData.append('file', selectedFile);
         await UploadFileAPI(formData);
         await uploadFile(selectedFile);
-        await fetchUploadedFiles();
+        setDisplayedFiles(prevFiles => [...prevFiles, selectedFile]);
+        window.location.reload();
       } catch (error) {
         console.error('Error uploading file:', error);
       } finally {
@@ -226,7 +232,7 @@ const ChatInterface = () => {
       await ClearFileAPI();
       clearFiles();
       if (fileInputRef.current) fileInputRef.current.value = '';
-      await fetchUploadedFiles();
+      setDisplayedFiles([]);
     } catch (error) {
       console.error('Error clearing files:', error);
     } finally {
@@ -322,9 +328,13 @@ const ChatInterface = () => {
     setIsLoading(true);
     try {
       await ClearFileByFileNameAPI(fileName);
-      clearFiles();
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      await fetchUploadedFiles();
+
+      // Remove the file from the local state
+      const updatedFiles = files.filter(file => file.name !== fileName);
+      localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
+
+      // Update the displayed files
+      setDisplayedFiles(updatedFiles);
     } catch (error) {
       console.error('Error deleting file:', error);
     } finally {
@@ -338,7 +348,7 @@ const ChatInterface = () => {
     return isValid(date) ? format(date, 'yyyy-MM-dd HH:mm:ss') : 'Invalid Date';
   };
 
-  const canSendMessage = message.trim() || files.length > 0;
+  const canSendMessage = message.trim() || displayedFiles.length > 0;
   const currentSession = sessions.find(s => s.id === activeSession);
   const hasMessages = currentSession && currentSession.messages.length > 0;
 
@@ -395,6 +405,7 @@ const ChatInterface = () => {
               </Button>
               <div className="flex items-center space-x-2">
                 <Switch
+
                     id="agent-mode"
                     checked={isAgentEnabled}
                     onCheckedChange={setIsAgentEnabled}
@@ -407,7 +418,7 @@ const ChatInterface = () => {
                   className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors duration-200"
                   aria-label="Export conversation"
               >
-                <Download className="w-5 h-5"   />
+                <Download className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -428,11 +439,11 @@ const ChatInterface = () => {
             </div>
           </ScrollArea>
 
-          {files.length > 0 && (
+          {displayedFiles.length > 0 && (
               <div className="p-4 border-t border-border">
                 <h3 className="text-sm font-semibold mb-2">Uploaded Files:</h3>
                 <div className="flex flex-wrap gap-2">
-                  {files.map((file, index) => (
+                  {displayedFiles.map((file, index) => (
                       <div key={index}
                            className="flex items-center bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm">
                         <File className="w-4 h-4 mr-2"/>
@@ -487,7 +498,7 @@ const ChatInterface = () => {
                     variant="outline"
                     size="icon"
                     onClick={handleClearFiles}
-                    disabled={isLoading || files.length === 0}
+                    disabled={isLoading || displayedFiles.length === 0}
                     aria-label="Clear files"
                 >
                   <X className="h-4 w-4"/>
@@ -548,17 +559,21 @@ const ChatMessages = ({ messages, username, isTyping, handleRetry, handleCopy, h
                 transition={{ duration: 0.3 }}
                 className={`flex ${message.sender === username ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex items-start space-x-4 max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl ${message.sender === username ? 'flex-row-reverse' : ''}`}>
+              <div
+                  className={`flex items-start space-x-4 max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl ${message.sender === username ? 'flex-row-reverse' : ''}`}>
                 <img
-                    src={message.sender === username ? 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y' : 'https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg'}
+                    src={message.sender === username
+                        ? 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'
+                        : '/placeholder.svg?height=40&width=40'}
                     alt={`${message.sender} avatar`}
-                    className="w-10 h-10 rounded-full"
+                    className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500"
                 />
                 <div className={`${message.sender === username ? 'text-right' : 'text-left'}`}>
-                  <div className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
+                  <div
+                      className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
                     {message.isAIResponse || message.isReport ? (
                         <div className="markdown-content">
-                          <MarkdownRenderer content={message.content} />
+                          <MarkdownRenderer content={message.content}/>
                         </div>
                     ) : (
                         <p>{message.content}</p>
@@ -568,11 +583,15 @@ const ChatMessages = ({ messages, username, isTyping, handleRetry, handleCopy, h
                     <span>{formatDate(message.timestamp)}</span>
                     {message.sender !== username && (
                         <>
-                          <button onClick={() => handleCopy(message.content)} className="p-1 text-muted-foreground hover:text-foreground transition-colors duration-200" aria-label="Copy message">
-                            <Copy className="w-4 h-4" />
+                          <button onClick={() => handleCopy(message.content)}
+                                  className="p-1 text-muted-foreground hover:text-foreground transition-colors duration-200"
+                                  aria-label="Copy message">
+                            <Copy className="w-4 h-4"/>
                           </button>
-                          <button onClick={() => handleDownload(message.content)} className="p-1 text-muted-foreground hover:text-foreground transition-colors duration-200" aria-label="Download message">
-                            <Download className="w-4 h-4" />
+                          <button onClick={() => handleDownload(message.content)}
+                                  className="p-1 text-muted-foreground hover:text-foreground transition-colors duration-200"
+                                  aria-label="Download message">
+                            <Download className="w-4 h-4"/>
                           </button>
                         </>
                     )}
@@ -583,8 +602,8 @@ const ChatMessages = ({ messages, username, isTyping, handleRetry, handleCopy, h
         ))}
         {isTyping && (
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{opacity: 0, y: 20}}
+                animate={{opacity: 1, y: 0}}
                 className="flex justify-start"
             >
               <div className="bg-secondary rounded-lg p-3">

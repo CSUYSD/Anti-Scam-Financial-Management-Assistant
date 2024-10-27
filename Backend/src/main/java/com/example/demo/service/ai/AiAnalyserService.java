@@ -55,11 +55,23 @@ public class AiAnalyserService {
 
     public String analyseCurrentRecord(String currentRecord, String recentRecords) {
         String context = """
-        Based on the following recent transaction records, generate a reply using the context provided.:
+        You are reviewing a recent bank transaction to assess if it's potentially a scam or bank card fraud.
+        
+        Recent transaction records for reference:
         ---------------------
         {context}
         ---------------------
-        If no recent records are given, reply nothing. If you find any transaction suspicious of being a scam, start your reply with 'WARNING'. Keep your response under 50 words.
+        Do not include recent records directly in your response.
+        
+        Instructions:
+        - Begin your reply with 'WARNING' only if the current record has strong indicators of fraud. Examples include:
+            - Multiple transactions with the same amount or recipient within a short time frame (e.g., two similar transactions within the same day).
+            - A sudden large withdrawal or purchase from an unfamiliar location.
+            - Unusual patterns or purposes compared to recent records.
+        - If the transaction seems legitimate, provide a brief explanation, such as "No unusual patterns detected."
+        
+        Remember, keep your response concise and under 50 words.
+        
         """;
         try {
             Message userMessage = new UserMessage(currentRecord);
