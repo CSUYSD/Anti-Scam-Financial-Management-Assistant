@@ -29,7 +29,7 @@ const ChatInterface = () => {
     updateSessionName,
     addMessageToActiveSession,
   } = chatSessions();
-  const { files, uploadFile, clearFiles } = fileUpload();
+  const { files, uploadFile, clearFiles, removeFile } = fileUpload();
 
   const [message, setMessage] = useState('');
   const [isAgentEnabled, setIsAgentEnabled] = useState(false);
@@ -329,12 +329,11 @@ const ChatInterface = () => {
     try {
       await ClearFileByFileNameAPI(fileName);
 
-      // Remove the file from the local state
-      const updatedFiles = files.filter(file => file.name !== fileName);
-      localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
+      // Remove the file from the local state and localStorage
+      removeFile(fileName);
 
       // Update the displayed files
-      setDisplayedFiles(updatedFiles);
+      setDisplayedFiles(prevFiles => prevFiles.filter(file => file.name !== fileName));
     } catch (error) {
       console.error('Error deleting file:', error);
     } finally {

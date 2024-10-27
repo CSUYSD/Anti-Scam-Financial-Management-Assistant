@@ -43,9 +43,13 @@ export function fileUpload() {
         }
     };
 
+    const removeFile = (fileName) => {
+        setFiles(prevFiles => prevFiles.filter(file => file.name !== fileName));
+    };
+
     const clearFiles = () => {
         setFiles([]);
     };
 
-    return { files, uploadFile, clearFiles };
+    return { files, uploadFile, removeFile, clearFiles };
 }
