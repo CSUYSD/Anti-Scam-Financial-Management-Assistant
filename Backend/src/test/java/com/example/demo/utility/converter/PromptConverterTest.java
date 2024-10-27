@@ -26,7 +26,7 @@ public class PromptConverterTest {
         List<TransactionRecordDTO> records = createTestRecords();
 
         // Act
-        String result = PromptConverter.parseRecentTransactionRecordsToPrompt(records);
+        String result = PromptConverter.parseRecentTransactionRecordsToPrompt(records, false);
 
         // Assert
         Truth.assertThat(result).contains("Type: EXPENSE");
@@ -54,7 +54,7 @@ public class PromptConverterTest {
         List<TransactionRecordDTO> emptyRecords = new ArrayList<>();
 
         // Act
-        String result = PromptConverter.parseRecentTransactionRecordsToPrompt(emptyRecords);
+        String result = PromptConverter.parseRecentTransactionRecordsToPrompt(emptyRecords, false);
 
         // Assert
         Truth.assertThat(result).isEqualTo("No records found.");

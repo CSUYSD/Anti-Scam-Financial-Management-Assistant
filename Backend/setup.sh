@@ -141,6 +141,71 @@ setup_docker_services() {
         "docker run -d --name chroma --net elastic -p 8000:8000 ghcr.io/chroma-core/chroma:0.4.15"
 }
 
+setup_vector_db() {
+    log "Setting up VectorDB environment..."
+
+    # 检查是否安装 Python 3.10
+    if ! command -v python3.10 &> /dev/null; then
+        log "Python 3.10 not found. Installing Python 3.10..."
+        if [ "$OS" == "macOS" ]; then
+            brew install python@3.10 || handle_error "Python 3.10 installation failed"
+        elif [ "$OS" == "Linux" ]; then
+            sudo apt-get update
+            sudo apt-get install -y python3.10 || handle_error "Python 3.10 installation failed"
+        fi
+    else
+        log "Python 3.10 is already installed, skipping installation"
+    fi
+
+    # 创建虚拟环境
+    VECTOR_DB_DIR="$HOME/VectorDB_env"
+    if [ ! -d "$VECTOR_DB_DIR" ]; then
+        python3.10 -m venv "$VECTOR_DB_DIR" || handle_error "Failed to create virtual environment for VectorDB"
+        log "Virtual environment created in $VECTOR_DB_DIR"
+    else
+        log "Virtual environment for VectorDB already exists, skipping creation"
+    fi
+
+    # 激活虚拟环境并安装 chromadb
+    source "$VECTOR_DB_DIR/bin/activate"
+    if ! pip list | grep -q chromadb; then
+        log "Installing chromadb==0.4.15..."
+        pip install chromadb==0.4.15 || handle_error "ChromaDB installation failed"
+    else
+        log "ChromaDB is already installed in the virtual environment, skipping"
+    fi
+
+    # 切换到 VectorDB 目录并执行 chroma.py 脚本
+    VECTOR_DB_SCRIPT_DIR="../VectorDB"  # 假设 VectorDB 文件夹在当前目录的上一级
+    CHROMA_SCRIPT_PATH="$VECTOR_DB_SCRIPT_DIR/chroma.py"
+    if [ -f "$CHROMA_SCRIPT_PATH" ]; then
+        log "Executing chroma.py..."
+        (cd "$VECTOR_DB_SCRIPT_DIR" && python "$CHROMA_SCRIPT_PATH") || handle_error "Execution of chroma.py failed"
+    else
+        handle_error "chroma.py not found in VectorDB directory"
+    fi
+
+    # 退出虚拟环境
+    deactivate
+}
+
+install_node_packages() {
+    if ! command -v react-scripts &> /dev/null || ! command -v tailwindcss &> /dev/null; then
+        log "Installing global Node.js packages..."
+        npm install -g react-scripts tailwindcss || handle_error "Global Node.js packages installation failed"
+    else
+        log "Global Node.js packages are already installed, skipping"
+    fi
+
+    # 安装本地项目依赖
+    FRONTEND_DIR="../Frontend"  # 假设 Frontend 文件夹在当前目录的上一级
+    if [ -d "$FRONTEND_DIR" ]; then
+        log "Installing frontend project dependencies..."
+        (cd "$FRONTEND_DIR" && npm install) || handle_error "Frontend dependencies installation failed"
+    else
+        log "Frontend directory not found, skipping local npm install"
+    fi
+}
 main() {
     log "Starting to install dependencies..."
     install_dependencies
@@ -148,6 +213,7 @@ main() {
     install_spring_boot
     install_chromadb
     setup_docker_services
+    setup_vector_db
 
     log "Installation completed. Note that some components may require additional configuration."
     log "You can access the services via the following addresses:"

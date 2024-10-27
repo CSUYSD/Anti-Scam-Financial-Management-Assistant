@@ -3,6 +3,7 @@ package com.example.demo.controller.ai;
 import com.example.demo.agent.Agent;
 import com.example.demo.model.ai.AiMessageWrapper;
 import com.example.demo.utility.GetCurrentUserInfo;
+import com.example.demo.utility.PromptManager;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -35,6 +36,8 @@ public class AiChatController {
 
 
     private String currentConversationId = "";
+    @Autowired
+    private PromptManager promptManager;
 
     public AiChatController(OpenAiChatModel openAiChatModel, ApplicationContext applicationContext, GetCurrentUserInfo getCurrentUserInfo) {
         this.openAiChatModel = openAiChatModel;
@@ -106,14 +109,8 @@ public class AiChatController {
 
     public void useVectorStore(ChatClient.AdvisorSpec advisorSpec, Boolean enableVectorStore) {
         if (!enableVectorStore) return;
-        String promptWithContext = """
-                Below is the context information:
-                ---------------------
-                {question_answer_context}
-                ---------------------
-                Please respond based on the provided context and historical information, rather than using prior knowledge. If the answer is not present in the context, let the user know that you don't know the answer.
-                """;
-        advisorSpec.advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults(), promptWithContext));
+        String context = promptManager.getRAGPromptTemplate();
+        advisorSpec.advisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults(), context));
     }
 
     @RabbitListener(queues = "financial.report.to.chatbot")

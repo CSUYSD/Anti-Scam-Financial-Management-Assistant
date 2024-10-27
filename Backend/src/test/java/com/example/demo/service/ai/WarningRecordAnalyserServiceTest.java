@@ -5,7 +5,6 @@ import com.example.demo.model.TransactionUser;
 import com.example.demo.model.dto.TransactionRecordDTO;
 import com.example.demo.repository.FinancialReportRepository;
 import com.example.demo.service.TransactionRecordService;
-import com.example.demo.service.ai.AiAnalyserService;
 import com.example.demo.service.rabbitmq.RabbitMQService;
 import com.example.demo.utility.PromptManager;
 import com.example.demo.utility.GetCurrentUserInfo;
@@ -25,7 +24,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-public class AiAnalyserServiceTest {
+public class WarningRecordAnalyserServiceTest {
 
     @Mock private OpenAiChatModel openAiChatModel;
     @Mock private JwtUtil jwtUtil;
@@ -86,7 +85,7 @@ public class AiAnalyserServiceTest {
         doAnswer(invocation -> "Report prompt")
                 .when(promptManager).getFinancialReportPrompt(any());
         doAnswer(invocation -> "Report context")
-                .when(promptManager).getFinancialReportContext();
+                .when(promptManager).getRAGPromptTemplate();
 
         doAnswer(invocation -> expectedResponse)
                 .when(openAiChatModel).call(any(Prompt.class));

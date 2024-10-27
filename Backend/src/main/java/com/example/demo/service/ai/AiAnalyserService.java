@@ -40,7 +40,25 @@ public class AiAnalyserService {
     public final RabbitMQService rabbitMQService;
     public final FinancialReportRepository financialReportRepository;
 
-    @Autowired
+    @Autowired        String context = """
+    You are reviewing a recent bank transaction to assess if it's potentially a scam or bank card fraud.
+    
+    Recent transaction records for reference:
+    ---------------------
+    {context}
+    ---------------------
+    Do not include recent records directly in your response.
+    
+    Instructions:
+    - Begin your reply with 'WARNING' only if the current record has strong indicators of fraud. Examples include:
+        - Multiple transactions with the same amount or recipient within a short time frame (e.g., two similar transactions within the same day).
+        - A sudden large withdrawal or purchase from an unfamiliar location.
+        - Unusual patterns or purposes compared to recent records.
+    - If the transaction seems legitimate, provide a brief explanation, such as "No unusual patterns detected."
+    
+    Remember, keep your response concise and under 50 words.
+    
+    """;
     public AiAnalyserService(OpenAiChatModel openAiChatModel, JwtUtil jwtUtil, GetCurrentUserInfo getCurrentUserInfo, TransactionRecordService recordService, ChromaVectorStore vectorStore, PromptManager promptManager, RabbitMQService rabbitMQService, FinancialReportRepository financialReportRepository) {
         this.openAiChatModel = openAiChatModel;
         this.jwtUtil = jwtUtil;
@@ -55,26 +73,26 @@ public class AiAnalyserService {
 
     public String analyseCurrentRecord(String currentRecord, String recentRecords) {
         String context = """
-        You are reviewing a recent bank transaction to assess if it's potentially a scam or bank card fraud.
-        
-        Recent transaction records for reference:
-        ---------------------
-        {context}
-        ---------------------
-        Do not include recent records directly in your response.
-        
-        Instructions:
-        - Begin your reply with 'WARNING' only if the current record has strong indicators of fraud. Examples include:
-            - Multiple transactions with the same amount or recipient within a short time frame (e.g., two similar transactions within the same day).
-            - A sudden large withdrawal or purchase from an unfamiliar location.
-            - Unusual patterns or purposes compared to recent records.
-        - If the transaction seems legitimate, provide a brief explanation, such as "No unusual patterns detected."
-        
-        Remember, keep your response concise and under 50 words.
-        
-        """;
+    You are reviewing a recent bank transaction to assess if it's potentially a scam or bank card fraud.
+    
+    Recent transaction records for reference:
+    ---------------------
+    {context}
+    ---------------------
+    Do not include recent records directly in your response.
+    
+    Instructions:
+    - Begin your reply with 'WARNING' only if the current record has strong indicators of fraud. Examples include:
+        - Multiple transactions with the same amount or recipient within a short time frame (e.g., two similar transactions within the same day).
+        - A sudden large withdrawal or purchase from an unfamiliar location.
+        - Unusual patterns or purposes compared to recent records.
+    - If the transaction seems legitimate, provide a brief explanation, such as "No unusual patterns detected."
+    
+    Remember, keep your response concise and under 50 words.
+    
+    """;
         try {
-            Message userMessage = new UserMessage(currentRecord);
+            Message userMessage = new UserMessage("Here is my current record: " + currentRecord);
 
             SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(context);
 
@@ -92,10 +110,10 @@ public class AiAnalyserService {
         Long userId = getCurrentUserInfo.getCurrentUserId(token);
         Long accountId = getCurrentUserInfo.getCurrentAccountId(userId);
         List<TransactionRecordDTO> records = recordService.getCertainDaysRecords(accountId, 10);
-        String recentRecords = PromptConverter.parseRecentTransactionRecordsToPrompt(records);
+        String recentRecords = PromptConverter.parseRecentTransactionRecordsToPrompt(records, false);
 
         String context = promptManager.getFinancialReportPrompt(recentRecords);
-        String prompt = String.format(promptManager.getFinancialReportContext(), recentRecords);
+        String prompt = String.format(promptManager.getRAGPromptTemplate(), recentRecords);
 
         ChatClient chatClient = ChatClient.create(openAiChatModel);
         String response = chatClient.prompt()

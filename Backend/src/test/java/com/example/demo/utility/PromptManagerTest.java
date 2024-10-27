@@ -16,15 +16,15 @@ public class PromptManagerTest {
     }
 
     @Test
-    public void testGetFinancialReportContext() {
+    public void testGetRAGPromptTemplate() {
         // Act
-        String result = promptManager.getFinancialReportContext();
+        String result = promptManager.getRAGPromptTemplate();
 
         // Assert
         Truth.assertThat(result).isNotNull();
         Truth.assertThat(result).contains("Below is the context information");
         Truth.assertThat(result).contains("{question_answer_context}");
-        System.out.println("testGetFinancialReportContext passed!");
+        System.out.println("testGetRAGPromptTemplate passed!");
     }
 
     @Test
