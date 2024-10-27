@@ -563,10 +563,13 @@ const ChatMessages = ({ messages, username, isTyping, handleRetry, handleCopy, h
                 <img
                     src={message.sender === username
                         ? 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'
-                        : '/placeholder.svg?height=40&width=40'}
+                        : '/robot-avatar.png'}
                     alt={`${message.sender} avatar`}
-                    className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500"
+                    className={`w-10 h-10 rounded-full ${message.sender === username
+                        ? 'bg-gradient-to-r from-purple-400 via-pink-500 to-red-500'
+                        : 'bg-gray-800'}`}
                 />
+
                 <div className={`${message.sender === username ? 'text-right' : 'text-left'}`}>
                   <div
                       className={`rounded-lg p-3 ${message.sender === username ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
