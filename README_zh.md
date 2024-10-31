@@ -38,7 +38,7 @@ Fin_care是一个允许用户通过多个AI驱动功能来管理其财务数据�
 ## 架构
 RESTful API和事件驱动架构
 
-## 开始使用！(目前支持MacOS和Linux)
+## 部署代码！(目前支持MacOS和Linux)
 ### 1. 克隆仓库
 ```bash
 git clone https://github.com/CSUYSD/Anti-Scam-Financial-Management-Assistant.git
